@@ -19,8 +19,10 @@ public class BootInitializer : MonoBehaviour {
 
         // GameManager create object + script component (can also be done in Script
         // with RuntimeInitializeOnLoadMethod, but this way keeps it centralized)
-        GameObject gameManagerObject = new("GameManager");
+        GameObject gameManagerObject = new("GameManager");        
         gameManagerObject.AddComponent<GameManager>();
+        GameManager gm =gameManagerObject.GetComponent<GameManager>();
+        gm.scenesSO = Resources.Load<ScenesSO>("ScenesSO");
         DontDestroyOnLoad(gameManagerObject);
         Debug.Log("[BI]: GameManager initialized..");
 
