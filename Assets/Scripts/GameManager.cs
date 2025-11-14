@@ -68,6 +68,7 @@ public class GameManager : MonoBehaviour
 
     public void LoadScene(Scenes scene)
     {
+        Debug.Log("GameManager->LoadScene(): " + scene.ToString());
         switch (scene)
         {
             case Scenes.MainMenu:
@@ -97,20 +98,35 @@ public class GameManager : MonoBehaviour
         string activeSceneName = SceneManager.GetActiveScene().name;
         if (activeSceneName == scenesSO.mainMenuScene)
         {
-            activeSceneName = scenesSO.mainMenuScene;
-            currentScene = Scenes.MainMenu;
+            if (currentScene != Scenes.MainMenu)
+            {
+                Debug.Log("currentScene mismatch; currentScene set to " + currentScene.ToString() + "; updating to " + Scenes.MainMenu.ToString());
+                currentScene = Scenes.MainMenu;
+            }
         }
         else if (activeSceneName == scenesSO.gameScene)
         {
-            currentScene = Scenes.Game;
+            if (currentScene != Scenes.Game)
+            {
+                Debug.Log("currentScene mismatch; currentScene set to " + currentScene.ToString() + "; updating to " + Scenes.Game.ToString());
+                currentScene = Scenes.Game;
+            }
         }
         else if (activeSceneName == scenesSO.gameOverScene)
         {
-            currentScene = Scenes.GameOver;
+            if (currentScene != Scenes.GameOver)
+            {
+                Debug.Log("currentScene mismatch; currentScene set to " + currentScene.ToString() + "; updating to " + Scenes.GameOver.ToString());
+                currentScene = Scenes.GameOver;
+            }
         }
         else if (activeSceneName == scenesSO.DCExperimentsScene)
         {
-            currentScene = Scenes.DCExperiments;
+            if (currentScene != Scenes.DCExperiments)
+            {
+                Debug.Log("currentScene mismatch; currentScene set to " + currentScene.ToString() + "; updating to " + Scenes.DCExperiments.ToString());
+                currentScene = Scenes.DCExperiments;
+            }
         }
         else
         {
