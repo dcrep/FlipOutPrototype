@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e94a665a86d79dc4c9db780918aae02b, type: 3}
+  m_Name: CardSpritesSO
+  m_EditorClassIdentifier: 
+  redCard: {fileID: -3570535864281540984, guid: f702f2fb33a93b0408bb2209ea4ed68b, type: 3}
+  greenCard: {fileID: -2657282597035245843, guid: 1f0f694bede29094da14bd4f2a7a298c, type: 3}
+  blueCard: {fileID: 5600482027583893594, guid: 1541f076d3816494a8ecb4d72c0985aa, type: 3}
+  purpleCard: {fileID: -1451464979754509187, guid: 314237a32ba43034dba8755191f50c0b, type: 3}
+  yellowCard: {fileID: -1338248503039513726, guid: 93a29c7713078d142bc5470b809af112, type: 3}
+  whiteCard: {fileID: 3367185850919738249, guid: c1cd830bf6c405d4f8de1762a226bb5d, type: 3}
