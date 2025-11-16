@@ -8,12 +8,14 @@ public class CardObject : MonoBehaviour
     public CardSpritesSO cardSpritesSO;
     //[SerializeField]
     private SpriteRenderer spriteRenderer = null;
-    //private Deck deck = null;
+    //private CardManager deck = null;
 
     [SerializeField] private Sprite sideA = null, sideB = null;
 
     //public cardFace facing { get; private set; } = cardFace.sideA;
-    public CardPF cardPOD = null;
+    public CardPOD cardPOD = null;
+
+    int id = -1;
 
     // Delegate and Event for card click - static so all instances share the same event
     public delegate void OnCardClicked(CardObject card);
@@ -22,7 +24,7 @@ public class CardObject : MonoBehaviour
     public void Awake()
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
-        //deck = FindFirstObjectByType<Deck>();
+        //deck = FindFirstObjectByType<CardManager>();
         //sideA = spriteRenderer.sprite;
         //sideB = sideA;
     }
@@ -38,10 +40,23 @@ public class CardObject : MonoBehaviour
     void Update()
     { }
 
-    public void SetData(CardPF cardPF, bool notInPlay = false)
+    public void SetCardPOD(CardPOD pod)
     {
-        SetSprites(cardPF.cardSideAColor, cardPF.cardSideBColor, cardPF.facing, notInPlay);
-        cardPOD = cardPF;
+        cardPOD = pod;
+        SetSprites(cardPOD.cardSideAColor, cardPOD.cardSideBColor, cardPOD.facing);
+        cardPOD.cardObject = this;
+        cardPOD.cardGO = this.gameObject;
+    }
+    public void SetId(int newId)
+    {
+        id = newId;
+        gameObject.name = "Card" + id.ToString("D2");
+    }
+
+    public void SetData(CardPOD cardPODInit, bool notInPlay = false)
+    {
+        cardPOD = cardPODInit;
+        SetSprites(cardPOD.cardSideAColor, cardPOD.cardSideBColor, cardPOD.facing, notInPlay);        
     }
 
     public void SetSprites(cardColor colorA, cardColor colorB, cardFace facing, bool notInPlay = false)

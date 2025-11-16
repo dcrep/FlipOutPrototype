@@ -130,7 +130,7 @@ GameObject:
   - component: {fileID: 1442612415}
   - component: {fileID: 1442612414}
   m_Layer: 0
-  m_Name: Deck
+  m_Name: CardManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -148,6 +148,548 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7131993d250b14d4fa73c5fc9fb177e4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  deckPure:
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  - state: 0
+    cardGO: {fileID: 0}
+    cardObject: {fileID: 0}
+    facing: 0
+    cardSideAColor: 0
+    cardSideBColor: 0
+  deck: []
 --- !u!4 &1442612415
 Transform:
   m_ObjectHideFlags: 0

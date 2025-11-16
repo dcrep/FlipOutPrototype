@@ -2,10 +2,10 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
-public class Deck : MonoBehaviour
+public class CardManager : MonoBehaviour
 {
     // Each color appears 6 times (including both sides)
-    private CardPF[] deckCardRange = new CardPF[15]
+    private CardPOD[] deckCardRange = new CardPOD[15]
     {
         new() { cardSideAColor = cardColor.red, cardSideBColor = cardColor.red },
         new() { cardSideAColor = cardColor.red, cardSideBColor = cardColor.green },
@@ -27,8 +27,8 @@ public class Deck : MonoBehaviour
 
         new() { cardSideAColor = cardColor.yellow, cardSideBColor =  cardColor.yellow }
     };
-    [SerializeField] private CardPF[] deckPure = new CardPF[90];
-    [SerializeField] private List<CardPF> deck = null;
+    [SerializeField] private CardPOD[] deckPure = new CardPOD[90];
+    [SerializeField] private List<CardPOD> deck = null;
 
     GameObject deckParentGO;
     //[SerializeField] private List<CardObject> deckCardObjects = null;
@@ -61,16 +61,21 @@ public class Deck : MonoBehaviour
 
         cardPrefab = Resources.Load<GameObject>("Prefabs/CardPF");
 
-        deckParentGO = new GameObject("_Deck");
+        deckParentGO = new GameObject("_Cards");
         for (int i = 0; i < deck.Count; i++)
         {
-            CardPF card = deck[i];
+            CardPOD card = deck[i];
             GameObject cardGO = Instantiate(cardPrefab, deckOffscreenPosition, Quaternion.identity, deckParentGO.transform);
-            cardGO.name = string.Format("Card{0:D2}", i);
+            //cardGO.name = string.Format("Card{0:D2}", i);
             // Set object and Sprites immediately even though the object won't be in play until
             // next update cycle
-            card.SetCardObject(cardGO, true);
+            CardObject cardObject = cardGO.GetComponent<CardObject>();
+            cardObject.SetId(i);
+            
             card.state = cardState.drawPile;
+            cardObject.SetCardPOD(card);
+            //card.SetCardObject(cardGO, true);
+            //card.state = cardState.drawPile;
 
             //card.SetPosition(new Vector3(-5, 5, 0));
             //card.SetSprites(true);
@@ -113,24 +118,24 @@ public class Deck : MonoBehaviour
         CardObject.onCardClicked -= OnCardClicked;
     }
 
-    public CardPF DrawCard()
+    public CardPOD DrawCard()
     {
         if (deck.Count > 0)
         {
-            CardPF drawnCard = deck[0];
+            CardPOD drawnCard = deck[0];
             deck.RemoveAt(0);
             return drawnCard;
         }
         else
         {
-            Debug.LogWarning("Deck: DrawCard - No more cards to draw!");
+            Debug.LogWarning("CardManager: DrawCard - No more cards to draw!");
             return null;
         }
     }
 
-    public List<CardPF> DrawCards(int numCards)
+    public List<CardPOD> DrawCards(int numCards)
     {
-        List<CardPF> drawnCards = new();
+        List<CardPOD> drawnCards = new();
         for (int i = 0; i < numCards; i++)
         {
             if (deck.Count > 0)
@@ -140,7 +145,7 @@ public class Deck : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning("Deck: DrawCards - No more cards to draw!");
+                Debug.LogWarning("CardManager: DrawCards - No more cards to draw!");
                 break;
             }
         }
@@ -151,8 +156,9 @@ public class Deck : MonoBehaviour
     // NOTE: No game objects should be attached yet
     void InitAndShuffleDeck()
     {
-        List<CardPF> deckPull = new();
+        List<CardPOD> deckPull = new();
         // Have to manually clone each card to avoid reference issues
+        // If we change CardPOD to a struct (value semantics), this can be simplified to a ToList conversion
         foreach(var card in deckPure)
         {
             deckPull.Add(card.Clone());
@@ -221,7 +227,7 @@ public class Deck : MonoBehaviour
 	void UpdateDrawPile()
     {
         const float STAGGER_X = 0.05f;
-        CardPF card;
+        CardPOD card;
         for (int i = 0; i < deck.Count; i++)
         {
             card = deck[i];
@@ -237,7 +243,7 @@ public class Deck : MonoBehaviour
 
     void OnCardClicked(CardObject card)
     {
-        Debug.Log("Deck: OnCardClicked - Card clicked: " + card.gameObject.name);
+        Debug.Log("CardManager: OnCardClicked - Card clicked: " + card.gameObject.name);
         if (card.cardPOD.state == cardState.drawPile)
         {
             card.SetLocalPosition(moveToPosition);

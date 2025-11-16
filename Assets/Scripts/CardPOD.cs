@@ -5,7 +5,7 @@ public enum cardColor { red, green, blue, purple, yellow }
 public enum cardFace { sideA, sideB }
 
 [System.Serializable]
-public class CardPF //: MonoBehaviour
+public class CardPOD //: MonoBehaviour
 {
     public cardState state = cardState.invalid;
     //[SerializeField] private PlayerPF playerOwner = null;
@@ -64,8 +64,8 @@ public class CardPF //: MonoBehaviour
 		cardObject.SetSortingOrder(sortingOrder);
     }
 
-    public CardPF Clone()
+    public CardPOD Clone()
     {
-        return (CardPF)this.MemberwiseClone();
+        return (CardPOD)this.MemberwiseClone();
     }
 }
