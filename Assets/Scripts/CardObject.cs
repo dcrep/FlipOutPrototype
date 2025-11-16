@@ -8,14 +8,21 @@ public class CardObject : MonoBehaviour
     public CardSpritesSO cardSpritesSO;
     //[SerializeField]
     private SpriteRenderer spriteRenderer = null;
+    //private Deck deck = null;
 
     [SerializeField] private Sprite sideA = null, sideB = null;
 
-    public cardFace facing { get; private set; } = cardFace.sideA;
+    //public cardFace facing { get; private set; } = cardFace.sideA;
+    public CardPF cardPOD = null;
+
+    // Delegate and Event for card click - static so all instances share the same event
+    public delegate void OnCardClicked(CardObject card);
+    public static event OnCardClicked onCardClicked;
 
     public void Awake()
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
+        //deck = FindFirstObjectByType<Deck>();
         //sideA = spriteRenderer.sprite;
         //sideB = sideA;
     }
@@ -24,17 +31,17 @@ public class CardObject : MonoBehaviour
     void Start()
     {
         if (sideA != null && sideB != null)
-            SetSprites(sideA, sideB, facing);
+            SetSprites(sideA, sideB, cardPOD.facing);
     }
 
     // Update is called once per frame
     void Update()
     { }
 
-    public void SetSprites(CardPF cardPF, bool notInPlay = false)
+    public void SetData(CardPF cardPF, bool notInPlay = false)
     {
-        SetSprites(cardPF.cardSideAColor, cardPF.cardSideBColor, cardPF.facingPlayer, notInPlay);
-        facing = cardPF.facingPlayer;
+        SetSprites(cardPF.cardSideAColor, cardPF.cardSideBColor, cardPF.facing, notInPlay);
+        cardPOD = cardPF;
     }
 
     public void SetSprites(cardColor colorA, cardColor colorB, cardFace facing, bool notInPlay = false)
@@ -107,21 +114,37 @@ public class CardObject : MonoBehaviour
 
     public void FlipCard()
     {
-        if (spriteRenderer.sprite == sideA)
+        if (cardPOD.facing == cardFace.sideA)
         {
             spriteRenderer.sprite = sideB;
-            facing = cardFace.sideB;
+            cardPOD.facing = cardFace.sideB;
         }
         else
         {
             spriteRenderer.sprite = sideA;
-            facing = cardFace.sideA;
+            cardPOD.facing = cardFace.sideA;
         }
+    }
+    
+    public void SetSortingLayerName(string layerName)
+    {
+		spriteRenderer.sortingLayerName = layerName;
+    }
+    
+    public void SetSortingOrder(int sortingOrder)
+    {
+		spriteRenderer.sortingOrder = sortingOrder;
     }
 
     public void OnMouseUpAsButton()
     {
-        Debug.Log("CardPF: OnMouseUpAsButton() - Card clicked!");
+        Debug.Log("Card: OnMouseUpAsButton() - " + gameObject.name + " clicked!");
+        onCardClicked?.Invoke(this);
+    }
+
+    public void SetLocalPosition(Vector3 pos)
+    {
+        gameObject.transform.localPosition = pos;
     }
 
 }

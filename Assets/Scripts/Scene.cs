@@ -1,5 +1,7 @@
 using UnityEngine;
 
+// This script is mandatory to attach to each Scene. Easiest is to attach it to the Main Camera
+// It communicates with the GameManager currently
 public class Scene : MonoBehaviour
 {
     void Awake()

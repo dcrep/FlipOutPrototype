@@ -12,7 +12,8 @@ public class CardPF //: MonoBehaviour
     public GameObject cardGO = null;
     public CardObject cardObject = null;
 
-    public cardFace facingPlayer = cardFace.sideA; 
+    //public cardFace facingPlayer = cardFace.sideA;
+    public cardFace facing = cardFace.sideA;
 
     public cardColor cardSideAColor = cardColor.red;
     public cardColor cardSideBColor = cardColor.red;
@@ -21,20 +22,50 @@ public class CardPF //: MonoBehaviour
     {
         cardGO = obj;
         cardObject = obj.GetComponent<CardObject>();
-        SetSprites(notInPlay);
+        cardObject.SetData(this, notInPlay);
     }
 
-    public void SetSprites(bool notInPlay = false)
+    public void SetData(bool notInPlay = false)
     {
         if (cardObject != null)
         {
-            cardObject.SetSprites(this, notInPlay);
+            cardObject.SetData(this, notInPlay);
         }
     }
+
+    public void SetLocalPosition(Vector3 pos)
+    {
+        cardGO.transform.localPosition = pos;
+    }
+
+    public void SetPosition(Vector3 pos)
+    {
+        if (cardGO != null)
+        {
+            cardGO.transform.position = pos;
+        }
+    }
+
+    //public void HideCard()
 
     public void FlipCard()
     {
         cardObject.FlipCard();
-        facingPlayer = cardObject.facing;
+        //facing = (facing == cardFace.sideA) ? cardFace.sideB : cardFace.sideA;
+    }
+
+    public void SetSortingLayerName(string layerName)
+    {
+		cardObject.SetSortingLayerName(layerName);
+    }
+    
+    public void SetSortingOrder(int sortingOrder)
+    {
+		cardObject.SetSortingOrder(sortingOrder);
+    }
+
+    public CardPF Clone()
+    {
+        return (CardPF)this.MemberwiseClone();
     }
 }

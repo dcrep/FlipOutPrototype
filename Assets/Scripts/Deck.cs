@@ -34,7 +34,13 @@ public class Deck : MonoBehaviour
     //[SerializeField] private List<CardObject> deckCardObjects = null;
     private GameObject cardPrefab;
 
-    Vector3 deckDefaultPosition = new Vector3(0, 0, 0);
+    Vector3 deckDefaultPosition = new Vector3(-6, -3, 0);
+    private Vector3 deckOffscreenPosition = new Vector3(-1000, -1000, 0);
+
+    Vector3 moveToPosition = new Vector3(1, 1, 0);
+    private int cardsMoved = 0;
+
+    bool cardsShowing = false;
 
     void Awake()
     {
@@ -51,7 +57,7 @@ public class Deck : MonoBehaviour
                     index = 0;
             }
         }
-        ShuffleDeck();
+        InitAndShuffleDeck();
 
         cardPrefab = Resources.Load<GameObject>("Prefabs/CardPF");
 
@@ -59,43 +65,98 @@ public class Deck : MonoBehaviour
         for (int i = 0; i < deck.Count; i++)
         {
             CardPF card = deck[i];
-            GameObject cardGO = Instantiate(cardPrefab, deckDefaultPosition, Quaternion.identity, deckParentGO.transform);
-            //Instantiate(cardPrefab, new Vector3(3, 0, 0), Quaternion.identity);
-            //CardObject cardObj = cardGO.GetComponent<CardObject>();
-            // Set Sprite immediately even though the object won't be in play until
+            GameObject cardGO = Instantiate(cardPrefab, deckOffscreenPosition, Quaternion.identity, deckParentGO.transform);
+            cardGO.name = string.Format("Card{0:D2}", i);
+            // Set object and Sprites immediately even though the object won't be in play until
             // next update cycle
             card.SetCardObject(cardGO, true);
+            card.state = cardState.drawPile;
+
+            //card.SetPosition(new Vector3(-5, 5, 0));
             //card.SetSprites(true);
             //cardGO.transform.SetParent(deckParentGO.transform);
         }
+        // Subscribe to static Click event once:
+        CardObject.onCardClicked += OnCardClicked;
     }
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        
+        // Problem: We need to have this run AFTER all the cards 'Start' methods have run
+        // Solution: Either do some counting, wait for an Update()/FixedUpdate() cycle,
+        // or change Script Execution Order:
+        // Edit > Project Settings, Script Execution Order + dropdown, CardObject script,
+        // change value to -50
+        // That solution is hacky though so instead we'll do it on 1st update
+        //UpdateDrawPile();
     }
 
     // Update is called once per frame
     void Update()
     {
-
+        if (!cardsShowing)
+        {
+            UpdateDrawPile();
+            cardsShowing = true;
+        }
     }
 
     void FixedUpdate()
     {
-        if (deck != null && deck.Count > 0)
+
+    }
+
+    void OnDestroy()
+    {
+        // Unsubscribe from static event
+        CardObject.onCardClicked -= OnCardClicked;
+    }
+
+    public CardPF DrawCard()
+    {
+        if (deck.Count > 0)
         {
-            deck[Random.Range(0, deck.Count)].cardGO.transform.position += 
-                        new Vector3(Random.Range(-1f, 1f), Random.Range(-1f, 1f), 0f);
-            
-            deck[Random.Range(0, deck.Count)].FlipCard();
+            CardPF drawnCard = deck[0];
+            deck.RemoveAt(0);
+            return drawnCard;
+        }
+        else
+        {
+            Debug.LogWarning("Deck: DrawCard - No more cards to draw!");
+            return null;
         }
     }
 
-    void ShuffleDeck()
+    public List<CardPF> DrawCards(int numCards)
     {
-        List<CardPF> deckPull = deckPure.ToList();
+        List<CardPF> drawnCards = new();
+        for (int i = 0; i < numCards; i++)
+        {
+            if (deck.Count > 0)
+            {
+                drawnCards.Add(deck[0]);
+                deck.RemoveAt(0);
+            }
+            else
+            {
+                Debug.LogWarning("Deck: DrawCards - No more cards to draw!");
+                break;
+            }
+        }
+        return drawnCards;
+    }
+
+    // Simple Deck initialization and shuffle
+    // NOTE: No game objects should be attached yet
+    void InitAndShuffleDeck()
+    {
+        List<CardPF> deckPull = new();
+        // Have to manually clone each card to avoid reference issues
+        foreach(var card in deckPure)
+        {
+            deckPull.Add(card.Clone());
+        }
         deck.Clear();
         System.Random rand = new();
 
@@ -103,7 +164,7 @@ public class Deck : MonoBehaviour
         {
             int index = rand.Next(0, deckPull.Count);
             // More randomness..
-            deckPull[index].facingPlayer = Random.value > 0.5f ? cardFace.sideA : cardFace.sideB;
+            deckPull[index].facing = Random.value > 0.5f ? cardFace.sideA : cardFace.sideB;
             deck.Add(deckPull[index]);
             deckPull.RemoveAt(index);
         }
@@ -154,4 +215,38 @@ public class Deck : MonoBehaviour
             Debug.Log($"Deck Composition - Red: {totalRed}, Green: {totalGreen}, Blue: {totalBlue}, Purple: {totalPurple}, Yellow: {totalYellow}");
         }
     }
+
+  // Updates the deck DrawPile - uses basic algorithm that Prospector Solitaire used
+  //  Layering a deck of cards with sorting layer/order and Z-order 
+	void UpdateDrawPile()
+    {
+        const float STAGGER_X = 0.05f;
+        CardPF card;
+        for (int i = 0; i < deck.Count; i++)
+        {
+            card = deck[i];
+            Vector3 cardPos = deckDefaultPosition;
+            cardPos.x += STAGGER_X * i;
+            cardPos.z = 0.1f * i;
+            //Debug.Log("Setting local position of " + card.cardObject.name + "  to " + cardPos);
+            card.SetLocalPosition(cardPos);
+            //card.SetSortingLayerName("Drawpile");
+            card.SetSortingOrder(-10 * i);
+        }
+    }
+
+    void OnCardClicked(CardObject card)
+    {
+        Debug.Log("Deck: OnCardClicked - Card clicked: " + card.gameObject.name);
+        if (card.cardPOD.state == cardState.drawPile)
+        {
+            card.SetLocalPosition(moveToPosition);
+            card.SetSortingOrder(cardsMoved * 10 + -100);
+            cardsMoved++;
+            card.cardPOD.state = cardState.scorePile;
+        }
+        else
+            card.FlipCard();
+    }
+
 }
