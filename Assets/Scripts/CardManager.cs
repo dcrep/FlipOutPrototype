@@ -29,18 +29,13 @@ public class CardManager : MonoBehaviour
     };
     [SerializeField] private CardPOD[] deckPure = new CardPOD[90];
     [SerializeField] private List<CardPOD> deck = null;
+    [SerializeField] private List<CardObject> deckObjects = null;
 
     GameObject deckParentGO;
     //[SerializeField] private List<CardObject> deckCardObjects = null;
     private GameObject cardPrefab;
 
-    Vector3 deckDefaultPosition = new Vector3(-6, -3, 0);
     private Vector3 deckOffscreenPosition = new Vector3(-1000, -1000, 0);
-
-    Vector3 moveToPosition = new Vector3(1, 1, 0);
-    private int cardsMoved = 0;
-
-    bool cardsShowing = false;
 
     void Awake()
     {
@@ -65,46 +60,33 @@ public class CardManager : MonoBehaviour
         for (int i = 0; i < deck.Count; i++)
         {
             CardPOD card = deck[i];
+            // New card game object, parent -> _Cards (deckParentGO)
             GameObject cardGO = Instantiate(cardPrefab, deckOffscreenPosition, Quaternion.identity, deckParentGO.transform);
-            //cardGO.name = string.Format("Card{0:D2}", i);
-            // Set object and Sprites immediately even though the object won't be in play until
-            // next update cycle
+            
+            // Grab CardObject component and set ID/name
             CardObject cardObject = cardGO.GetComponent<CardObject>();
             cardObject.SetId(i);
-            
+            //cardGO.name = string.Format("Card{0:D2}", i); // set in SetId()
+
+            // Attach Card POD to CardObject
             card.state = cardState.drawPile;
             cardObject.SetCardPOD(card);
-            //card.SetCardObject(cardGO, true);
-            //card.state = cardState.drawPile;
 
-            //card.SetPosition(new Vector3(-5, 5, 0));
-            //card.SetSprites(true);
-            //cardGO.transform.SetParent(deckParentGO.transform);
+            // and put in deckObjects list
+            deckObjects.Add(cardObject);
         }
-        // Subscribe to static Click event once:
-        CardObject.onCardClicked += OnCardClicked;
+        GameManager.Instance.SetDrawPile(deckObjects);
     }
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        // Problem: We need to have this run AFTER all the cards 'Start' methods have run
-        // Solution: Either do some counting, wait for an Update()/FixedUpdate() cycle,
-        // or change Script Execution Order:
-        // Edit > Project Settings, Script Execution Order + dropdown, CardObject script,
-        // change value to -50
-        // That solution is hacky though so instead we'll do it on 1st update
-        //UpdateDrawPile();
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (!cardsShowing)
-        {
-            UpdateDrawPile();
-            cardsShowing = true;
-        }
+
     }
 
     void FixedUpdate()
@@ -115,41 +97,7 @@ public class CardManager : MonoBehaviour
     void OnDestroy()
     {
         // Unsubscribe from static event
-        CardObject.onCardClicked -= OnCardClicked;
-    }
-
-    public CardPOD DrawCard()
-    {
-        if (deck.Count > 0)
-        {
-            CardPOD drawnCard = deck[0];
-            deck.RemoveAt(0);
-            return drawnCard;
-        }
-        else
-        {
-            Debug.LogWarning("CardManager: DrawCard - No more cards to draw!");
-            return null;
-        }
-    }
-
-    public List<CardPOD> DrawCards(int numCards)
-    {
-        List<CardPOD> drawnCards = new();
-        for (int i = 0; i < numCards; i++)
-        {
-            if (deck.Count > 0)
-            {
-                drawnCards.Add(deck[0]);
-                deck.RemoveAt(0);
-            }
-            else
-            {
-                Debug.LogWarning("CardManager: DrawCards - No more cards to draw!");
-                break;
-            }
-        }
-        return drawnCards;
+        //CardObject.onCardClicked -= OnCardClicked;
     }
 
     // Simple Deck initialization and shuffle
@@ -220,39 +168,6 @@ public class CardManager : MonoBehaviour
             }
             Debug.Log($"Deck Composition - Red: {totalRed}, Green: {totalGreen}, Blue: {totalBlue}, Purple: {totalPurple}, Yellow: {totalYellow}");
         }
-    }
-
-  // Updates the deck DrawPile - uses basic algorithm that Prospector Solitaire used
-  //  Layering a deck of cards with sorting layer/order and Z-order 
-	void UpdateDrawPile()
-    {
-        const float STAGGER_X = 0.05f;
-        CardPOD card;
-        for (int i = 0; i < deck.Count; i++)
-        {
-            card = deck[i];
-            Vector3 cardPos = deckDefaultPosition;
-            cardPos.x += STAGGER_X * i;
-            cardPos.z = 0.1f * i;
-            //Debug.Log("Setting local position of " + card.cardObject.name + "  to " + cardPos);
-            card.SetLocalPosition(cardPos);
-            //card.SetSortingLayerName("Drawpile");
-            card.SetSortingOrder(-10 * i);
-        }
-    }
-
-    void OnCardClicked(CardObject card)
-    {
-        Debug.Log("CardManager: OnCardClicked - Card clicked: " + card.gameObject.name);
-        if (card.cardPOD.state == cardState.drawPile)
-        {
-            card.SetLocalPosition(moveToPosition);
-            card.SetSortingOrder(cardsMoved * 10 + -100);
-            cardsMoved++;
-            card.cardPOD.state = cardState.scorePile;
-        }
-        else
-            card.FlipCard();
     }
 
 }

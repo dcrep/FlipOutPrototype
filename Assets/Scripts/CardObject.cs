@@ -12,7 +12,7 @@ public class CardObject : MonoBehaviour
 
     [SerializeField] private Sprite sideA = null, sideB = null;
 
-    //public cardFace facing { get; private set; } = cardFace.sideA;
+    // General game data about the card:
     public CardPOD cardPOD = null;
 
     int id = -1;
@@ -44,6 +44,7 @@ public class CardObject : MonoBehaviour
     {
         cardPOD = pod;
         SetSprites(cardPOD.cardSideAColor, cardPOD.cardSideBColor, cardPOD.facing);
+        // !! This info should be unneccesary but for debugging purposes...
         cardPOD.cardObject = this;
         cardPOD.cardGO = this.gameObject;
     }

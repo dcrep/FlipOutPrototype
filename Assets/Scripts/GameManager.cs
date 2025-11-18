@@ -1,31 +1,88 @@
 using System;
+using System.Collections.Generic;
+using Unity.Multiplayer.Playmode;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 [Serializable]
 public enum Scenes
 {
+    LoadingScreen,
     MainMenu,
     Game,
     GameOver,
     DCExperiments
 }
 
+[Serializable]
+public enum GameState
+{
+    Loading,
+    Playing,
+    Paused,
+    UI,
+    GameOver,
+    Win,
+    Lose
+ };
+
+ [Serializable]
+ public enum MultiplayerMode
+ {
+    Disconnected,
+    LocalHotseat,
+    Online
+ };
+
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
 
+    public GameState currentGameState = GameState.Loading;
+
     public ScenesSO scenesSO;
 
-    public Scenes currentScene = Scenes.MainMenu;   // Loading/title scene?
+    public Scenes currentScene = Scenes.LoadingScreen;
+    public MultiplayerMode currentMultiplayerMode = MultiplayerMode.Disconnected;    
 
+    [SerializeField] private PlayerPF[] players = new PlayerPF[5];
+    private int localPlayer1Index = 0;
+    private int currentPlayerIndex = 1;
+    private int totalPlayers = 1;
+
+    [SerializeField] private Vector3[] playerPositions = new Vector3[5]
+    {
+    
+        new(0, -4, 0),    // Player 1 - Bottom center
+        new(-7, 0, 0),    // Player 2 - Left center
+        new(0, 4, 0),     // Player 3 - Top center
+        new(7, 0, 0),     // Player 4 - Right center
+        new(0, 0, 0)      // Player 5 - Center (?!)
+    };
+
+    private CardManager cardManager;
+
+    private List<CardObject> drawPile = null;
+    bool cardsShowing = false;
+
+    Vector3 drawPileDefaultPosition = new Vector3(0, 0, 0);   //(-6, -3, 0);
+    //private Vector3 deckOffscreenPosition = new Vector3(-1000, -1000, 0);
+
+    // Debugging purposes
+    Vector3 moveToPosition = new Vector3(1, 1, 0);
+    int cardsMoved = 0;
+
+    // Awake - Called before first Scene, not destroyed or recreated on Scene load
     void Awake()
     {
         Debug.Log("GameManager->Awake()");
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject);            
+            DontDestroyOnLoad(gameObject);
+            // !! Hotseat for testing purposes
+            currentMultiplayerMode = MultiplayerMode.LocalHotseat;           
         }
         else
         {
@@ -33,10 +90,11 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // Start is called before the first frame update
+    // Start - Called before the first frame of first Scene, not destroyed/recreated on Scene load
     void Start()
     {
         Debug.Log("GameManager->Start()");
+
         /*AudioClip clip = Resources.Load<AudioClip>("Music/OVCasual Vol5 House Building Intensity 1");
         if (clip == null)
         {
@@ -54,18 +112,6 @@ public class GameManager : MonoBehaviour
 #endif
     }
 
-    public void SceneAwake()
-    {
-        VerifyCurrentScene();
-        Debug.Log("GameManager->SceneAwake() for scene: " + SceneManager.GetActiveScene().name);
-    }
-
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    public void SceneStart()
-    {
-        Debug.Log("GameManager->SceneStart() for scene: " + SceneManager.GetActiveScene().name);
-    }
-
     public void LoadScene(Scenes scene)
     {
         Debug.Log("GameManager->LoadScene(): " + scene.ToString());
@@ -74,18 +120,22 @@ public class GameManager : MonoBehaviour
             case Scenes.MainMenu:
                 LoadScene(scenesSO.mainMenuScene);
                 currentScene = Scenes.MainMenu;
+                currentGameState = GameState.UI;
                 break;
             case Scenes.Game:
                 LoadScene(scenesSO.gameScene);
                 currentScene = Scenes.Game;
+                currentGameState = GameState.Playing;
                 break;
             case Scenes.GameOver:
                 LoadScene(scenesSO.gameOverScene);
                 currentScene = Scenes.GameOver;
+                currentGameState = GameState.GameOver;
                 break;
             case Scenes.DCExperiments:
                 LoadScene(scenesSO.DCExperimentsScene);
-                currentScene = Scenes.DCExperiments;
+                currentScene = Scenes.Game; // !!
+                currentGameState = GameState.Playing;
                 break;
             default:
                 Debug.LogError("Unknown scene: " + scene);
@@ -102,6 +152,7 @@ public class GameManager : MonoBehaviour
             {
                 Debug.Log("currentScene mismatch; currentScene set to " + currentScene.ToString() + "; updating to " + Scenes.MainMenu.ToString());
                 currentScene = Scenes.MainMenu;
+                currentGameState = GameState.UI;
             }
         }
         else if (activeSceneName == scenesSO.gameScene)
@@ -110,6 +161,7 @@ public class GameManager : MonoBehaviour
             {
                 Debug.Log("currentScene mismatch; currentScene set to " + currentScene.ToString() + "; updating to " + Scenes.Game.ToString());
                 currentScene = Scenes.Game;
+                currentGameState = GameState.Playing;
             }
         }
         else if (activeSceneName == scenesSO.gameOverScene)
@@ -118,6 +170,7 @@ public class GameManager : MonoBehaviour
             {
                 Debug.Log("currentScene mismatch; currentScene set to " + currentScene.ToString() + "; updating to " + Scenes.GameOver.ToString());
                 currentScene = Scenes.GameOver;
+                currentGameState = GameState.GameOver;
             }
         }
         else if (activeSceneName == scenesSO.DCExperimentsScene)
@@ -125,7 +178,8 @@ public class GameManager : MonoBehaviour
             if (currentScene != Scenes.DCExperiments)
             {
                 Debug.Log("currentScene mismatch; currentScene set to " + currentScene.ToString() + "; updating to " + Scenes.DCExperiments.ToString());
-                currentScene = Scenes.DCExperiments;
+                currentScene = Scenes.Game; // !!
+                currentGameState = GameState.Playing;
             }
         }
         else
@@ -139,6 +193,94 @@ public class GameManager : MonoBehaviour
         SceneManager.LoadScene(sceneName);
     }
 
+    void OnMultiplayerConnect()
+    {
+        Debug.Log("GameManager->OnServerConnected()");
+        currentMultiplayerMode = MultiplayerMode.Online;
+    
+    }
+
+    void OnMultiplayerDisconnect()
+    {
+        Debug.Log("GameManager->OnServerDisconnected()");
+        currentMultiplayerMode = MultiplayerMode.Disconnected;
+    }
+
+    void OnMultiplayerLocalHotseat()
+    {
+        Debug.Log("GameManager->OnLocalHotseat()");
+        currentMultiplayerMode = MultiplayerMode.LocalHotseat;
+    }
+
+    public void SceneAwake()
+    {
+        VerifyCurrentScene();
+        Debug.Log("GameManager->SceneAwake() for scene: " + SceneManager.GetActiveScene().name + " currentScene: " + currentScene.ToString());
+        if (currentScene == Scenes.Game)
+        {
+            Debug.Log("Current Multiplayer mode: " + currentMultiplayerMode.ToString());
+            if (currentMultiplayerMode == MultiplayerMode.Disconnected)
+            {
+                //NetworkManager.Instance.Connect();
+                // abort to Multiplayer-connect UI?
+            }
+            else    // connected or Hotseat
+            {
+                Debug.Log("GameManager->SceneAwake(): Multiplayer/Hotseat connected, initializing game scene.");
+                cardManager = FindFirstObjectByType<CardManager>();
+                if (cardManager == null)
+                {
+                    Debug.LogError("GameManager->SceneAwake(): CardManager not found in scene!");
+                    // Manually add it to the scene:
+                    //GameObject cardManagerGO = new GameObject("CardManager");
+                    //cardManager = cardManagerGO.AddComponent<CardManager>();
+                }
+
+                // Subscribe to static Click event once:
+                CardObject.onCardClicked += OnCardClicked;
+
+                if (currentMultiplayerMode == MultiplayerMode.Online)
+                {
+                    // NetworkManager.Instance.SetupMultiplayerGame();
+                }
+                else if (currentMultiplayerMode == MultiplayerMode.LocalHotseat)
+                {
+                    //totalPlayers = NetworkManager.Instance.GetLocalHotseatPlayerCount();
+                    // temporarily hardcode to 2 players for local hotseat
+                    totalPlayers = 2;
+                    currentGameState = GameState.Playing;
+                }
+            }
+        }
+    }
+
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    public void SceneStart()
+    {
+        Debug.Log("GameManager->SceneStart() for scene: " + SceneManager.GetActiveScene().name);
+        if (currentScene == Scenes.Game)
+        {
+            // Initialize game components
+        }
+    }
+
+    public void SceneDestroyed()
+    {
+        Debug.Log("GameManager->SceneDestroyed() for scene: " + SceneManager.GetActiveScene().name);
+        if (currentScene == Scenes.Game)
+        {
+            // Unsubscribe from static Click event
+            CardObject.onCardClicked -= OnCardClicked;
+            cardsShowing = false;
+            drawPile.Clear();
+        }
+    }
+
+    public void SetDrawPile(List<CardObject> newDrawPile)
+    {
+        drawPile = newDrawPile;
+    }
+
     // Update is called once per frame
     void Update()
     {
@@ -148,6 +290,85 @@ public class GameManager : MonoBehaviour
             //LoadScene("xDCExperiments");
             LoadScene(Scenes.DCExperiments);
         }
-        
+        // workaround for Start() timing issue (avoiding Script Execution Order change)
+        if (currentScene == Scenes.Game && drawPile != null && !cardsShowing)
+        {
+            UpdateDrawPile();
+            cardsShowing = true;
+        }
+    }
+
+    public CardObject DrawCard()
+    {
+        if (drawPile.Count > 0)
+        {
+            CardObject drawnCard = drawPile[0];
+            drawPile.RemoveAt(0);
+            return drawnCard;
+        }
+        else
+        {
+            Debug.LogWarning("GameManager: DrawCard - No more cards to draw!");
+            return null;
+        }
+    }
+
+    public List<CardObject> DrawCards(int numCards)
+    {
+        List<CardObject> drawnCards = new();
+        for (int i = 0; i < numCards; i++)
+        {
+            if (drawPile.Count > 0)
+            {
+                drawnCards.Add(drawPile[0]);
+                drawPile.RemoveAt(0);
+            }
+            else
+            {
+                Debug.LogWarning("GameManager: DrawCards - No more cards to draw!");
+                break;
+            }
+        }
+        return drawnCards;
+    }
+  // Updates the deck DrawPile - uses basic algorithm that Prospector Solitaire used
+  //  Layering a deck of cards with sorting layer/order and Z-order 
+	void UpdateDrawPile()
+    {
+        const float STAGGER_X = 0.05f;
+        CardObject card;
+
+        Debug.Log("GameManager->UpdateDrawPile() - Updating draw pile with " + drawPile.Count + " cards.");
+
+        for (int i = 0; i < drawPile.Count; i++)
+        {
+            card = drawPile[i];
+            Vector3 cardPos = drawPileDefaultPosition;
+            cardPos.x += STAGGER_X * i;
+            cardPos.z = 0.1f * i;
+            //Debug.Log("Setting local position of " + card.cardObject.name + "  to " + cardPos);
+            card.SetLocalPosition(cardPos);
+            //card.SetSortingLayerName("Drawpile");
+            card.SetSortingOrder(-10 * i);
+        }
+    }
+
+    // Called when a card is clicked - responds based on player turn, action, etc.
+    void OnCardClicked(CardObject card)
+    {
+        Debug.Log("GameManager->OnCardClicked - Card clicked: " + card.gameObject.name + " currentPlayerIndex: " + currentPlayerIndex);
+
+        // Just for testing purposes - move or flip:
+        if (card.cardPOD.state == cardState.drawPile)
+        {
+            var moveToLocation = playerPositions[currentPlayerIndex];
+            //moveToLocation.x += cardsMoved * 0.2f; // slight offset for visibility
+            card.SetLocalPosition(moveToLocation);
+            card.SetSortingOrder(cardsMoved * 10 + -100);
+            cardsMoved++;
+            card.cardPOD.state = cardState.scorePile;
+        }
+        else
+            card.FlipCard();
     }
 }

@@ -16,4 +16,9 @@ public class Scene : MonoBehaviour
 
     // Update is called once per frame
     //void Update() { }
+
+    void OnDestroy()
+    {
+        GameManager.Instance.SceneDestroyed();
+    }
 }
