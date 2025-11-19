@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 93a04d02a0077a746822b4010cd0bc38, type: 3}
+  m_Name: AudioSourcesSO
+  m_EditorClassIdentifier: 
+  musicClips:
+  - {fileID: 8300000, guid: b14329baad52e1943a4ee86914e9867c, type: 3}
+  UIMenuClick: {fileID: 8300000, guid: aec59aa4f0e80f84581f51171a6cd416, type: 3}
+  clickCard: {fileID: 8300000, guid: aec59aa4f0e80f84581f51171a6cd416, type: 3}

@@ -154,7 +154,7 @@ public class CardObject : MonoBehaviour
 
     public void OnMouseUpAsButton()
     {
-        Debug.Log("Card: OnMouseUpAsButton() - " + gameObject.name + " clicked!");
+        //Debug.Log("Card: OnMouseUpAsButton() - " + gameObject.name + " clicked!");
         onCardClicked?.Invoke(this);
     }
 

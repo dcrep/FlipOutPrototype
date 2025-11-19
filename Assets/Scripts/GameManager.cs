@@ -39,9 +39,12 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
 
+    public InputManager inputManager;
+    AudioClip clickSound;
+
     public GameState currentGameState = GameState.Loading;
 
-    public ScenesSO scenesSO;
+    public static ScenesSO scenesSO;
 
     public Scenes currentScene = Scenes.LoadingScreen;
     public MultiplayerMode currentMultiplayerMode = MultiplayerMode.Disconnected;    
@@ -95,15 +98,22 @@ public class GameManager : MonoBehaviour
     {
         Debug.Log("GameManager->Start()");
 
-        /*AudioClip clip = Resources.Load<AudioClip>("Music/OVCasual Vol5 House Building Intensity 1");
+        AudioClip clip = Resources.Load<AudioClip>("Audio/OVS_CorporateVol2BeyontheBlueprintCut30");
         if (clip == null)
         {
             Debug.LogError("Failed to load audio clip from Resources folder.");
             return;
         }
-        SoundManager.Play(clip, 0.7f);
-        SoundManager.Loop();
-        Debug.Log("Playing music: " + clip.name);*/
+        AudioManager.Play(clip, 0.25f);
+        /*clickSound = Resources.Load<AudioClip>("Audio/OVS_Clicky");
+        if (clickSound == null)
+        {
+            Debug.LogError("Failed to load click sound clip from Resources folder.");
+            return;
+        }*/
+        
+        //AudioManager.Loop();
+        Debug.Log("Playing music: " + clip.name);
 #if UNITY_EDITOR
         // Keep current editor level if in Editor
         //LevelCurrentInternalInit();
@@ -212,6 +222,8 @@ public class GameManager : MonoBehaviour
         currentMultiplayerMode = MultiplayerMode.LocalHotseat;
     }
 
+    // Scene -> Scene script (in each level) calls the following Awake/Start/Destroyed functions
+
     public void SceneAwake()
     {
         VerifyCurrentScene();
@@ -276,6 +288,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    // CardManager calls this with 'deck', and then it moves around in play
     public void SetDrawPile(List<CardObject> newDrawPile)
     {
         drawPile = newDrawPile;
@@ -298,6 +311,8 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    // Draw a single card from the draw pile
+    // (needs to be expanded for player id (optional for hotseat?) and multiplayer sync)
     public CardObject DrawCard()
     {
         if (drawPile.Count > 0)
@@ -313,6 +328,8 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    // Draw multiple cards from the draw pile (should be a max of 6)
+    // Expansion for multiplayer needed (as above)
     public List<CardObject> DrawCards(int numCards)
     {
         List<CardObject> drawnCards = new();
@@ -331,8 +348,10 @@ public class GameManager : MonoBehaviour
         }
         return drawnCards;
     }
-  // Updates the deck DrawPile - uses basic algorithm that Prospector Solitaire used
-  //  Layering a deck of cards with sorting layer/order and Z-order 
+
+    // Updates the deck DrawPile - uses basic algorithm that Prospector Solitaire used
+    //  Layering a deck of cards with sorting layer/order and Z-order 
+    // !This will be changed for the full game to just showing the top card (or nothing if empty)
 	void UpdateDrawPile()
     {
         const float STAGGER_X = 0.05f;
@@ -356,9 +375,10 @@ public class GameManager : MonoBehaviour
     // Called when a card is clicked - responds based on player turn, action, etc.
     void OnCardClicked(CardObject card)
     {
+        AudioManager.PlayOneShot(AudioManager.audioSourcesSO.clickCard, 1f);
         Debug.Log("GameManager->OnCardClicked - Card clicked: " + card.gameObject.name + " currentPlayerIndex: " + currentPlayerIndex);
 
-        // Just for testing purposes - move or flip:
+        // !Just for testing purposes - move or flip:
         if (card.cardPOD.state == cardState.drawPile)
         {
             var moveToLocation = playerPositions[currentPlayerIndex];

@@ -10,29 +10,31 @@ public class BootInitializer : MonoBehaviour {
 	    GameObject.DontDestroyOnLoad(bootInit);
         
         // !! IMPORTANT: Order of Initialization is important in case there's a dependency on another script !!
-        // SoundManager create object + script component (can also be done in Script
+        // AudioManager create object + script component (can also be done in Script
         // with RuntimeInitializeOnLoadMethod, but this way keeps it centralized)
-        /*GameObject soundManagerObject = new("SoundManager");
-        soundManagerObject.AddComponent<SoundManager>();
-        DontDestroyOnLoad(soundManagerObject);
-        Debug.Log("[BI]: SoundManager initialized.");*/
+        GameObject audioManager = new("AudioManager");
+        audioManager.AddComponent<AudioManager>();
+        //AudioManager am = audioManager.GetComponent<AudioManager>();
+        AudioManager.audioSourcesSO = Resources.Load<AudioSourcesSO>("AudioSourcesSO");
+        DontDestroyOnLoad(audioManager);
+        Debug.Log("[BI]: AudioManager initialized.");
 
         // GameManager create object + script component (can also be done in Script
         // with RuntimeInitializeOnLoadMethod, but this way keeps it centralized)
         GameObject gameManagerObject = new("GameManager");        
         gameManagerObject.AddComponent<GameManager>();
-        GameManager gm =gameManagerObject.GetComponent<GameManager>();
-        gm.scenesSO = Resources.Load<ScenesSO>("ScenesSO");
+        //GameManager gm =gameManagerObject.GetComponent<GameManager>();
+        GameManager.scenesSO = Resources.Load<ScenesSO>("ScenesSO");
         DontDestroyOnLoad(gameManagerObject);
         Debug.Log("[BI]: GameManager initialized..");
 
         // Input Manager
-        /*GameObject inputManagerObject = new("InputManager");
+        GameObject inputManagerObject = new("InputManager");
         inputManagerObject.AddComponent<InputManager>();
         DontDestroyOnLoad(inputManagerObject);
-        Debug.Log("[BI]: InputManager initialized..");*/
+        Debug.Log("[BI]: InputManager initialized..");
 
 		// GameManager - reference InputManager
-        //gameManagerObject.GetComponent<GameManager>().inputManager = inputManagerObject.GetComponent<InputManager>();
+        gameManagerObject.GetComponent<GameManager>().inputManager = inputManagerObject.GetComponent<InputManager>();
     } 
 }
