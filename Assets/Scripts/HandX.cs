@@ -1,5 +1,6 @@
 using UnityEngine;
 
+[System.Serializable]
 public class HandX  // : MonoBehaviour
 {
     //[SerializeField] private CardPOD[] handCards = new CardPOD[6];

@@ -16,6 +16,7 @@ public enum Scenes
     DCExperiments
 }
 
+// AppState ? (avoids collision with GameState script)
 [Serializable]
 public enum GameState
 {
@@ -41,13 +42,15 @@ public class GameManager : MonoBehaviour
     public static GameManager Instance { get; private set; }
 
     public InputManager inputManager;
-    AudioClip clickSound;
+    //AudioClip clickSound;
 
     public GameState currentGameState = GameState.Loading;
 
     public static ScenesSO scenesSO;
 
     public Scenes currentScene = Scenes.LoadingScreen;
+
+    [SerializeField]private GameStateScript gameStateScript = new GameStateScript();
     public MultiplayerMode currentMultiplayerMode = MultiplayerMode.Disconnected;    
 
     [SerializeField] private PlayerX[] players = new PlayerX[5];
@@ -67,16 +70,24 @@ public class GameManager : MonoBehaviour
         new(0, 0, 0)      // Player 5 - Center (?!)
     };
 
-    private CardManager cardManager;
+// CARDS
+    //private CardManager cardManager;
 
-    private List<CardObject> drawPile = null;
+    //private List<CardObject> drawPile = null;
     bool cardsShowing = false;
 
     Vector3 drawPileDefaultPosition = new Vector3(0, 0, 0);   //(-6, -3, 0);
-    //private Vector3 deckOffscreenPosition = new Vector3(-1000, -1000, 0);
+    private Vector3 deckOffscreenPosition = new Vector3(-1000, -1000, 0);
+
+    GameObject cardPrefab;
+    GameObject deckParentGO;
+
+    [SerializeField] private CardObject drawPileTop;
+
+    List<CardObject> cardsInPlay;
 
     // Debugging purposes
-    Vector3 moveToPosition = new Vector3(1, 1, 0);
+    //Vector3 moveToPosition = new Vector3(1, 1, 0);
     int cardsMoved = 0;
 
     public bool forceHotseat = true;
@@ -228,14 +239,6 @@ public class GameManager : MonoBehaviour
         if (currentScene == Scenes.Game)
         {
             //Debug.Log("Current Multiplayer mode: " + currentMultiplayerMode.ToString());
-            cardManager = FindFirstObjectByType<CardManager>();
-            if (cardManager == null)
-            {
-                Debug.LogError("GameManager->SceneAwake(): CardManager not found in scene!");
-                // Manually add it to the scene:
-                //GameObject cardManagerGO = new GameObject("CardManager");
-                //cardManager = cardManagerGO.AddComponent<CardManager>();
-            }
             CardObject.onCardClicked += OnCardClicked;
 
             if (forceHotseat && currentMultiplayerMode == MultiplayerMode.Disconnected)
@@ -279,6 +282,7 @@ public class GameManager : MonoBehaviour
         }
         Debug.Log("GameManager->StartHotseatGame()");
         Debug.Log("First name: " + playerNames[0]);
+        gameStateScript.InitServer();
         totalPlayers = numPlayers;
         currentPlayerIndex = localPlayer1Index;
         currentMultiplayerMode = MultiplayerMode.LocalHotseat;
@@ -288,6 +292,8 @@ public class GameManager : MonoBehaviour
         {
             Debug.LogWarning("GameManager->StartHotseatGame(): numPlayers does not match length of playerNames array!");
         }
+
+        cardsInPlay = new List<CardObject>();
 
         playersParentGO = new GameObject("_Players");
         for (int i = 0; i < numPlayers; i++)
@@ -303,7 +309,27 @@ public class GameManager : MonoBehaviour
         }
 
         inputManager.activePlayer = players[currentPlayerIndex];
+
+        drawPileTop = InstantiateCardObjectFromPOD(gameStateScript.serverDrawPile[0], drawPileDefaultPosition, cardState.drawPile);
         //TurnStart();
+    }
+
+    void SetDrawPileTopCard()
+    {
+        if (gameStateScript.serverDrawPile.Count == 0)
+        {
+            if (drawPileTop != null)
+            {
+                Destroy(drawPileTop.gameObject);
+                drawPileTop = null;
+            }
+            Debug.LogWarning("SetDrawPileTopCard: draw pile empty!");
+            return;
+        }
+        CardPOD topPOD = gameStateScript.serverDrawPile[0];
+        drawPileTop.SetCardPOD(topPOD);
+        drawPileTop.cardPOD.state = cardState.drawPile;
+        return;
     }
 
     // Called by NetworkManager when online game is ready to start (?)
@@ -333,8 +359,15 @@ public class GameManager : MonoBehaviour
         Debug.Log("GameManager->EndGameCleanup()");
         playersParentGO = null;
         cardsShowing = false;
-        drawPile.Clear();
+        drawPileTop = null;
+    
+        if (cardsInPlay != null)
+        {
+            cardsInPlay.Clear();
+            cardsInPlay = null;
+        }
         DestroyPlayers();
+        gameStateScript.Cleanup();
         currentMultiplayerMode = MultiplayerMode.Disconnected;
     }
 
@@ -351,10 +384,102 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // CardManager calls this with 'deck', and then it moves around in play
-    public void SetDrawPile(List<CardObject> newDrawPile)
+    private CardObject InstantiateCardObjectFromPOD(CardPOD cardPOD, Vector3 position, cardState newState = cardState.playerHolder)
     {
-        drawPile = newDrawPile;
+        if (deckParentGO == null)
+        {
+            deckParentGO = new GameObject("_Cards");            
+        }
+        if (cardPrefab == null)
+        {
+            cardPrefab = Resources.Load<GameObject>("Prefabs/CardPF");
+        }
+
+        GameObject cardGO = GameObject.Instantiate(cardPrefab, position, Quaternion.identity, deckParentGO.transform);
+        
+        CardObject cardObject = cardGO.GetComponent<CardObject>();
+
+        // Attach Card POD to CardObject
+        cardPOD.state = newState;
+        cardObject.SetCardPOD(cardPOD);
+
+        return cardObject;
+    }
+
+    // Draw a single card from the draw pile
+    // (needs to be expanded for player id (optional for hotseat?) and multiplayer sync)
+    public CardObject DrawCardAsObject(int playerID)
+    {
+       if (currentPlayerIndex != playerID)
+        {
+            Debug.LogError("GameManager->DrawCardsAsObjects(): It's not Player " + playerID + "'s turn!");
+            return null;
+        }
+        if (currentMultiplayerMode == MultiplayerMode.Disconnected)
+        {
+            Debug.LogError("GameManager: DrawCard - Not in multiplayer mode!");
+            return null;
+        }
+        if (currentMultiplayerMode == MultiplayerMode.LocalHotseat)
+        {
+            CardPOD cardPOD = gameStateScript.DrawCard();
+            CardObject cardObject = InstantiateCardObjectFromPOD(cardPOD, deckOffscreenPosition, cardState.playerHolder);
+            SetDrawPileTopCard();
+            return cardObject;
+        }
+        else
+        {
+            Debug.LogError("GameManager: DrawCard - Online multiplayer not yet implemented!");
+            return null;
+        }
+    }
+
+   // Draw numCards from draw pile and create local CardObjects - client side
+    public List<CardObject> DrawCardsAsObjects(int numCards, int playerID)
+    {
+        if (currentPlayerIndex != playerID)
+        {
+            Debug.LogError("GameManager->DrawCardsAsObjects(): It's not Player " + playerID + "'s turn!");
+            return null;
+        }
+        if (currentMultiplayerMode == MultiplayerMode.Disconnected)
+        {
+            Debug.LogError("GameManager->DrawCardsAsObjects(): Not in multiplayer mode!");
+            return null;
+        }
+        if (currentMultiplayerMode == MultiplayerMode.LocalHotseat)
+        {
+            List<CardPOD> cardPODs = gameStateScript.DrawCards(numCards);
+
+            // endgame reached
+            if (cardPODs == null)
+                return null;
+            
+            if (deckParentGO == null)
+            {
+                deckParentGO = new GameObject("_Cards");            
+            }
+            if (cardPrefab == null)
+            {
+                cardPrefab = Resources.Load<GameObject>("Prefabs/CardPF");
+            }
+
+            List<CardObject> drawnCards = new List<CardObject>();
+            for (int i = 0; i < numCards; i++)
+            {
+                //GameObject cardGO = GameObject.Instantiate(cardPrefab, deckOffscreenPosition, Quaternion.identity, deckParentGO.transform);
+                CardObject cardObject = InstantiateCardObjectFromPOD(cardPODs[i], deckOffscreenPosition, cardState.playerHolder);
+                // and put in deckObjects list
+                drawnCards.Add(cardObject);
+            }
+            SetDrawPileTopCard();
+            return drawnCards;
+        }
+        else
+        {
+            Debug.LogError("GameManager->DrawCardsAsObjects(): Online multiplayer not yet implemented!");
+            return null;
+        }
     }
 
     void TurnEnd()
@@ -391,51 +516,15 @@ public class GameManager : MonoBehaviour
             LoadScene(Scenes.DCExperiments);
         }
         // workaround for Start() timing issue (avoiding Script Execution Order change)
-        if (currentScene == Scenes.Game && drawPile != null && !cardsShowing)
+        if (currentScene == Scenes.Game && gameStateScript.serverDrawPile != null && !cardsShowing)
         {
-            UpdateDrawPile();
+            //UpdateDrawPile();
+            //DrawPileDisplayTopCard();
             cardsShowing = true;
         }
     }
 
-    // Draw a single card from the draw pile
-    // (needs to be expanded for player id (optional for hotseat?) and multiplayer sync)
-    public CardObject DrawCard()
-    {
-        if (drawPile.Count > 0)
-        {
-            CardObject drawnCard = drawPile[0];
-            drawPile.RemoveAt(0);
-            return drawnCard;
-        }
-        else
-        {
-            Debug.LogWarning("GameManager: DrawCard - No more cards to draw!");
-            return null;
-        }
-    }
-
-    // Draw multiple cards from the draw pile (should be a max of 6)
-    // Expansion for multiplayer needed (as above)
-    public List<CardObject> DrawCards(int numCards)
-    {
-        List<CardObject> drawnCards = new();
-        for (int i = 0; i < numCards; i++)
-        {
-            if (drawPile.Count > 0)
-            {
-                drawnCards.Add(drawPile[0]);
-                drawPile.RemoveAt(0);
-            }
-            else
-            {
-                Debug.LogWarning("GameManager: DrawCards - No more cards to draw!");
-                break;
-            }
-        }
-        return drawnCards;
-    }
-
+/*
     // Updates the deck DrawPile - uses basic algorithm that Prospector Solitaire used
     //  Layering a deck of cards with sorting layer/order and Z-order 
     // !This will be changed for the full game to just showing the top card (or nothing if empty)
@@ -458,22 +547,22 @@ public class GameManager : MonoBehaviour
             card.SetSortingOrder(-10 * i);
         }
     }
-
+*/
     // Called when a card is clicked - responds based on player turn, action, etc.
     void OnCardClicked(CardObject card)
     {
-        AudioManager.PlayOneShot(AudioManager.audioSourcesSO.clickCard, 1f);
+        AudioManager.PlaySoundAt(AudioManager.audioSourcesSO.clickCard, 1f);
         Debug.Log("GameManager->OnCardClicked - Card clicked: " + card.gameObject.name + " currentPlayerIndex: " + currentPlayerIndex);
 
         // !Just for testing purposes - move or flip:
         if (card.cardPOD.state == cardState.drawPile)
         {
-            var moveToLocation = playerPositions[currentPlayerIndex];
+            var cardObject = DrawCardAsObject(currentPlayerIndex);
+            cardObject.SetLocalPosition(playerPositions[currentPlayerIndex]);
             //moveToLocation.x += cardsMoved * 0.2f; // slight offset for visibility
-            card.SetLocalPosition(moveToLocation);
-            card.SetSortingOrder(cardsMoved * 10 + -100);
+            cardObject.SetSortingOrder(cardsMoved * 10 + -100);
             cardsMoved++;
-            card.cardPOD.state = cardState.scorePile;
+            cardObject.cardPOD.state = cardState.scorePile;
         }
         else
             card.FlipCard();

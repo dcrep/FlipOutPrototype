@@ -18,6 +18,8 @@ public class CardPOD //: MonoBehaviour
     public cardColor cardSideAColor = cardColor.red;
     public cardColor cardSideBColor = cardColor.red;
 
+    public int cardID = -1;   // unique identifier for this card
+
     // !! These aren't needed, but useful for debugging
     public GameObject cardGO = null;    // link to GameObject that the CardObject script is attached to
     public CardObject cardObject = null;    // link to CardObject (owner) script object

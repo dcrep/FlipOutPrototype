@@ -44,6 +44,7 @@ public class CardObject : MonoBehaviour
     {
         cardPOD = pod;
         SetSprites(cardPOD.cardSideAColor, cardPOD.cardSideBColor, cardPOD.facing);
+        gameObject.name = "Card" + cardPOD.cardID.ToString("D2");
         // !! This info should be unneccesary but for debugging purposes...
         cardPOD.cardObject = this;
         cardPOD.cardGO = this.gameObject;

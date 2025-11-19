@@ -1,6 +1,5 @@
 using UnityEngine;
 using System.Collections.Generic;
-using System.Linq;
 
 public class CardManager : MonoBehaviour
 {
@@ -54,28 +53,28 @@ public class CardManager : MonoBehaviour
         }
         InitAndShuffleDeck();
 
-        cardPrefab = Resources.Load<GameObject>("Prefabs/CardPF");
+        //cardPrefab = Resources.Load<GameObject>("Prefabs/CardPF");
 
-        deckParentGO = new GameObject("_Cards");
+        /*//deckParentGO = new GameObject("_Cards");
         for (int i = 0; i < deck.Count; i++)
         {
             CardPOD card = deck[i];
             // New card game object, parent -> _Cards (deckParentGO)
-            GameObject cardGO = Instantiate(cardPrefab, deckOffscreenPosition, Quaternion.identity, deckParentGO.transform);
+            //GameObject cardGO = Instantiate(cardPrefab, deckOffscreenPosition, Quaternion.identity, deckParentGO.transform);
             
             // Grab CardObject component and set ID/name
-            CardObject cardObject = cardGO.GetComponent<CardObject>();
-            cardObject.SetId(i);
+            //CardObject cardObject = cardGO.GetComponent<CardObject>();
+            //cardObject.SetId(i);
             //cardGO.name = string.Format("Card{0:D2}", i); // set in SetId()
 
             // Attach Card POD to CardObject
             card.state = cardState.drawPile;
-            cardObject.SetCardPOD(card);
+            //cardObject.SetCardPOD(card);
 
             // and put in deckObjects list
             deckObjects.Add(cardObject);
         }
-        GameManager.Instance.SetDrawPile(deckObjects);
+        GameManager.Instance.SetDrawPile(deckObjects);*/
     }
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
@@ -104,6 +103,7 @@ public class CardManager : MonoBehaviour
     // NOTE: No game objects should be attached yet
     void InitAndShuffleDeck()
     {
+        int cardID = 0;        
         List<CardPOD> deckPull = new();
         // Have to manually clone each card to avoid reference issues
         // If we change CardPOD to a struct (value semantics), this can be simplified to a ToList conversion
@@ -119,8 +119,13 @@ public class CardManager : MonoBehaviour
             int index = rand.Next(0, deckPull.Count);
             // More randomness..
             deckPull[index].facing = Random.value > 0.5f ? cardFace.sideA : cardFace.sideB;
-            deck.Add(deckPull[index]);
+
+            CardPOD cardCopy = deckPull[index].Clone(); // not necessary since Cloned above..
+            cardCopy.cardID = cardID;
+            cardCopy.state = cardState.drawPile;    // by default
+            deck.Add(cardCopy);
             deckPull.RemoveAt(index);
+            cardID++;
         }
 
         // Ensure correct number of each card (6 * 6 = 36)
