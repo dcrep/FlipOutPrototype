@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class PlayerX : MonoBehaviour
@@ -7,9 +8,15 @@ public class PlayerX : MonoBehaviour
     public int playerId = -1;
     [SerializeField] private HandX playerHand = null;
 
+    // Network connection info?
+    // NetManager...
+
+    public List<CardObject> scorePile = null;
+
     void Awake()
     {
         playerHand = new HandX();
+        scorePile = new List<CardObject>();
     }
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created

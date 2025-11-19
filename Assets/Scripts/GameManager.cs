@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Unity.Multiplayer.Playmode;
 using Unity.VisualScripting;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -262,11 +263,7 @@ public class GameManager : MonoBehaviour
         {
             // Unsubscribe from static Click event
             CardObject.onCardClicked -= OnCardClicked;
-            playersParentGO = null;
-            cardsShowing = false;
-            drawPile.Clear();
-            DestroyPlayers();
-            currentMultiplayerMode = MultiplayerMode.Disconnected;
+            EndGameCleanup();
             // 'Unloading'?
             //currentGameState = GameState.Loading;
         }
@@ -291,18 +288,22 @@ public class GameManager : MonoBehaviour
         {
             Debug.LogWarning("GameManager->StartHotseatGame(): numPlayers does not match length of playerNames array!");
         }
+
         playersParentGO = new GameObject("_Players");
         for (int i = 0; i < numPlayers; i++)
         {
-            GameObject playerGO = new GameObject("Player" + i);
+            GameObject playerGO = new GameObject("Player" + i, typeof(PlayerX));
             playerGO.transform.SetParent(playersParentGO.transform);
-            playerGO.AddComponent<PlayerX>();
+            //playerGO.AddComponent<PlayerX>();
             
             players[i] = playerGO.GetComponent<PlayerX>();
             players[i].playerName = playerNames[i];
             players[i].playerId = i;
             Debug.Log("Player " + i + " name set to: " + players[i].playerName);
         }
+
+        inputManager.activePlayer = players[currentPlayerIndex];
+        //TurnStart();
     }
 
     // Called by NetworkManager when online game is ready to start (?)
@@ -320,6 +321,28 @@ public class GameManager : MonoBehaviour
         currentGameState = GameState.Playing;
     }
 
+    void EndGame()
+    {
+        Debug.Log("GameManager->EndGame()");
+        EndGameCleanup();
+        //LoadScene(Scenes.GameOver);
+    }
+
+    void EndGameCleanup()
+    {
+        Debug.Log("GameManager->EndGameCleanup()");
+        playersParentGO = null;
+        cardsShowing = false;
+        drawPile.Clear();
+        DestroyPlayers();
+        currentMultiplayerMode = MultiplayerMode.Disconnected;
+    }
+
+    PlayerX GetActivePlayer()
+    {
+        return players[currentPlayerIndex];
+    }
+
     void DestroyPlayers()
     {
         for (int i = 0; i < 5; i++)
@@ -332,6 +355,30 @@ public class GameManager : MonoBehaviour
     public void SetDrawPile(List<CardObject> newDrawPile)
     {
         drawPile = newDrawPile;
+    }
+
+    void TurnEnd()
+    {
+        if (currentMultiplayerMode == MultiplayerMode.LocalHotseat)
+        {
+            currentPlayerIndex++;
+            if (currentPlayerIndex >= totalPlayers)
+                currentPlayerIndex = 0;
+            Debug.Log("GameManager->TurnEnd(): Current player is now Player " + currentPlayerIndex);
+            inputManager.activePlayer = players[currentPlayerIndex];
+            return;
+        }
+        //else - online mode
+    }
+
+    public static void Quit()
+    {
+#if UNITY_EDITOR
+        EditorApplication.ExitPlaymode();
+#else
+        Application.Quit(); // For standalone builds
+#endif
+        Debug.Log("Player Has Quit the Game");
     }
 
     // Update is called once per frame

@@ -208,6 +208,15 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Quit"",
+                    ""type"": ""Button"",
+                    ""id"": ""4ce101a0-9979-49ee-ac46-df5b169acde5"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -648,6 +657,17 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""groups"": """",
                     ""action"": ""ScrollWheel"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""ff36ffe9-00ee-4f3a-96e6-5d4b903d9475"",
+                    ""path"": ""<Keyboard>/q"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Quit"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -1228,6 +1248,7 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         m_Player_Pause = m_Player.FindAction("Pause", throwIfNotFound: true);
         m_Player_Mute = m_Player.FindAction("Mute", throwIfNotFound: true);
         m_Player_ScrollWheel = m_Player.FindAction("ScrollWheel", throwIfNotFound: true);
+        m_Player_Quit = m_Player.FindAction("Quit", throwIfNotFound: true);
         // UI
         m_UI = asset.FindActionMap("UI", throwIfNotFound: true);
         m_UI_Navigate = m_UI.FindAction("Navigate", throwIfNotFound: true);
@@ -1333,6 +1354,7 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_Pause;
     private readonly InputAction m_Player_Mute;
     private readonly InputAction m_Player_ScrollWheel;
+    private readonly InputAction m_Player_Quit;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player".
     /// </summary>
@@ -1396,6 +1418,10 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Player/ScrollWheel".
         /// </summary>
         public InputAction @ScrollWheel => m_Wrapper.m_Player_ScrollWheel;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/Quit".
+        /// </summary>
+        public InputAction @Quit => m_Wrapper.m_Player_Quit;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -1461,6 +1487,9 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
             @ScrollWheel.started += instance.OnScrollWheel;
             @ScrollWheel.performed += instance.OnScrollWheel;
             @ScrollWheel.canceled += instance.OnScrollWheel;
+            @Quit.started += instance.OnQuit;
+            @Quit.performed += instance.OnQuit;
+            @Quit.canceled += instance.OnQuit;
         }
 
         /// <summary>
@@ -1511,6 +1540,9 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
             @ScrollWheel.started -= instance.OnScrollWheel;
             @ScrollWheel.performed -= instance.OnScrollWheel;
             @ScrollWheel.canceled -= instance.OnScrollWheel;
+            @Quit.started -= instance.OnQuit;
+            @Quit.performed -= instance.OnQuit;
+            @Quit.canceled -= instance.OnQuit;
         }
 
         /// <summary>
@@ -1891,6 +1923,13 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnScrollWheel(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Quit" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnQuit(InputAction.CallbackContext context);
     }
     /// <summary>
     /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "UI" which allows adding and removing callbacks.

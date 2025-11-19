@@ -10,6 +10,8 @@ public class InputManager : MonoBehaviour
     private InputAction mouseRightClickAction;
     private InputAction mouseWheelAction;
 
+    public PlayerX activePlayer = null;
+
     // UI Manager (?)
     GameObject pauseMenuPrefab = null;
     GameObject pauseMenuInstance = null;
@@ -67,6 +69,11 @@ public class InputManager : MonoBehaviour
         {
             //GameManager.Instance.MuteGame();
             AudioManager.PauseToggle();
+        }
+        else if (playerControls.Player.Quit.triggered)
+        {
+            //Debug.Log("Quit triggered!");
+            GameManager.Quit();
         }
     }
     /*public bool PauseMenuClose()
