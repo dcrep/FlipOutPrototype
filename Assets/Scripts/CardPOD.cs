@@ -10,7 +10,7 @@ public enum cardFace { sideA, sideB }
 public class CardPOD //: MonoBehaviour
 {
     public cardState state = cardState.invalid;
-    //[SerializeField] private PlayerPF playerOwner = null;
+    //[SerializeField] private PlayerX playerOwner = null;
 
     //public cardFace facingPlayer = cardFace.sideA;
     public cardFace facing = cardFace.sideA;

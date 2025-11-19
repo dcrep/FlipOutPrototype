@@ -1,10 +1,17 @@
 using UnityEngine;
 
-public class HandPF : MonoBehaviour
+public class PlayerX : MonoBehaviour
 {
-    [SerializeField] private CardPOD[] handCards = new CardPOD[6];
-    [SerializeField] private PlayerPF handOwner = null;
     
+    public string playerName = "PlayerX";
+    public int playerId = -1;
+    [SerializeField] private HandX playerHand = null;
+
+    void Awake()
+    {
+        playerHand = new HandX();
+    }
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {

@@ -49,7 +49,9 @@ public class GameManager : MonoBehaviour
     public Scenes currentScene = Scenes.LoadingScreen;
     public MultiplayerMode currentMultiplayerMode = MultiplayerMode.Disconnected;    
 
-    [SerializeField] private PlayerPF[] players = new PlayerPF[5];
+    [SerializeField] private PlayerX[] players = new PlayerX[5];
+
+    GameObject playersParentGO = null;
     private int localPlayer1Index = 0;
     private int currentPlayerIndex = 1;
     private int totalPlayers = 1;
@@ -76,6 +78,8 @@ public class GameManager : MonoBehaviour
     Vector3 moveToPosition = new Vector3(1, 1, 0);
     int cardsMoved = 0;
 
+    public bool forceHotseat = true;
+
     // Awake - Called before first Scene, not destroyed or recreated on Scene load
     void Awake()
     {
@@ -83,9 +87,7 @@ public class GameManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
-            // !! Hotseat for testing purposes
-            currentMultiplayerMode = MultiplayerMode.LocalHotseat;           
+            DontDestroyOnLoad(gameObject);        
         }
         else
         {
@@ -216,12 +218,6 @@ public class GameManager : MonoBehaviour
         currentMultiplayerMode = MultiplayerMode.Disconnected;
     }
 
-    void OnMultiplayerLocalHotseat()
-    {
-        Debug.Log("GameManager->OnLocalHotseat()");
-        currentMultiplayerMode = MultiplayerMode.LocalHotseat;
-    }
-
     // Scene -> Scene script (in each level) calls the following Awake/Start/Destroyed functions
 
     public void SceneAwake()
@@ -230,38 +226,21 @@ public class GameManager : MonoBehaviour
         Debug.Log("GameManager->SceneAwake() for scene: " + SceneManager.GetActiveScene().name + " currentScene: " + currentScene.ToString());
         if (currentScene == Scenes.Game)
         {
-            Debug.Log("Current Multiplayer mode: " + currentMultiplayerMode.ToString());
-            if (currentMultiplayerMode == MultiplayerMode.Disconnected)
+            //Debug.Log("Current Multiplayer mode: " + currentMultiplayerMode.ToString());
+            cardManager = FindFirstObjectByType<CardManager>();
+            if (cardManager == null)
             {
-                //NetworkManager.Instance.Connect();
-                // abort to Multiplayer-connect UI?
+                Debug.LogError("GameManager->SceneAwake(): CardManager not found in scene!");
+                // Manually add it to the scene:
+                //GameObject cardManagerGO = new GameObject("CardManager");
+                //cardManager = cardManagerGO.AddComponent<CardManager>();
             }
-            else    // connected or Hotseat
+            CardObject.onCardClicked += OnCardClicked;
+
+            if (forceHotseat && currentMultiplayerMode == MultiplayerMode.Disconnected)
             {
-                Debug.Log("GameManager->SceneAwake(): Multiplayer/Hotseat connected, initializing game scene.");
-                cardManager = FindFirstObjectByType<CardManager>();
-                if (cardManager == null)
-                {
-                    Debug.LogError("GameManager->SceneAwake(): CardManager not found in scene!");
-                    // Manually add it to the scene:
-                    //GameObject cardManagerGO = new GameObject("CardManager");
-                    //cardManager = cardManagerGO.AddComponent<CardManager>();
-                }
-
-                // Subscribe to static Click event once:
-                CardObject.onCardClicked += OnCardClicked;
-
-                if (currentMultiplayerMode == MultiplayerMode.Online)
-                {
-                    // NetworkManager.Instance.SetupMultiplayerGame();
-                }
-                else if (currentMultiplayerMode == MultiplayerMode.LocalHotseat)
-                {
-                    //totalPlayers = NetworkManager.Instance.GetLocalHotseatPlayerCount();
-                    // temporarily hardcode to 2 players for local hotseat
-                    totalPlayers = 2;
-                    currentGameState = GameState.Playing;
-                }
+                //StartHotseatGame(2, new string[] { Environment.UserName, "Player2" });
+                StartHotseatGame(2, new string[] { "PlayerUNO", "Player2" });
             }
         }
     }
@@ -283,8 +262,69 @@ public class GameManager : MonoBehaviour
         {
             // Unsubscribe from static Click event
             CardObject.onCardClicked -= OnCardClicked;
+            playersParentGO = null;
             cardsShowing = false;
             drawPile.Clear();
+            DestroyPlayers();
+            currentMultiplayerMode = MultiplayerMode.Disconnected;
+            // 'Unloading'?
+            //currentGameState = GameState.Loading;
+        }
+    }
+
+    // Called by UI to start hotseat game (input number of players and player names)
+    void StartHotseatGame(int numPlayers, string[] playerNames)
+    {
+        if (currentScene != Scenes.Game)
+        {
+            Debug.LogError("GameManager->StartHotseatGame(): Not in Game scene!");
+            return;
+        }
+        Debug.Log("GameManager->StartHotseatGame()");
+        Debug.Log("First name: " + playerNames[0]);
+        totalPlayers = numPlayers;
+        currentPlayerIndex = localPlayer1Index;
+        currentMultiplayerMode = MultiplayerMode.LocalHotseat;
+        currentGameState = GameState.Playing;
+
+        if (numPlayers != playerNames.Length)
+        {
+            Debug.LogWarning("GameManager->StartHotseatGame(): numPlayers does not match length of playerNames array!");
+        }
+        playersParentGO = new GameObject("_Players");
+        for (int i = 0; i < numPlayers; i++)
+        {
+            GameObject playerGO = new GameObject("Player" + i);
+            playerGO.transform.SetParent(playersParentGO.transform);
+            playerGO.AddComponent<PlayerX>();
+            
+            players[i] = playerGO.GetComponent<PlayerX>();
+            players[i].playerName = playerNames[i];
+            players[i].playerId = i;
+            Debug.Log("Player " + i + " name set to: " + players[i].playerName);
+        }
+    }
+
+    // Called by NetworkManager when online game is ready to start (?)
+    void StartOnlineGame(int numPlayers)
+    {
+        if (currentScene != Scenes.Game)
+        {
+            Debug.LogError("GameManager->StartOnlineGame(): Not in Game scene!");
+            return;
+        }
+        Debug.Log("GameManager->StartOnlineGame()");
+        totalPlayers = numPlayers;
+        //currentPlayerIndex = NetworkManager.Instance.GetLocalPlayerIndex();
+        currentMultiplayerMode = MultiplayerMode.Online;
+        currentGameState = GameState.Playing;
+    }
+
+    void DestroyPlayers()
+    {
+        for (int i = 0; i < 5; i++)
+        {
+            players[i] = null;
         }
     }
 
