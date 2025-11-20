@@ -1,6 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
-
+/*
 public class CardManager : MonoBehaviour
 {
     // Each color appears 6 times (including both sides)
@@ -54,50 +54,22 @@ public class CardManager : MonoBehaviour
         InitAndShuffleDeck();
 
         //cardPrefab = Resources.Load<GameObject>("Prefabs/CardPF");
-
-        /*//deckParentGO = new GameObject("_Cards");
-        for (int i = 0; i < deck.Count; i++)
-        {
-            CardPOD card = deck[i];
-            // New card game object, parent -> _Cards (deckParentGO)
-            //GameObject cardGO = Instantiate(cardPrefab, deckOffscreenPosition, Quaternion.identity, deckParentGO.transform);
-            
-            // Grab CardObject component and set ID/name
-            //CardObject cardObject = cardGO.GetComponent<CardObject>();
-            //cardObject.SetId(i);
-            //cardGO.name = string.Format("Card{0:D2}", i); // set in SetId()
-
-            // Attach Card POD to CardObject
-            card.state = cardState.drawPile;
-            //cardObject.SetCardPOD(card);
-
-            // and put in deckObjects list
-            deckObjects.Add(cardObject);
-        }
-        GameManager.Instance.SetDrawPile(deckObjects);*/
+        //GameManager.Instance.SetDrawPile(deckObjects);
     }
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
-    {
-    }
+    {}
 
     // Update is called once per frame
     void Update()
-    {
-
-    }
+    { }
 
     void FixedUpdate()
-    {
-
-    }
+    { }
 
     void OnDestroy()
-    {
-        // Unsubscribe from static event
-        //CardObject.onCardClicked -= OnCardClicked;
-    }
+    { }
 
     // Simple Deck initialization and shuffle
     // NOTE: No game objects should be attached yet
@@ -176,3 +148,4 @@ public class CardManager : MonoBehaviour
     }
 
 }
+*/

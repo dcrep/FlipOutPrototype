@@ -1,5 +1,5 @@
 using UnityEngine;
-
+/*
 [System.Serializable]
 public class HandX  // : MonoBehaviour
 {
@@ -35,4 +35,4 @@ public class HandX  // : MonoBehaviour
     {
         handOwner = owner;
     }
-}
+}*/

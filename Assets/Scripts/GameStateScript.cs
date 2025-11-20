@@ -178,8 +178,13 @@ public class GameStateScript //: MonoBehaviour
         }
 
         // Ensure correct number of each card (6 * 6 = 36)
-        if (false)
-        {
+        //VerifyDeckComposition();
+    }
+
+    void VerifyDeckComposition()
+    {
+        // Ensure correct number of each card (6 * 6 = 36)
+
             int totalRed = 0, totalGreen = 0, totalBlue = 0, totalPurple = 0, totalYellow = 0;
             for (int i = 0; i < serverDrawPile.Count; i++)
             {
@@ -221,7 +226,6 @@ public class GameStateScript //: MonoBehaviour
                 }
             }
             Debug.Log($"Deck Composition - Red: {totalRed}, Green: {totalGreen}, Blue: {totalBlue}, Purple: {totalPurple}, Yellow: {totalYellow}");
-        }
     }
 
     public List<TurnAction> GetAvailableActionsForCard(CardPOD cardPOD)
@@ -406,10 +410,17 @@ public class GameStateScript //: MonoBehaviour
             }
             else
             {
+                // break in previous run; check if we met or exceeded 4 in a row
+                if (sameColorCount >= 4)
+                {
+                    //Debug.Log("IsThereAny4To6AdjacentCardsOfSameColor: player " + player.playerId + " found adjacent same color count = " + sameColorCount);
+                    return true;
+                }
                 sameColorCount = 1;
                 lastColor = thisColor;
             }
         }
+        //Debug.Log("IsThereAny4To6AdjacentCardsOfSameColor: player " + player.playerId + " max adjacent same color count = " + sameColorCount);
         return sameColorCount >= 4;
     }
 
@@ -440,6 +451,36 @@ public class GameStateScript //: MonoBehaviour
             }
         }
         return false;
+    }
+
+    public int GetTotalAdjacentColorCount(PlayerX player)
+    {
+        if (player == null)
+            return -1;
+
+        cardColor lastColor = player.hand[0].cardPOD.GetFacingColor();
+        int sameColorCount = 1;
+        int maxSameColorCount = 1;
+        for (int i = 1; i < 6; i++)
+        {
+            cardColor thisColor = player.hand[i].cardPOD.GetFacingColor();
+            //Debug.Log("GetTotalAdjacentColorCount: player " + player.playerId + " checking card index " + i + " color " + thisColor);
+            if (thisColor == lastColor)
+            {
+                sameColorCount++;
+            }
+            else
+            {
+                // break in previous run; keep previous max
+                maxSameColorCount = sameColorCount > maxSameColorCount ? sameColorCount : maxSameColorCount;
+                sameColorCount = 1;
+                lastColor = thisColor;
+            }
+        }
+        if (sameColorCount > maxSameColorCount)
+            maxSameColorCount = sameColorCount;
+        //Debug.Log("GetTotalAdjacentColorCount: player " + player.playerId + " max adjacent same color count = " + maxSameColorCount);
+        return maxSameColorCount;
     }
 
 }

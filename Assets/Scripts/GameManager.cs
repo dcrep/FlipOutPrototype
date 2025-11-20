@@ -89,7 +89,7 @@ public class GameManager : MonoBehaviour
 
     // Debugging purposes
     //Vector3 moveToPosition = new Vector3(1, 1, 0);
-    int cardsMoved = 0;
+    //int cardsMoved = 0;
 
     public bool forceHotseat = true;
 
@@ -608,7 +608,10 @@ public class GameManager : MonoBehaviour
             Debug.Log("Actions available: " + string.Join(", ", gameStateScript.GetAvailableActionsForCard(card.cardPOD)));
         }
         else
-            Debug.Log("Swap2 available: " + gameStateScript.IsSwap2Available());
+        {
+            Debug.Log("Max run player 0: " + gameStateScript.GetTotalAdjacentColorCount(players[0]));
+            Debug.Log("Max run player 1: " + gameStateScript.GetTotalAdjacentColorCount(players[1]));
+        }
     }
 }
 
