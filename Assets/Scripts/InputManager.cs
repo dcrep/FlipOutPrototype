@@ -126,11 +126,29 @@ public class InputManager : MonoBehaviour
 
     void MouseRightButtonPressed(InputAction.CallbackContext context)
     {
+        //Debug.Log("Right Mouse Button Pressed");
         if (GameManager.Instance.currentGameState != GameState.Playing)
             return;
+        // For 2D physics (BoxCollider2D) use Physics2D. OverlapPoint with the
+        // mouse position converted to world coordinates. The previous 3D
+        // Physics.Raycast won't hit 2D colliders.
+        Vector3 mousePos = Input.mousePosition;
+        Vector2 worldPoint = Camera.main.ScreenToWorldPoint(mousePos);
 
-        // Ignore for now..
+        // Check any collider at the point; use OverlapPointAll if you expect
+        // multiple colliders stacked and want to resolve by sorting order.
+        Collider2D hit2D = Physics2D.OverlapPoint(worldPoint);
+        if (hit2D != null)
+        {
+            //Debug.Log("Right-click hit 2D: " + hit2D.gameObject.name);
+            if (hit2D.gameObject.TryGetComponent<CardObject>(out var card))
+            {
+                Debug.Log("Right-clicked on card: " + card.gameObject.name);
+                card.FlipCard();
+            }
+        }
     }
+    
     void MouseRightButtonReleased(InputAction.CallbackContext context)
     {
         // Ignore for now..

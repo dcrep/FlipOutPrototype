@@ -1,5 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
+using Unity.VisualScripting;
+using NUnit.Framework;
 
 // FlipOut Game rules @ https://www.ultraboardgames.com/flipout/game-rules.php
 // TurnActions - 2 per turn!
@@ -220,6 +222,224 @@ public class GameStateScript //: MonoBehaviour
             }
             Debug.Log($"Deck Composition - Red: {totalRed}, Green: {totalGreen}, Blue: {totalBlue}, Purple: {totalPurple}, Yellow: {totalYellow}");
         }
+    }
+
+    public List<TurnAction> GetAvailableActionsForCard(CardPOD cardPOD)
+    {
+        List<TurnAction> actions = new List<TurnAction>();
+        PlayerX ownerPlayer = GameManager.Instance.GetPlayerByID(cardPOD.ownerPlayerID);
+        if (ownerPlayer == null)
+        {
+            Debug.LogError("AvailableActionsForCard: could not find owner player for cardID " + cardPOD.cardID);
+            return actions;
+        }
+
+        var allPlayers = GameManager.Instance.GetActivePlayers();
+
+        // Flip always available -> current player's or oppenent's card
+        actions.Add(TurnAction.Flip);
+        // Switch always available -> current player's or opponent's card
+        actions.Add(TurnAction.Switch);
+        // Swap1 always available -> current player's card with either theirs or opponent's
+        actions.Add(TurnAction.Swap1);
+
+        // Swap2 requires 2 adjacent same color cards from 2 players
+        if (IsThere2AdjacentCardsOfSameColorAsThis(ownerPlayer, cardPOD))
+        {
+            // Check other players for adjacent same color cards
+            foreach (var player in allPlayers)
+            {
+                if (player != ownerPlayer && IsThereAny2AdjacentCardsOfSameColor(player))
+                {
+                    actions.Add(TurnAction.Swap2);
+                    break;
+                }
+            }
+        }
+        // Score requires 4-6 adjacent same color cards from current player's hand
+        if (IsThere4To6AdjacentCardsOfSameColorAsThis(ownerPlayer, cardPOD))
+        {
+            actions.Add(TurnAction.Score);
+        }
+        if (IsSwipeAvailableForPlayer(ownerPlayer))
+        {
+            actions.Add(TurnAction.Swipe);
+        }
+
+        return actions;
+    }
+
+    public bool IsSwap2Available()
+    {
+        var allPlayers = GameManager.Instance.GetActivePlayers();
+        foreach (var player in allPlayers)
+        {
+            if (IsThereAny2AdjacentCardsOfSameColor(player))
+            {
+                // Check other players for adjacent same color cards
+                foreach (var otherPlayer in allPlayers)
+                {
+                    if (otherPlayer != player && IsThereAny2AdjacentCardsOfSameColor(otherPlayer))
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    public bool IsSwap2AvailableForPlayer(PlayerX player)
+    {
+        if (player == null)
+            return false;
+
+        if (IsThereAny2AdjacentCardsOfSameColor(player))
+        {
+            var allPlayers = GameManager.Instance.GetActivePlayers();
+            // Check other players for adjacent same color cards
+            foreach (var otherPlayer in allPlayers)
+            {
+                if (otherPlayer != player && IsThereAny2AdjacentCardsOfSameColor(otherPlayer))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public bool IsThereAny2AdjacentCardsOfSameColor(PlayerX player)
+    {
+        if (player == null)
+            return false;
+
+        for (int i = 0; i < 6 - 1; i++)
+        {
+            cardColor thisColor = player.hand[i].cardPOD.GetFacingColor();
+            cardColor nextColor = player.hand[i + 1].cardPOD.GetFacingColor();
+            if (thisColor == nextColor)
+            {
+                Debug.Log("IsThereAnyAdjacentCardsOfSameColor: found adjacent same color cards in player " + player.playerId + "'s hand at index " + i);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public bool IsThere2AdjacentCardsOfSameColorAsThis(PlayerX player, CardPOD cardPOD)
+    {
+        if (player == null)
+            return false;
+
+        cardColor selectedCard = cardPOD.GetFacingColor();
+
+        int cardIndex = player.GetIndexOfCard(cardPOD);
+        if (cardIndex < 0)
+        {
+            Debug.LogError("IsThereAdjacentCardsOfSameColorAsThis: could not find cardID " + cardPOD.cardID + " in player " + player.playerId + "'s hand");
+            return false;
+        }
+        // Check right if can
+        if (cardIndex + 1 < 6)
+        {
+            if (player.hand[cardIndex + 1].cardPOD.GetFacingColor() == selectedCard)
+                return true;
+        }
+        // Check left if can
+        if (cardIndex - 1 >= 0)
+        {
+            if (player.hand[cardIndex - 1].cardPOD.GetFacingColor() == selectedCard)
+                return true;
+        }
+
+        return false;
+    }
+
+    public bool IsThere4To6AdjacentCardsOfSameColorAsThis(PlayerX player, CardPOD cardPOD)
+    {
+        if (player == null)
+            return false;
+            
+        cardColor color = cardPOD.GetFacingColor();
+        int cardIndex = player.GetIndexOfCard(cardPOD);
+        if (cardIndex < 0)
+        {
+            Debug.LogError("IsThere4To6AdjacentCardsOfSameColorAsThis: could not find cardID " + cardPOD.cardID + " in player " + player.playerId + "'s hand");
+            return false;
+        }
+        int leftCount = 0;
+        int rightCount = 0;
+        // Check left
+        for (int i = cardIndex - 1; i >= 0; i--)
+        {
+            if (player.hand[i].cardPOD.GetFacingColor() == color)
+                leftCount++;
+            else
+                break;
+        }
+        // Check right
+        for (int i = cardIndex + 1; i < 6; i++)
+        {
+            if (player.hand[i].cardPOD.GetFacingColor() == color)
+                rightCount++;
+            else
+                break;
+        }
+        int totalAdjacent = leftCount + rightCount + 1;
+        return totalAdjacent >= 4 && totalAdjacent <= 6;
+    }
+
+    public bool IsThereAny4To6AdjacentCardsOfSameColor(PlayerX player)
+    {
+        if (player == null)
+            return false;
+
+        cardColor lastColor = player.hand[0].cardPOD.GetFacingColor();
+        int sameColorCount = 1;
+        for (int i = 1; i < 6; i++)
+        {
+            cardColor thisColor = player.hand[i].cardPOD.GetFacingColor();
+            if (thisColor == lastColor)
+            {
+                sameColorCount++;
+            }
+            else
+            {
+                sameColorCount = 1;
+                lastColor = thisColor;
+            }
+        }
+        return sameColorCount >= 4;
+    }
+
+    public bool IsScoreAvailableForPlayer(PlayerX player)
+    {
+        return IsThereAny4To6AdjacentCardsOfSameColor(player);
+    }
+
+    public bool IsThereAny4To6AdjacentCardsOfSameColorForAnyPlayer()
+    {
+        var allPlayers = GameManager.Instance.GetActivePlayers();
+        foreach (var player in allPlayers)
+        {
+            if (IsThereAny4To6AdjacentCardsOfSameColor(player))
+                return true;
+        }
+        return false;
+    }
+
+    public bool IsSwipeAvailableForPlayer(PlayerX player)
+    {
+        var allPlayers = GameManager.Instance.GetActivePlayers();
+        foreach (var otherPlayer in allPlayers)
+        {
+            if (otherPlayer != player && IsThereAny4To6AdjacentCardsOfSameColor(otherPlayer))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
 }

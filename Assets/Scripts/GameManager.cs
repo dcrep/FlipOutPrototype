@@ -57,18 +57,19 @@ public class GameManager : MonoBehaviour
 
     GameObject playersParentGO = null;
     private int localPlayer1Index = 0;
-    private int currentPlayerIndex = 1;
+    private int currentPlayerIndex = 0;
     private int totalPlayers = 1;
 
     [SerializeField] private Vector3[] playerPositions = new Vector3[5]
     {
     
-        new(0, -4, 0),    // Player 1 - Bottom center
-        new(-7, 0, 0),    // Player 2 - Left center
-        new(0, 4, 0),     // Player 3 - Top center
+        new(-6, -3, 0),    // Player 1 - Bottom center
+        new(-6, 3, 0),     // Player 2 - Top center
+        new(-7, 0, 0),    // Player 3 - Left center        
         new(7, 0, 0),     // Player 4 - Right center
-        new(0, 0, 0)      // Player 5 - Center (?!)
+        new(0, 0, 0)      // Player 5 - Center (?!!)
     };
+    [SerializeField] private Vector3 cardHolderOffset = new Vector3(2.5f, 0, 0);
 
 // CARDS
     //private CardManager cardManager;
@@ -272,6 +273,21 @@ public class GameManager : MonoBehaviour
         }
     }
 
+   // Called by NetworkManager when online game is ready to start (?)
+    void StartOnlineGame(int numPlayers)
+    {
+        if (currentScene != Scenes.Game)
+        {
+            Debug.LogError("GameManager->StartOnlineGame(): Not in Game scene!");
+            return;
+        }
+        Debug.Log("GameManager->StartOnlineGame()");
+        totalPlayers = numPlayers;
+        //currentPlayerIndex = NetworkManager.Instance.GetLocalPlayerIndex();
+        currentMultiplayerMode = MultiplayerMode.Online;
+        currentGameState = GameState.Playing;
+    }
+
     // Called by UI to start hotseat game (input number of players and player names)
     void StartHotseatGame(int numPlayers, string[] playerNames)
     {
@@ -310,41 +326,11 @@ public class GameManager : MonoBehaviour
 
         inputManager.activePlayer = players[currentPlayerIndex];
 
-        drawPileTop = InstantiateCardObjectFromPOD(gameStateScript.serverDrawPile[0], drawPileDefaultPosition, cardState.drawPile);
+        //drawPileTop = InstantiateCardObjectFromPOD(gameStateScript.serverDrawPile[0], drawPileDefaultPosition, cardState.drawPile);
+        drawPileTop = InstantiateCardObjectFromPOD(new CardPOD(), drawPileDefaultPosition, cardState.drawPile, -1);
+
+        DealCardsToPlayers();
         //TurnStart();
-    }
-
-    void SetDrawPileTopCard()
-    {
-        if (gameStateScript.serverDrawPile.Count == 0)
-        {
-            if (drawPileTop != null)
-            {
-                Destroy(drawPileTop.gameObject);
-                drawPileTop = null;
-            }
-            Debug.LogWarning("SetDrawPileTopCard: draw pile empty!");
-            return;
-        }
-        CardPOD topPOD = gameStateScript.serverDrawPile[0];
-        drawPileTop.SetCardPOD(topPOD);
-        drawPileTop.cardPOD.state = cardState.drawPile;
-        return;
-    }
-
-    // Called by NetworkManager when online game is ready to start (?)
-    void StartOnlineGame(int numPlayers)
-    {
-        if (currentScene != Scenes.Game)
-        {
-            Debug.LogError("GameManager->StartOnlineGame(): Not in Game scene!");
-            return;
-        }
-        Debug.Log("GameManager->StartOnlineGame()");
-        totalPlayers = numPlayers;
-        //currentPlayerIndex = NetworkManager.Instance.GetLocalPlayerIndex();
-        currentMultiplayerMode = MultiplayerMode.Online;
-        currentGameState = GameState.Playing;
     }
 
     void EndGame()
@@ -371,9 +357,29 @@ public class GameManager : MonoBehaviour
         currentMultiplayerMode = MultiplayerMode.Disconnected;
     }
 
-    PlayerX GetActivePlayer()
+    public PlayerX GetActivePlayer()
     {
         return players[currentPlayerIndex];
+    }
+
+    public PlayerX GetPlayerByID(int playerID)
+    {
+        if (playerID < 0 || playerID >= totalPlayers)
+        {
+            Debug.LogError("GameManager->GetPlayerByID(): Invalid playerID " + playerID);
+            return null;
+        }
+        return players[playerID];
+    }
+
+    public List<PlayerX> GetActivePlayers()
+    {
+        List<PlayerX> activePlayers = new List<PlayerX>();
+        for (int i = 0; i < totalPlayers; i++)
+        {
+            activePlayers.Add(players[i]);
+        }
+        return activePlayers;
     }
 
     void DestroyPlayers()
@@ -384,7 +390,58 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private CardObject InstantiateCardObjectFromPOD(CardPOD cardPOD, Vector3 position, cardState newState = cardState.playerHolder)
+    void SetDrawPileTopCard()
+    {
+        if (gameStateScript.serverDrawPile.Count == 0)
+        {
+            if (drawPileTop != null)
+            {
+                Destroy(drawPileTop.gameObject);
+                drawPileTop = null;
+            }
+            Debug.LogWarning("SetDrawPileTopCard: draw pile empty!");
+            return;
+        }
+        CardPOD topPOD = gameStateScript.serverDrawPile[0];
+        drawPileTop.SetCardPOD(topPOD);
+        drawPileTop.cardPOD.state = cardState.drawPile;
+        return;
+    }
+
+    void DealCardsToPlayers()
+    {
+        const int CARDS_PER_PLAYER = 6;
+        for (int p = 0; p < totalPlayers; p++)
+        {
+            List<CardObject> dealtCards = DrawCardsAsObjects(CARDS_PER_PLAYER, p, true);
+            if (dealtCards == null)
+            {
+                Debug.LogError("GameManager->DealCardsToPlayers(): Failed to draw cards for Player " + p);
+                return;
+            }
+            for (int c = 0; c < CARDS_PER_PLAYER; c++)
+            {
+                // Set card position to player position
+                dealtCards[c].SetLocalPosition(playerPositions[p] + cardHolderOffset * c);
+                // Slight offset for visibility
+                dealtCards[c].SetSortingOrder(50);
+                // Set card state to playerHolder
+                dealtCards[c].cardPOD.state = cardState.playerHolder;
+                if (p != currentPlayerIndex)
+                {
+                    // other players cards show back side to current player
+                    // !Need to flip these back when another player becomes current player!!
+                    dealtCards[c].FlipCard();
+                }
+                players[p].hand[c] = dealtCards[c];
+                players[p].hand[c].cardPOD.ownerPlayerID = p;
+                // For now, just add to cardsInPlay list
+                //cardsInPlay.Add(dealtCards[c]);
+            }
+        }
+    }
+
+    private CardObject InstantiateCardObjectFromPOD(CardPOD cardPOD, Vector3 position, cardState newState = cardState.playerHolder, int playerID = -1)
     {
         if (deckParentGO == null)
         {
@@ -401,6 +458,7 @@ public class GameManager : MonoBehaviour
 
         // Attach Card POD to CardObject
         cardPOD.state = newState;
+        cardPOD.ownerPlayerID = playerID;
         cardObject.SetCardPOD(cardPOD);
 
         return cardObject;
@@ -408,9 +466,9 @@ public class GameManager : MonoBehaviour
 
     // Draw a single card from the draw pile
     // (needs to be expanded for player id (optional for hotseat?) and multiplayer sync)
-    public CardObject DrawCardAsObject(int playerID)
+    public CardObject DrawCardAsObject(int playerID, bool ignorePlayerId = false)
     {
-       if (currentPlayerIndex != playerID)
+       if (!ignorePlayerId && playerID > 0 && currentPlayerIndex != playerID)
         {
             Debug.LogError("GameManager->DrawCardsAsObjects(): It's not Player " + playerID + "'s turn!");
             return null;
@@ -423,7 +481,7 @@ public class GameManager : MonoBehaviour
         if (currentMultiplayerMode == MultiplayerMode.LocalHotseat)
         {
             CardPOD cardPOD = gameStateScript.DrawCard();
-            CardObject cardObject = InstantiateCardObjectFromPOD(cardPOD, deckOffscreenPosition, cardState.playerHolder);
+            CardObject cardObject = InstantiateCardObjectFromPOD(cardPOD, deckOffscreenPosition, cardState.playerHolder, playerID);
             SetDrawPileTopCard();
             return cardObject;
         }
@@ -435,9 +493,9 @@ public class GameManager : MonoBehaviour
     }
 
    // Draw numCards from draw pile and create local CardObjects - client side
-    public List<CardObject> DrawCardsAsObjects(int numCards, int playerID)
+    public List<CardObject> DrawCardsAsObjects(int numCards, int playerID, bool ignorePlayerId = false)
     {
-        if (currentPlayerIndex != playerID)
+        if (!ignorePlayerId && playerID > 0 && currentPlayerIndex != playerID)
         {
             Debug.LogError("GameManager->DrawCardsAsObjects(): It's not Player " + playerID + "'s turn!");
             return null;
@@ -468,7 +526,7 @@ public class GameManager : MonoBehaviour
             for (int i = 0; i < numCards; i++)
             {
                 //GameObject cardGO = GameObject.Instantiate(cardPrefab, deckOffscreenPosition, Quaternion.identity, deckParentGO.transform);
-                CardObject cardObject = InstantiateCardObjectFromPOD(cardPODs[i], deckOffscreenPosition, cardState.playerHolder);
+                CardObject cardObject = InstantiateCardObjectFromPOD(cardPODs[i], deckOffscreenPosition, cardState.playerHolder, playerID);
                 // and put in deckObjects list
                 drawnCards.Add(cardObject);
             }
@@ -524,10 +582,40 @@ public class GameManager : MonoBehaviour
         }
     }
 
-/*
+
+    // Called when a card is clicked - responds based on player turn, action, etc.
+    void OnCardClicked(CardObject card)
+    {
+        AudioManager.PlaySoundAt(AudioManager.audioSourcesSO.clickCard, 1f);
+        Debug.Log("GameManager->OnCardClicked - Card clicked: " + card.gameObject.name + " currentPlayerIndex: " + currentPlayerIndex);
+
+        // !Just for testing purposes - move or flip:
+        /*if (card.cardPOD.state == cardState.drawPile)
+        {
+            var cardObject = DrawCardAsObject(currentPlayerIndex);
+            cardObject.SetLocalPosition(playerPositions[currentPlayerIndex]);
+            //moveToLocation.x += cardsMoved * 0.2f; // slight offset for visibility
+            cardObject.SetSortingOrder(cardsMoved * 10 + -100);
+            cardsMoved++;
+            cardObject.cardPOD.state = cardState.scorePile;
+        }
+        else
+            card.FlipCard();*/
+        //card.FlipCard();
+
+        if (card.cardPOD.state == cardState.playerHolder)
+        {
+            Debug.Log("Actions available: " + string.Join(", ", gameStateScript.GetAvailableActionsForCard(card.cardPOD)));
+        }
+        else
+            Debug.Log("Swap2 available: " + gameStateScript.IsSwap2Available());
+    }
+}
+
+    /*
+    // !REMNANT CODE FROM GAMEMANAGER - Useful for debugging/viewing entire deck in staggered pile
     // Updates the deck DrawPile - uses basic algorithm that Prospector Solitaire used
     //  Layering a deck of cards with sorting layer/order and Z-order 
-    // !This will be changed for the full game to just showing the top card (or nothing if empty)
 	void UpdateDrawPile()
     {
         const float STAGGER_X = 0.05f;
@@ -546,25 +634,4 @@ public class GameManager : MonoBehaviour
             //card.SetSortingLayerName("Drawpile");
             card.SetSortingOrder(-10 * i);
         }
-    }
-*/
-    // Called when a card is clicked - responds based on player turn, action, etc.
-    void OnCardClicked(CardObject card)
-    {
-        AudioManager.PlaySoundAt(AudioManager.audioSourcesSO.clickCard, 1f);
-        Debug.Log("GameManager->OnCardClicked - Card clicked: " + card.gameObject.name + " currentPlayerIndex: " + currentPlayerIndex);
-
-        // !Just for testing purposes - move or flip:
-        if (card.cardPOD.state == cardState.drawPile)
-        {
-            var cardObject = DrawCardAsObject(currentPlayerIndex);
-            cardObject.SetLocalPosition(playerPositions[currentPlayerIndex]);
-            //moveToLocation.x += cardsMoved * 0.2f; // slight offset for visibility
-            cardObject.SetSortingOrder(cardsMoved * 10 + -100);
-            cardsMoved++;
-            cardObject.cardPOD.state = cardState.scorePile;
-        }
-        else
-            card.FlipCard();
-    }
-}
+    }*/
