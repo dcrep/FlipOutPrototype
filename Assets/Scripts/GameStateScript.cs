@@ -273,6 +273,8 @@ public class GameStateScript //: MonoBehaviour
         return actions;
     }
 
+#region Available-Action-Checks
+
     public bool IsSwap2Available()
     {
         var allPlayers = GameManager.Instance.GetActivePlayers();
@@ -452,7 +454,7 @@ public class GameStateScript //: MonoBehaviour
         }
         return false;
     }
-
+#endregion
     public int GetTotalAdjacentColorCount(PlayerX player)
     {
         if (player == null)
