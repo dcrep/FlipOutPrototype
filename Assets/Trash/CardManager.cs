@@ -6,25 +6,25 @@ public class CardManager : MonoBehaviour
     // Each color appears 6 times (including both sides)
     private CardPOD[] deckCardRange = new CardPOD[15]
     {
-        new() { cardSideAColor = cardColor.red, cardSideBColor = cardColor.red },
-        new() { cardSideAColor = cardColor.red, cardSideBColor = cardColor.green },
-        new() { cardSideAColor = cardColor.red, cardSideBColor = cardColor.blue },
-        new() { cardSideAColor = cardColor.red, cardSideBColor = cardColor.purple },
-        new() { cardSideAColor = cardColor.red, cardSideBColor = cardColor.yellow },
+        new() { cardSideAColor = CardColor.red, cardSideBColor = CardColor.red },
+        new() { cardSideAColor = CardColor.red, cardSideBColor = CardColor.green },
+        new() { cardSideAColor = CardColor.red, cardSideBColor = CardColor.blue },
+        new() { cardSideAColor = CardColor.red, cardSideBColor = CardColor.purple },
+        new() { cardSideAColor = CardColor.red, cardSideBColor = CardColor.yellow },
 
-        new() { cardSideAColor = cardColor.green, cardSideBColor = cardColor.green },
-        new() { cardSideAColor = cardColor.green, cardSideBColor = cardColor.blue },
-        new() { cardSideAColor = cardColor.green, cardSideBColor = cardColor.purple },
-        new() { cardSideAColor = cardColor.green, cardSideBColor = cardColor.yellow },
+        new() { cardSideAColor = CardColor.green, cardSideBColor = CardColor.green },
+        new() { cardSideAColor = CardColor.green, cardSideBColor = CardColor.blue },
+        new() { cardSideAColor = CardColor.green, cardSideBColor = CardColor.purple },
+        new() { cardSideAColor = CardColor.green, cardSideBColor = CardColor.yellow },
 
-        new() { cardSideAColor = cardColor.blue, cardSideBColor =  cardColor.blue },
-        new() { cardSideAColor = cardColor.blue, cardSideBColor =  cardColor.purple },
-        new() { cardSideAColor = cardColor.blue, cardSideBColor =  cardColor.yellow },
+        new() { cardSideAColor = CardColor.blue, cardSideBColor =  CardColor.blue },
+        new() { cardSideAColor = CardColor.blue, cardSideBColor =  CardColor.purple },
+        new() { cardSideAColor = CardColor.blue, cardSideBColor =  CardColor.yellow },
 
-        new() { cardSideAColor = cardColor.purple, cardSideBColor =  cardColor.purple },
-        new() { cardSideAColor = cardColor.purple, cardSideBColor =  cardColor.yellow },
+        new() { cardSideAColor = CardColor.purple, cardSideBColor =  CardColor.purple },
+        new() { cardSideAColor = CardColor.purple, cardSideBColor =  CardColor.yellow },
 
-        new() { cardSideAColor = cardColor.yellow, cardSideBColor =  cardColor.yellow }
+        new() { cardSideAColor = CardColor.yellow, cardSideBColor =  CardColor.yellow }
     };
     [SerializeField] private CardPOD[] deckPure = new CardPOD[90];
     [SerializeField] private List<CardPOD> deck = null;
@@ -90,11 +90,11 @@ public class CardManager : MonoBehaviour
         {
             int index = rand.Next(0, deckPull.Count);
             // More randomness..
-            deckPull[index].facing = Random.value > 0.5f ? cardFace.sideA : cardFace.sideB;
+            deckPull[index].facing = Random.value > 0.5f ? CardFace.sideA : CardFace.sideB;
 
             CardPOD cardCopy = deckPull[index].Clone(); // not necessary since Cloned above..
             cardCopy.cardID = cardID;
-            cardCopy.state = cardState.drawPile;    // by default
+            cardCopy.state = CardState.drawPile;    // by default
             deck.Add(cardCopy);
             deckPull.RemoveAt(index);
             cardID++;
@@ -108,37 +108,37 @@ public class CardManager : MonoBehaviour
             {
                 switch (deck[i].cardSideAColor)
                 {
-                    case cardColor.red:
+                    case CardColor.red:
                         totalRed++;
                         break;
-                    case cardColor.green:
+                    case CardColor.green:
                         totalGreen++;
                         break;
-                    case cardColor.blue:
+                    case CardColor.blue:
                         totalBlue++;
                         break;
-                    case cardColor.purple:
+                    case CardColor.purple:
                         totalPurple++;
                         break;
-                    case cardColor.yellow:
+                    case CardColor.yellow:
                         totalYellow++;
                         break;
                 }
                 switch (deck[i].cardSideBColor)
                 {
-                    case cardColor.red:
+                    case CardColor.red:
                         totalRed++;
                         break;
-                    case cardColor.green:
+                    case CardColor.green:
                         totalGreen++;
                         break;
-                    case cardColor.blue:
+                    case CardColor.blue:
                         totalBlue++;
                         break;
-                    case cardColor.purple:
+                    case CardColor.purple:
                         totalPurple++;
                         break;
-                    case cardColor.yellow:
+                    case CardColor.yellow:
                         totalYellow++;
                         break;
                 }

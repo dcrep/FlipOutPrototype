@@ -1,5 +1,5 @@
 using UnityEngine;
-
+/*
 [RequireComponent(typeof(SpriteRenderer))]
 [RequireComponent(typeof(BoxCollider2D))]
 [System.Serializable]
@@ -10,10 +10,10 @@ public class CardObject : MonoBehaviour
     private SpriteRenderer spriteRenderer = null;
     //private CardManager deck = null;
 
-    [SerializeField] private Sprite CardFace = null;
+    [SerializeField] private Sprite sideA = null, sideB = null;
 
     // General game data about the card:
-    public CardPODClient cardPOD = null;
+    public CardPOD cardPOD = null;
 
     int id = -1;
 
@@ -32,20 +32,20 @@ public class CardObject : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        if (CardFace != null)
-            SetSprite();
+        if (sideA != null && sideB != null)
+            SetSprites(sideA, sideB, cardPOD.facing);
     }
 
     // Update is called once per frame
     void Update()
     { }
 
-    public void SetCardPOD(CardPODClient pod)
+    public void SetCardPOD(CardPOD pod)
     {
         cardPOD = pod;
-        SetSprite();
+        SetSprites(cardPOD.cardSideAColor, cardPOD.cardSideBColor, cardPOD.facing);
         gameObject.name = "Card" + cardPOD.cardID.ToString("D2");
-        // !! This info should be unneccesary but for ease-of-use/debugging purposes...
+        // !! This info should be unneccesary but for debugging purposes...
         cardPOD.cardObject = this;
         cardPOD.cardGO = this.gameObject;
     }
@@ -55,42 +55,65 @@ public class CardObject : MonoBehaviour
         gameObject.name = "Card" + id.ToString("D2");
     }
 
-    public void SetData(CardPODClient cardPODInit)
+    public void SetData(CardPOD cardPODInit, bool notInPlay = false)
     {
-        SetCardPOD(cardPODInit); 
+        cardPOD = cardPODInit;
+        SetSprites(cardPOD.cardSideAColor, cardPOD.cardSideBColor, cardPOD.facing, notInPlay);        
     }
 
-    public void UpdateColor(CardColor newColor)
+    public void SetSprites(CardColor colorA, CardColor colorB, CardFace facing, bool notInPlay = false)
     {
-        cardPOD.color = newColor;
-        SetSprite();
-    }
-
-    public void SetSprite()
-    {
-        switch (cardPOD.color)
+        switch (colorA)
         {
             case CardColor.red:
-                CardFace = cardSpritesSO.redCard;
+                sideA = cardSpritesSO.redCard;
                 break;
             case CardColor.green:
-                CardFace = cardSpritesSO.greenCard;
+                sideA = cardSpritesSO.greenCard;
                 break;
             case CardColor.blue:
-                CardFace = cardSpritesSO.blueCard;
+                sideA = cardSpritesSO.blueCard;
                 break;
             case CardColor.purple:
-                CardFace = cardSpritesSO.purpleCard;
+                sideA = cardSpritesSO.purpleCard;
                 break;
             case CardColor.yellow:
-                CardFace = cardSpritesSO.yellowCard;
+                sideA = cardSpritesSO.yellowCard;
                 break;
         }
+
+        switch (colorB)
+        {
+            case CardColor.red:
+                sideB = cardSpritesSO.redCard;
+                break;
+            case CardColor.green:
+                sideB = cardSpritesSO.greenCard;
+                break;
+            case CardColor.blue:
+                sideB = cardSpritesSO.blueCard;
+                break;
+            case CardColor.purple:
+                sideB = cardSpritesSO.purpleCard;
+                break;
+            case CardColor.yellow:
+                sideB = cardSpritesSO.yellowCard;
+                break;
+        }
+        SetSprites(sideA, sideB, facing, notInPlay);
+    }
+
+    public void SetSprites(Sprite a, Sprite b, CardFace facing, bool notInPlay = false)
+    {
+        sideA = a;
+        sideB = b;
+
+        // Due to potential instantiation/setSprite timing issues:
         if (spriteRenderer == null)
         {
             // Forced setting data before object is in play?
-            //if (notInPlay)
-            //    return;
+            if (notInPlay)
+                return;
 
             spriteRenderer = GetComponent<SpriteRenderer>();
             if (spriteRenderer == null)
@@ -99,7 +122,25 @@ public class CardObject : MonoBehaviour
                 return;
             }
         }
-        spriteRenderer.sprite = CardFace;
+
+        if (facing == CardFace.sideA)
+            spriteRenderer.sprite = sideA;
+        else
+            spriteRenderer.sprite = sideB;
+    }
+
+    public void FlipCard()
+    {
+        if (cardPOD.facing == CardFace.sideA)
+        {
+            spriteRenderer.sprite = sideB;
+            cardPOD.facing = CardFace.sideB;
+        }
+        else
+        {
+            spriteRenderer.sprite = sideA;
+            cardPOD.facing = CardFace.sideA;
+        }
     }
     
     public void SetSortingLayerName(string layerName)
@@ -123,14 +164,5 @@ public class CardObject : MonoBehaviour
         gameObject.transform.localPosition = pos;
     }
 
-    public void FlipCardDEBUG()
-    {
-        if (cardPOD == null)
-        {
-            Debug.LogError("CardObject: FlipCard() - cardPOD is null!");
-            return;
-        }
-        cardPOD.RequestFlipCard();
-   }
-
 }
+*/

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Multiplayer.Playmode;
-using Unity.VisualScripting;
+using Unity.Netcode;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -18,7 +18,7 @@ public enum Scenes
 
 // AppState ? (avoids collision with GameState script)
 [Serializable]
-public enum GameState
+public enum GameStatus
 {
     Loading,
     Playing,
@@ -44,21 +44,29 @@ public class GameManager : MonoBehaviour
     public InputManager inputManager;
     //AudioClip clickSound;
 
-    public GameState currentGameState = GameState.Loading;
+    [SerializeField] private PlayerSessionManager sessionManager = new PlayerSessionManager();
+    [SerializeField] public GameStateServer gameStateServer = new GameStateServer();
+
+    // Only for Editor inspection:
+    [SerializeField] public GameStateClient gameStateClient;
+    public GameStateClient gameStateClient2;
+
+    public ServerDispatch serverDispatch = new ServerDispatch();
+
+    public GameStatus currentGameState = GameStatus.Loading;
 
     public static ScenesSO scenesSO;
 
     public Scenes currentScene = Scenes.LoadingScreen;
 
-    [SerializeField]private GameStateScript gameStateScript = new GameStateScript();
     public MultiplayerMode currentMultiplayerMode = MultiplayerMode.Disconnected;    
 
-    [SerializeField] private PlayerX[] players = new PlayerX[5];
+    //[SerializeField] private PlayerX[] players = new PlayerX[5];
 
     GameObject playersParentGO = null;
-    private int localPlayer1Index = 0;
-    private int currentPlayerIndex = 0;
-    private int totalPlayers = 1;
+    //private int localPlayer1Index = 0;
+    //private int currentPlayerIndex = 0;
+    //private int totalPlayers = 1;
 
     [SerializeField] private Vector3[] playerPositions = new Vector3[5]
     {
@@ -140,27 +148,35 @@ public class GameManager : MonoBehaviour
     public void LoadScene(Scenes scene)
     {
         Debug.Log("GameManager->LoadScene(): " + scene.ToString());
+        if (currentGameState == GameStatus.Playing)
+        {
+            EndGameCleanup();
+        }
         switch (scene)
         {
             case Scenes.MainMenu:
-                LoadScene(scenesSO.mainMenuScene);
-                currentScene = Scenes.MainMenu;
-                currentGameState = GameState.UI;
+                SceneManager.LoadScene(scenesSO.mainMenuScene);
+                //currentScene = Scenes.MainMenu;
+                currentScene = scenesSO.mainMenuSceneEnum;
+                currentGameState = GameStatus.UI;
                 break;
             case Scenes.Game:
-                LoadScene(scenesSO.gameScene);
-                currentScene = Scenes.Game;
-                currentGameState = GameState.Playing;
+                SceneManager.LoadScene(scenesSO.gameScene);
+                //currentScene = Scenes.Game;
+                currentScene = scenesSO.gameSceneEnum;
+                currentGameState = GameStatus.Playing;
                 break;
             case Scenes.GameOver:
-                LoadScene(scenesSO.gameOverScene);
-                currentScene = Scenes.GameOver;
-                currentGameState = GameState.GameOver;
+                SceneManager.LoadScene(scenesSO.gameOverScene);
+                //currentScene = Scenes.GameOver;
+                currentScene = scenesSO.gameOverSceneEnum;                
+                currentGameState = GameStatus.GameOver;
                 break;
             case Scenes.DCExperiments:
-                LoadScene(scenesSO.DCExperimentsScene);
-                currentScene = Scenes.Game; // !!
-                currentGameState = GameState.Playing;
+                SceneManager.LoadScene(scenesSO.DCExperimentsScene);
+                //currentScene = Scenes.DCExperiments;
+                currentScene = scenesSO.DCExperimentsSceneEnum;
+                currentGameState = GameStatus.Playing;
                 break;
             default:
                 Debug.LogError("Unknown scene: " + scene);
@@ -177,7 +193,7 @@ public class GameManager : MonoBehaviour
             {
                 Debug.Log("currentScene mismatch; currentScene set to " + currentScene.ToString() + "; updating to " + Scenes.MainMenu.ToString());
                 currentScene = Scenes.MainMenu;
-                currentGameState = GameState.UI;
+                currentGameState = GameStatus.UI;
             }
         }
         else if (activeSceneName == scenesSO.gameScene)
@@ -186,7 +202,7 @@ public class GameManager : MonoBehaviour
             {
                 Debug.Log("currentScene mismatch; currentScene set to " + currentScene.ToString() + "; updating to " + Scenes.Game.ToString());
                 currentScene = Scenes.Game;
-                currentGameState = GameState.Playing;
+                currentGameState = GameStatus.Playing;
             }
         }
         else if (activeSceneName == scenesSO.gameOverScene)
@@ -195,7 +211,7 @@ public class GameManager : MonoBehaviour
             {
                 Debug.Log("currentScene mismatch; currentScene set to " + currentScene.ToString() + "; updating to " + Scenes.GameOver.ToString());
                 currentScene = Scenes.GameOver;
-                currentGameState = GameState.GameOver;
+                currentGameState = GameStatus.GameOver;
             }
         }
         else if (activeSceneName == scenesSO.DCExperimentsScene)
@@ -204,7 +220,7 @@ public class GameManager : MonoBehaviour
             {
                 Debug.Log("currentScene mismatch; currentScene set to " + currentScene.ToString() + "; updating to " + Scenes.DCExperiments.ToString());
                 currentScene = Scenes.Game; // !!
-                currentGameState = GameState.Playing;
+                currentGameState = GameStatus.Playing;
             }
         }
         else
@@ -213,10 +229,10 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    public void LoadScene(string sceneName)
-    {
-        SceneManager.LoadScene(sceneName);
-    }
+    //public void LoadScene(string sceneName)
+    //{
+    //    SceneManager.LoadScene(sceneName);
+    //}
 
     void OnMultiplayerConnect()
     {
@@ -269,23 +285,30 @@ public class GameManager : MonoBehaviour
             CardObject.onCardClicked -= OnCardClicked;
             EndGameCleanup();
             // 'Unloading'?
-            //currentGameState = GameState.Loading;
+            //currentGameState = GameStatus.Loading;
         }
     }
 
    // Called by NetworkManager when online game is ready to start (?)
-    void StartOnlineGame(int numPlayers)
+    void StartOnlineGame(int[] playerIds, string[] playerNames)
     {
         if (currentScene != Scenes.Game)
         {
             Debug.LogError("GameManager->StartOnlineGame(): Not in Game scene!");
             return;
         }
+        if (playerIds.Length != playerNames.Length)
+        {
+            Debug.LogError("GameManager->StartOnlineGame(): playerIds length does not match length of playerNames array!");
+        }
         Debug.Log("GameManager->StartOnlineGame()");
-        totalPlayers = numPlayers;
+        //totalPlayers = numPlayers;
         //currentPlayerIndex = NetworkManager.Instance.GetLocalPlayerIndex();
+
+        // if (IsHost)
+        gameStateServer.InitGameStateServer(playerIds, playerNames);
         currentMultiplayerMode = MultiplayerMode.Online;
-        currentGameState = GameState.Playing;
+        currentGameState = GameStatus.Playing;
     }
 
     // Called by UI to start hotseat game (input number of players and player names)
@@ -296,40 +319,55 @@ public class GameManager : MonoBehaviour
             Debug.LogError("GameManager->StartHotseatGame(): Not in Game scene!");
             return;
         }
-        Debug.Log("GameManager->StartHotseatGame()");
-        Debug.Log("First name: " + playerNames[0]);
-        gameStateScript.InitServer();
-        totalPlayers = numPlayers;
-        currentPlayerIndex = localPlayer1Index;
-        currentMultiplayerMode = MultiplayerMode.LocalHotseat;
-        currentGameState = GameState.Playing;
-
         if (numPlayers != playerNames.Length)
         {
-            Debug.LogWarning("GameManager->StartHotseatGame(): numPlayers does not match length of playerNames array!");
+            Debug.LogError("GameManager->StartHotseatGame(): numPlayers does not match length of playerNames array!");
         }
+        Debug.Log("GameManager->StartHotseatGame()");
+        Debug.Log("First name: " + playerNames[0]);
+
+
+        // Player Ids are separate from player numbers but for hotseat they are basically the same
+        int[] playerIds = new int[numPlayers];
+        
+        for (int i = 0; i < numPlayers; i++)
+        {
+            playerIds[i] = i;
+            sessionManager.AddSession(i, playerNames[i], "LocalHost");
+        }
+
+        // if (IsHost)
+        //gameStateServer.InitGameStateServer(playerIds,playerNames);
+        GameStateClient.InitGameStateClient(playerIds, playerNames);
+
+        gameStateClient = GameStateClient.GetHotseatGameStateForPlayerNumber(0);
+        gameStateClient2 = GameStateClient.GetHotseatGameStateForPlayerNumber(1);
+
+        //totalPlayers = numPlayers;
+        //currentPlayerIndex = localPlayer1Index;
+        currentMultiplayerMode = MultiplayerMode.LocalHotseat;
+        currentGameState = GameStatus.Playing;
 
         cardsInPlay = new List<CardObject>();
 
         playersParentGO = new GameObject("_Players");
         for (int i = 0; i < numPlayers; i++)
         {
-            GameObject playerGO = new GameObject("Player" + i, typeof(PlayerX));
+            GameObject playerGO = new GameObject("Player" + i); //, typeof(PlayerXClient));
             playerGO.transform.SetParent(playersParentGO.transform);
-            //playerGO.AddComponent<PlayerX>();
-            
-            players[i] = playerGO.GetComponent<PlayerX>();
-            players[i].playerName = playerNames[i];
-            players[i].playerId = i;
-            Debug.Log("Player " + i + " name set to: " + players[i].playerName);
         }
 
-        inputManager.activePlayer = players[currentPlayerIndex];
+        //inputManager.activePlayerId = gameStateServer.GetActivePlayerNumber();
 
-        //drawPileTop = InstantiateCardObjectFromPOD(gameStateScript.serverDrawPile[0], drawPileDefaultPosition, cardState.drawPile);
-        drawPileTop = InstantiateCardObjectFromPOD(new CardPOD(), drawPileDefaultPosition, cardState.drawPile, -1);
+        //drawPileTop = InstantiateCardObjectFromPOD(gameStateServer.serverDrawPile[0], drawPileDefaultPosition, CardState.drawPile);
 
-        DealCardsToPlayers();
+        // This card object is special and doesn't need to be tracked as an 'in-play' card - it only sits on 'top' of the draw pile
+        drawPileTop = InstantiateCardObjectFromPOD(new CardPODClient(), drawPileDefaultPosition, CardState.drawPile, -1);
+
+        // This will call GameStateClient.InitGameStateClient() which will result in a log-error.
+        // Not sure how I should do the order of calls as I need gameStateClient setup
+        serverDispatch.StartHotseatGame(playerIds, playerNames);
+
         //TurnStart();
     }
 
@@ -352,47 +390,14 @@ public class GameManager : MonoBehaviour
             cardsInPlay.Clear();
             cardsInPlay = null;
         }
-        DestroyPlayers();
-        gameStateScript.Cleanup();
+        gameStateServer.Cleanup();
+        GameStateClient.CleanupClients();
         currentMultiplayerMode = MultiplayerMode.Disconnected;
     }
 
-    public PlayerX GetActivePlayer()
+    void SetDrawPileTopCard(CardColor color)
     {
-        return players[currentPlayerIndex];
-    }
-
-    public PlayerX GetPlayerByID(int playerID)
-    {
-        if (playerID < 0 || playerID >= totalPlayers)
-        {
-            Debug.LogError("GameManager->GetPlayerByID(): Invalid playerID " + playerID);
-            return null;
-        }
-        return players[playerID];
-    }
-
-    public List<PlayerX> GetActivePlayers()
-    {
-        List<PlayerX> activePlayers = new List<PlayerX>();
-        for (int i = 0; i < totalPlayers; i++)
-        {
-            activePlayers.Add(players[i]);
-        }
-        return activePlayers;
-    }
-
-    void DestroyPlayers()
-    {
-        for (int i = 0; i < 5; i++)
-        {
-            players[i] = null;
-        }
-    }
-
-    void SetDrawPileTopCard()
-    {
-        if (gameStateScript.serverDrawPile.Count == 0)
+        if (gameStateServer.GetDrawPileCount() == 0)
         {
             if (drawPileTop != null)
             {
@@ -402,46 +407,136 @@ public class GameManager : MonoBehaviour
             Debug.LogWarning("SetDrawPileTopCard: draw pile empty!");
             return;
         }
-        CardPOD topPOD = gameStateScript.serverDrawPile[0];
+        CardPODClient topPOD = new CardPODClient();
+        // topPOD.cardID = ownerPlayerID = -1; // defaults
+        topPOD.color = color;
         drawPileTop.SetCardPOD(topPOD);
-        drawPileTop.cardPOD.state = cardState.drawPile;
+        drawPileTop.cardPOD.state = CardState.drawPile;
         return;
     }
-
-    void DealCardsToPlayers()
+    void SetDrawPileTopCard()
     {
-        const int CARDS_PER_PLAYER = 6;
-        for (int p = 0; p < totalPlayers; p++)
+        SetDrawPileTopCard(gameStateServer.PeekTopDrawCard().GetFacingColor());
+    }
+
+    //[Rpc(SendTo.Server)]
+    //[Rpc(SendTo.NotServer)]
+    //[Rpc(SendTo.ClientsAndHost)]
+
+    //[ClientRpc]
+
+    public void ShowOpponentFullHandClient(int playerNum, CardPODClient[] hand)
+    {
+        // Show opponent's full hand to local player
+        DealFullHandClient(playerNum, hand, true);
+    }
+
+    public void DealAllHandsClientFromState()
+    {
+        for (int playerNum = 0; playerNum < GameStateClient.GetTotalPlayers(); playerNum++)
         {
-            List<CardObject> dealtCards = DrawCardsAsObjects(CARDS_PER_PLAYER, p, true);
-            if (dealtCards == null)
+            var hand = GameStateClient.CurrentGameStateClient.GetPlayerByNumber(playerNum).hand;
+            //! Can't create cardObjects for other players, just cardPODs
+            CardObject[] cardObjects = new CardObject[6];
+
+            int ownerPlayerID = GameStateClient.CurrentGameStateClient.GetPlayerIDByNumber(playerNum);;
+
+            for (int i = 0; i < hand.Length; i++)
             {
-                Debug.LogError("GameManager->DealCardsToPlayers(): Failed to draw cards for Player " + p);
-                return;
-            }
-            for (int c = 0; c < CARDS_PER_PLAYER; c++)
-            {
+                cardObjects[i] = CardObjectFromPODClient(ownerPlayerID, hand[i].Clone());
                 // Set card position to player position
-                dealtCards[c].SetLocalPosition(playerPositions[p] + cardHolderOffset * c);
+                cardObjects[i].SetLocalPosition(playerPositions[playerNum] + cardHolderOffset * i);
                 // Slight offset for visibility
-                dealtCards[c].SetSortingOrder(50);
+                cardObjects[i].SetSortingOrder(50);
                 // Set card state to playerHolder
-                dealtCards[c].cardPOD.state = cardState.playerHolder;
-                if (p != currentPlayerIndex)
-                {
-                    // other players cards show back side to current player
-                    // !Need to flip these back when another player becomes current player!!
-                    dealtCards[c].FlipCard();
-                }
-                players[p].hand[c] = dealtCards[c];
-                players[p].hand[c].cardPOD.ownerPlayerID = p;
-                // For now, just add to cardsInPlay list
-                //cardsInPlay.Add(dealtCards[c]);
+                cardObjects[i].cardPOD.state = CardState.playerHolder;
             }
         }
     }
 
-    private CardObject InstantiateCardObjectFromPOD(CardPOD cardPOD, Vector3 position, cardState newState = cardState.playerHolder, int playerID = -1)
+    // Client-side
+    public void DealFullHandClient(int playerNum, CardPODClient[] hand, bool bOpponent = false)
+    {
+        if (hand.Length != 6)
+        {
+            Debug.LogError("GameManager->SetLocalPlayerHand(): hand length is not 6!");
+            return;
+        }
+        // Ignoring hand that is not the active player (unless bOpponent is true, which means show opponent's deck)
+        if (playerNum != GameStateClient.GetActivePlayerNumber())
+        {
+            if (!bOpponent)
+            {
+                Debug.Log("GameManager->SetLocalPlayerHand(): ownerPlayerID does not match local active player ID! & bOpponent is false, so ignoring.");
+                return;
+            }
+        }
+        // ownerPlayerId DOES match active player, so we will NOT show what opponent sees
+        else if (bOpponent)
+        {
+            Debug.Log("GameManager->SetLocalPlayerHand(): Cannot show opponent deck for local active player!");
+            return;
+        }
+
+        //! Can't create cardObjects for other players, just cardPODs
+        CardObject[] cardObjects = new CardObject[6];
+
+        int ownerPlayerID = GameStateClient.CurrentGameStateClient.GetPlayerIDByNumber(playerNum);;
+
+        for (int i = 0; i < hand.Length; i++)
+        {
+            cardObjects[i] = CardObjectFromPODClient(ownerPlayerID, hand[i].Clone());
+            // Set card position to player position
+            cardObjects[i].SetLocalPosition(playerPositions[playerNum] + cardHolderOffset * i);
+            // Slight offset for visibility
+            cardObjects[i].SetSortingOrder(50);
+            // Set card state to playerHolder
+            cardObjects[i].cardPOD.state = CardState.playerHolder;
+
+            //gameStateClient.playersClient[playerNum].hand[i] = cardObjects[i].cardPOD;
+        }
+        // Animate from deck to player/position (?)
+        //GameStateClient.CurrentGameStateClient.SetCardsForPlayer(playerNum, hand);
+    }
+
+    public void StartPlayerTurnClient(int playerNum, int playerId, TurnAction availableActions)
+    {
+        Debug.Log("GameManager->StartPlayerTurnClient(): Player " + playerId + "'s turn started.");
+        //StartTurnClient(playerId, availableActions);
+    }
+
+    public void ClearObjectsInPlay()
+    {
+        if (cardsInPlay != null)
+        {
+            foreach (CardObject card in cardsInPlay)
+            {
+                if (card != null)
+                {
+                    Destroy(card.gameObject);
+                }
+            }
+            cardsInPlay.Clear();
+        }
+    }
+
+    public void EndTurnClient()
+    {
+        //gameStateServer.isClientTurn = false;
+        // Notify server that turn is ending
+        //EndTurnServerRpc();
+
+    }
+    //[Rpc(SendTo.Server)]
+    //[ServerRpc]
+    void EndTurnServerRpc()
+    {
+        //gameStateServer.EndTurnServer();
+    }
+
+
+#region Client-Side
+    private CardObject InstantiateCardObjectFromPOD(CardPODClient cardPOD, Vector3 position, CardState newState = CardState.playerHolder, int playerID = -1)
     {
         if (deckParentGO == null)
         {
@@ -463,96 +558,13 @@ public class GameManager : MonoBehaviour
 
         return cardObject;
     }
+#endregion
 
-    // Draw a single card from the draw pile
-    // (needs to be expanded for player id (optional for hotseat?) and multiplayer sync)
-    public CardObject DrawCardAsObject(int playerID, bool ignorePlayerId = false)
+    public CardObject CardObjectFromPODClient(int playerID, CardPODClient cardPOD)
     {
-       if (!ignorePlayerId && playerID > 0 && currentPlayerIndex != playerID)
-        {
-            Debug.LogError("GameManager->DrawCardsAsObjects(): It's not Player " + playerID + "'s turn!");
-            return null;
-        }
-        if (currentMultiplayerMode == MultiplayerMode.Disconnected)
-        {
-            Debug.LogError("GameManager: DrawCard - Not in multiplayer mode!");
-            return null;
-        }
-        if (currentMultiplayerMode == MultiplayerMode.LocalHotseat)
-        {
-            CardPOD cardPOD = gameStateScript.DrawCard();
-            CardObject cardObject = InstantiateCardObjectFromPOD(cardPOD, deckOffscreenPosition, cardState.playerHolder, playerID);
-            SetDrawPileTopCard();
-            return cardObject;
-        }
-        else
-        {
-            Debug.LogError("GameManager: DrawCard - Online multiplayer not yet implemented!");
-            return null;
-        }
+        return InstantiateCardObjectFromPOD(cardPOD, deckOffscreenPosition, CardState.playerHolder, playerID);
     }
 
-   // Draw numCards from draw pile and create local CardObjects - client side
-    public List<CardObject> DrawCardsAsObjects(int numCards, int playerID, bool ignorePlayerId = false)
-    {
-        if (!ignorePlayerId && playerID > 0 && currentPlayerIndex != playerID)
-        {
-            Debug.LogError("GameManager->DrawCardsAsObjects(): It's not Player " + playerID + "'s turn!");
-            return null;
-        }
-        if (currentMultiplayerMode == MultiplayerMode.Disconnected)
-        {
-            Debug.LogError("GameManager->DrawCardsAsObjects(): Not in multiplayer mode!");
-            return null;
-        }
-        if (currentMultiplayerMode == MultiplayerMode.LocalHotseat)
-        {
-            List<CardPOD> cardPODs = gameStateScript.DrawCards(numCards);
-
-            // endgame reached
-            if (cardPODs == null)
-                return null;
-            
-            if (deckParentGO == null)
-            {
-                deckParentGO = new GameObject("_Cards");            
-            }
-            if (cardPrefab == null)
-            {
-                cardPrefab = Resources.Load<GameObject>("Prefabs/CardPF");
-            }
-
-            List<CardObject> drawnCards = new List<CardObject>();
-            for (int i = 0; i < numCards; i++)
-            {
-                //GameObject cardGO = GameObject.Instantiate(cardPrefab, deckOffscreenPosition, Quaternion.identity, deckParentGO.transform);
-                CardObject cardObject = InstantiateCardObjectFromPOD(cardPODs[i], deckOffscreenPosition, cardState.playerHolder, playerID);
-                // and put in deckObjects list
-                drawnCards.Add(cardObject);
-            }
-            SetDrawPileTopCard();
-            return drawnCards;
-        }
-        else
-        {
-            Debug.LogError("GameManager->DrawCardsAsObjects(): Online multiplayer not yet implemented!");
-            return null;
-        }
-    }
-
-    void TurnEnd()
-    {
-        if (currentMultiplayerMode == MultiplayerMode.LocalHotseat)
-        {
-            currentPlayerIndex++;
-            if (currentPlayerIndex >= totalPlayers)
-                currentPlayerIndex = 0;
-            Debug.Log("GameManager->TurnEnd(): Current player is now Player " + currentPlayerIndex);
-            inputManager.activePlayer = players[currentPlayerIndex];
-            return;
-        }
-        //else - online mode
-    }
 
     public static void Quit()
     {
@@ -574,7 +586,7 @@ public class GameManager : MonoBehaviour
             LoadScene(Scenes.DCExperiments);
         }
         // workaround for Start() timing issue (avoiding Script Execution Order change)
-        if (currentScene == Scenes.Game && gameStateScript.serverDrawPile != null && !cardsShowing)
+        if (currentScene == Scenes.Game && gameStateServer.serverDrawPile != null && !cardsShowing)
         {
             //UpdateDrawPile();
             //DrawPileDisplayTopCard();
@@ -587,32 +599,91 @@ public class GameManager : MonoBehaviour
     void OnCardClicked(CardObject card)
     {
         AudioManager.PlaySoundAt(AudioManager.audioSourcesSO.clickCard, 1f);
-        Debug.Log("GameManager->OnCardClicked - Card clicked: " + card.gameObject.name + " currentPlayerIndex: " + currentPlayerIndex);
+        Debug.Log("GameManager->OnCardClicked - Card clicked: " + card.gameObject.name + " currentPlayerIndex: " + gameStateServer.GetActivePlayerNumber());
 
-        // !Just for testing purposes - move or flip:
-        /*if (card.cardPOD.state == cardState.drawPile)
+        if (card.cardPOD.state == CardState.playerHolder)
         {
-            var cardObject = DrawCardAsObject(currentPlayerIndex);
-            cardObject.SetLocalPosition(playerPositions[currentPlayerIndex]);
-            //moveToLocation.x += cardsMoved * 0.2f; // slight offset for visibility
-            cardObject.SetSortingOrder(cardsMoved * 10 + -100);
-            cardsMoved++;
-            cardObject.cardPOD.state = cardState.scorePile;
-        }
-        else
-            card.FlipCard();*/
-        //card.FlipCard();
-
-        if (card.cardPOD.state == cardState.playerHolder)
-        {
-            Debug.Log("Actions available: " + string.Join(", ", gameStateScript.GetAvailableActionsForCard(card.cardPOD)));
+            Debug.Log("Actions available: " + string.Join(", ", GameStateClient.CurrentGameStateClient.GetAvailableActionsForCard(card.cardPOD)));
         }
         else
         {
-            Debug.Log("Max run player 0: " + gameStateScript.GetTotalAdjacentColorCount(players[0]));
-            Debug.Log("Max run player 1: " + gameStateScript.GetTotalAdjacentColorCount(players[1]));
+            Debug.Log("Max run player 0: " + GameStateClient.GetTotalAdjacentColorCount(GameStateClient.CurrentGameStateClient.GetPlayerByNumber(0)));
+            Debug.Log("Max run player 1: " + GameStateClient.GetTotalAdjacentColorCount(GameStateClient.CurrentGameStateClient.GetPlayerByNumber(1)));
         }
     }
+
+#region Client-Server
+    /*void TurnEnd()
+    {
+        if (currentMultiplayerMode == MultiplayerMode.LocalHotseat)
+        {
+            currentPlayerIndex++;
+            if (currentPlayerIndex >= totalPlayers)
+                currentPlayerIndex = 0;
+            Debug.Log("GameManager->TurnEnd(): Current player is now Player " + currentPlayerIndex);
+            inputManager.activePlayer = players[currentPlayerIndex];
+            return;
+        }
+        //else - online mode
+    }*/
+
+
+    // Client-side
+    public void RequestFlipCard(int playerId, int cardId)
+    {
+        SendServerRpc_FlipCard(playerId, cardId);
+    }
+    // Send message to server to flip card
+    public void SendServerRpc_FlipCard(int playerId, int cardId)
+    {
+        // This calls the actual ServerRpc defined below
+        FlipCardServerRpc(playerId, cardId);
+    }
+    // Server-side
+    //[ServerRpc]
+    public void FlipCardServerRpc(int playerId, int cardId)
+    {
+        Debug.Log("GameManager->FlipCardServerRpc(): Player " + playerId + " requested flip of cardID " + cardId);
+        // Validate action
+        // CanPlayerFlipCard() // no need yet - debugging only
+        //gameStateServer.FlipCard(playerId, cardId);
+        if (true)
+        {
+            //BroadcastFlipCardClientRpc(playerId, cardId, gameStateServer.GetCardPODByID(cardId).facingOwner);
+        }
+        else
+        {
+            Debug.LogWarning("GameManager->FlipCardServerRpc(): Player " + playerId + " not allowed to flip cardID " + cardId);
+            //SendActionRejectedClientRpc(playerId, TurnAction.FlipCard, cardId);
+            return;
+        }
+    }
+
+#endregion
+    public void FlipCard(int cardID)
+    {
+        // Find the CardObject with the given cardID
+        CardObject cardToFlip = null;
+        foreach (Transform cardTransform in deckParentGO.transform)
+        {
+            CardObject cardObject = cardTransform.GetComponent<CardObject>();
+            if (cardObject != null && cardObject.cardPOD.cardID == cardID)
+            {
+                cardToFlip = cardObject;
+                break;
+            }
+        }
+
+        if (cardToFlip != null)
+        {
+            //cardToFlip.FlipCard();
+        }
+        else
+        {
+            Debug.LogError("GameManager->FlipCard(): No card found with cardID " + cardID);
+        }
+    }
+
 }
 
     /*

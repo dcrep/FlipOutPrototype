@@ -10,7 +10,9 @@ public class InputManager : MonoBehaviour
     private InputAction mouseRightClickAction;
     private InputAction mouseWheelAction;
 
-    public PlayerX activePlayer = null;
+    private InputAction numKeyAction;
+
+    //public PlayerX activePlayer = null;
 
     // UI Manager (?)
     GameObject pauseMenuPrefab = null;
@@ -43,9 +45,15 @@ public class InputManager : MonoBehaviour
         mouseWheelAction.performed += MouseWheelScrolled;
         mouseWheelAction.Enable();
 
+        numKeyAction = playerControls.Player.NumKeys;
+        numKeyAction.Enable();
+        numKeyAction.performed += NumKeyPressed;
     }
     void OnDisable()
     {
+        numKeyAction.performed -= NumKeyPressed;
+        numKeyAction.Disable();        
+
         mouseWheelAction.performed -= MouseWheelScrolled;
         mouseWheelAction.Disable();
 
@@ -97,7 +105,7 @@ public class InputManager : MonoBehaviour
         {
             return PauseMenuClose();                
         }
-        else if (GameManager.gameState == GameManager.GameState.Playing)
+        else if (GameManager.GameStatus == GameManager.GameStatus.Playing)
         {
             Debug.Log("Pause triggered!");
             if (pauseMenuPrefab != null)
@@ -127,7 +135,7 @@ public class InputManager : MonoBehaviour
     void MouseRightButtonPressed(InputAction.CallbackContext context)
     {
         //Debug.Log("Right Mouse Button Pressed");
-        if (GameManager.Instance.currentGameState != GameState.Playing)
+        if (GameManager.Instance.currentGameState != GameStatus.Playing)
             return;
         // For 2D physics (BoxCollider2D) use Physics2D. OverlapPoint with the
         // mouse position converted to world coordinates. The previous 3D
@@ -144,7 +152,7 @@ public class InputManager : MonoBehaviour
             if (hit2D.gameObject.TryGetComponent<CardObject>(out var card))
             {
                 Debug.Log("Right-clicked on card: " + card.gameObject.name);
-                card.FlipCard();
+                card.FlipCardDEBUG();
             }
         }
     }
@@ -156,7 +164,7 @@ public class InputManager : MonoBehaviour
 
     private void MouseWheelScrolled(InputAction.CallbackContext context)
     {
-        if (GameManager.Instance.currentGameState != GameState.Playing)
+        if (GameManager.Instance.currentGameState != GameStatus.Playing)
             return;
         //Debug.Log("Mouse Wheel scrolled!");
         float scrollValue = context.ReadValue<float>();
@@ -173,6 +181,61 @@ public class InputManager : MonoBehaviour
         }
         GameManager.Instance.cameraMovement.CameraZoomOnUpdate(scrollValue / 120);
         */
+    }
+
+    private void NumKeyPressed(InputAction.CallbackContext context)
+    {
+        //Debug.Log("NumKey pressed!");
+        
+        // IMPORTANT! The NumKeys in PlayerControl must be ordered 0 through 9 then Numpad 0-9
+        // 0 - 19. 0-9 are top of the keyboard, 10 - 19 are numpad
+        int keyValue = context.action.GetBindingIndexForControl(context.control);
+        
+        // NumPad key?
+        if (keyValue > 9)
+        {
+            keyValue -= 10;
+            //numpadKeyPressed = true;
+        }
+        else
+        {
+            //numpadKeyPressed = false;
+        }
+
+        //Debug.Log("NumKey pressed: " + keyValue);
+
+        if (GameManager.Instance.currentGameState == GameStatus.Playing)
+        {
+
+            if (keyValue == 1)
+            {
+                //TurnAction.Flip // flip your own or opponent's card
+            }
+            else if (keyValue == 2)
+            {
+                //TurnAction.Switch // switch 1 card with another of yours, or 1 of opponents with another of opponent's
+            }
+            else if (keyValue == 3)
+            {
+                //TurnAction.Swap1 // swap 1 of your cards with another player's
+            }
+            else if (keyValue == 4)
+            {
+                //TurnAction.Swap2 // swap 2 adjacent same-color cards of yours with another player's 2 adjacent same-color cards
+            }
+            else if (keyValue == 5)
+            {
+                //TurnAction.Score // score a set of 4 to 6 adjacent same-color cards from your hand, redraw up to 6
+            }
+            else if (keyValue == 6)
+            {
+                //TurnAction.Swipe  // score a set of 4 to 6 adjacent same-color cards from another player's hand
+            }
+            else if (keyValue == 0)
+            {
+                //
+            }
+        }
     }
 
 }
