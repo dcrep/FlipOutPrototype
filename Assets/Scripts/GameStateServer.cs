@@ -382,6 +382,21 @@ public class GameStateServer
         return cardsInPlay[serverDrawPile[0]];
     }
 
+    public CardColor PeekTopDrawCardColor()
+    {
+        if (!isServer)
+        {
+            Debug.LogError("PeekTopDrawCardColor: not server!");
+            return CardColor.invalid;
+        }
+        if (serverDrawPile.Count == 0)
+        {
+            Debug.LogError("PeekTopDrawCardColor: draw pile empty!");
+            return CardColor.invalid;
+        }
+        return cardsInPlay[serverDrawPile[0]].GetFacingColor();
+    }
+
     public int GetDrawPileCount()
     {
         if (!isServer)

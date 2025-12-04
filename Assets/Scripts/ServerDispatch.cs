@@ -23,7 +23,7 @@ public class ServerDispatch
 
         // GameStateServer initialize, prepare for new game
         gameStateServer.InitGameStateServer(playerIds, playerNames);
-        // Hotseat only:
+        // Host/hotseat
         GameStateClient.InitGameStateClient(playerIds, playerNames);
 
         StartGameServer();
@@ -51,8 +51,7 @@ public class ServerDispatch
         //StartGameServer();
     }
 
-    // GameManager should be calling this?
-    // !If not - GameManager.Instance.Cleanup() ?
+    // Call this directly
     public void EndGame()
     {
         if (!isServer)
@@ -60,6 +59,14 @@ public class ServerDispatch
             Debug.LogError("EndGameServer: not server!");
             return;
         }
+
+        FlipOutActions endGameAction = FlipOutActions.CreateEndGameAction(
+            gameStateServer.GetActivePlayer().playerId
+        );
+
+        //if (isHotseatGame) // no Hotseat check required here, if 1 client, 1 action tracked
+        GameStateClient.AddUncountedActionTakenForAll(endGameAction);
+
         Debug.Log("ServerDispatch->EndGame(): Ending game on server...");
         gameStateServer.Cleanup();
         if (isHotseatGame)
@@ -69,9 +76,12 @@ public class ServerDispatch
         }
         isServer = false;
         gameStateServer = null;
+        // if isHotseat
+        GameManager.Instance.EndGameClient();
     }
 
-    public void StartGameServer()
+    // private (called by Hotseat or Online start)
+    private void StartGameServer()
     {
         if (!isServer)
         {
@@ -86,7 +96,7 @@ public class ServerDispatch
         StartTurn();
     }
 
-    public void DealCardsToPlayers()
+    private void DealCardsToPlayers()
     {
         if (!isServer)
         {
@@ -102,6 +112,7 @@ public class ServerDispatch
             int playerId = gameStateServer.playersServer[playerNum].playerId;
 
             List<CardPODServer> cards = gameStateServer.DrawCards(6, playerId);
+            CardColor deckTopColor = gameStateServer.PeekTopDrawCardColor();
             List<CardPODClient> cardsForPlayer = new List<CardPODClient>(cards.Count);
             List<CardPODClient> cardsForOpponentViews = new List<CardPODClient>(cards.Count);
 
@@ -142,43 +153,45 @@ public class ServerDispatch
             FlipOutActions dealAction = FlipOutActions.CreateDealAction(
                 gameStateServer.playersServer[playerNum].playerId,
                 dealtCardInfos,
-                positions
+                positions, deckTopColor
             );
             FlipOutActions dealActionForOpponents = FlipOutActions.CreateDealAction(
                 gameStateServer.playersServer[playerNum].playerId,
                 dealtCardInfosForOpponents,
-                positions
+                positions, deckTopColor
             );
             // Apply to GameStateServer
             //! GameStateServer won't 'see' both sides of cards in these actions, but can lookup based on cardID
             gameStateServer.AddUncountedActionTaken(dealAction);
             gameStateServer.AssignCardsToPlayerHand(playerNum, cards, positions);
 
+            GameStateClient.AssignDeckTopCard(deckTopColor);
+
             if (isHotseatGame)
             {
-                GameStateClient.CurrentGameStateClient.AddUncountedActionTaken(dealAction);
-                GameStateClient.GetHotseatGameStateForPlayerNumber(playerNum).AssignCardsToPlayerHand(playerNum, cardsForPlayer, positions);
+                GameStateClient.GetHotseatGameStateForPlayerNumber(playerNum).AddUncountedActionTaken(dealAction);
+                GameStateClient.AddUncountedActionTakenForOpponentViews(playerNum, dealActionForOpponents);
 
+                GameStateClient.GetHotseatGameStateForPlayerNumber(playerNum).AssignCardsToPlayerHand(playerNum, cardsForPlayer, positions);
                 // Update GameStateClient for each player (static method for obvious reasons)
                 GameStateClient.AssignCardsToPlayerHandForOpponentViews(playerNum, cardsForOpponentViews, positions);
             }
             else
             {
+                // Send message server->client
                 SendCardsToPlayer(playerId, dealAction);
 
-                // opponents see opposite sides of cards
+                // opponents see opposite sides of cards (server->client message)
                 ShowDealtCardsToOpponents(playerId, dealActionForOpponents);
             }
         }
         // Draw once all hands are configured
-        if (isHotseatGame)
-        {
-            // Can do animation here as well
-            GameManager.Instance.DealAllHandsClientFromState();
-        }
+        //!No - StartTurn() will construct cards this way
+        //if (isHotseatGame) { GameManager.Instance.DealAllHandsClientFromState(); }
     }
 
-    public void SendCardsToPlayer(int playerId, FlipOutActions dealAction)
+    // Server-Client message (actions inside are when received):
+    private void SendCardsToPlayer(int playerId, FlipOutActions dealAction)
     {
         // Send to specific player only
         //GameManager.Instance.networkManager.SendFlipOutActionToPlayer(playerId, dealAction);
@@ -198,7 +211,9 @@ public class ServerDispatch
 
         GameManager.Instance.DealFullHandClient(playerNum, hand);
     }
-    public void ShowDealtCardsToOpponents(int dealtPlayerId, FlipOutActions dealActionForOpponent)
+    
+    // Server-Client message (actions inside are when received):
+    private void ShowDealtCardsToOpponents(int dealtPlayerId, FlipOutActions dealActionForOpponent)
     {
         int dealtPlayerNum = gameStateServer.GetPlayerNumberByID(dealtPlayerId);
         CardPODClient[] hand = new CardPODClient[6];
@@ -223,7 +238,8 @@ public class ServerDispatch
         }
     }
 
-    public void StartTurn()
+    // called internally:
+    private void StartTurn()
     {
         if (!isServer)
         {
@@ -237,10 +253,28 @@ public class ServerDispatch
         // Notify GameManager of new turn
         //GameManager.Instance.StartPlayerTurn(currentPlayerId);
         Debug.Log("ServerDispatch: Starting turn for player " + gameStateServer.GetActivePlayerNumber() + " (" + gameStateServer.GetActivePlayer().playerName + ")");
+
+        // This seemed unnecessary since we just log end of turns (which suggests there is a turn start next):
+        //FlipOutActions startTurnAction = FlipOutActions.CreateTurnStartAction();
+
+        GameStateClient.CurrentGameStateClient.SetActionsAvailableThisTurn(
+            gameStateServer.GetAvailableActionsForPlayer(gameStateServer.GetActivePlayer())
+        );
+
+        if (isHotseatGame)
+        {
+            GameManager.Instance.StartPlayerTurnClient(
+                gameStateServer.GetActivePlayerNumber(),
+                gameStateServer.GetActivePlayer().playerId,
+                gameStateServer.GetAvailableActionsForPlayer(gameStateServer.GetActivePlayer())
+            );
+        }
         // Notify clients of turn start?
-        GameManager.Instance.StartPlayerTurnClient(gameStateServer.GetActivePlayerNumber(), gameStateServer.GetActivePlayer().playerId, gameStateServer.GetAvailableActionsForPlayer(gameStateServer.GetActivePlayer()));
+        //GameManager.Instance.StartPlayerTurnClient(gameStateServer.GetActivePlayerNumber(), gameStateServer.GetActivePlayer().playerId, gameStateServer.GetAvailableActionsForPlayer(gameStateServer.GetActivePlayer()));
+        //SetActionsAvailableThisTurn
     }
 
+    // call directly:
     public void EndTurn()
     {
         if (!isServer)
@@ -253,12 +287,19 @@ public class ServerDispatch
         FlipOutActions endTurnAction = FlipOutActions.CreateTurnEndAction(
             gameStateServer.GetActivePlayer().playerId
         );
-        gameStateServer.AddUncountedActionTaken(endTurnAction);
-        
+
+        //if (isHotseatGame) // no Hotseat check required here, if 1 client, 1 action tracked
+        GameStateClient.AddUncountedActionTakenForAll(endTurnAction);
+
+        if (isHotseatGame)
+        {
+            GameManager.Instance.EndTurnClient();
+        }
+        //! online - any messages to clients?
+       
         int nextPlayerNum = gameStateServer.AdvanceToNextPlayer();
         if (isHotseatGame)
         {
-            GameStateClient.CurrentGameStateClient.AddUncountedActionTaken(endTurnAction);   //!propagate..
             GameStateClient.CurrentGameStateClient.AdvanceToNextPlayer();
         }
         StartTurn();

@@ -89,7 +89,7 @@ public class GameManager : MonoBehaviour
     private Vector3 deckOffscreenPosition = new Vector3(-1000, -1000, 0);
 
     GameObject cardPrefab;
-    GameObject deckParentGO;
+    GameObject cardsParentGO;
 
     [SerializeField] private CardObject drawPileTop;
 
@@ -362,20 +362,35 @@ public class GameManager : MonoBehaviour
         //drawPileTop = InstantiateCardObjectFromPOD(gameStateServer.serverDrawPile[0], drawPileDefaultPosition, CardState.drawPile);
 
         // This card object is special and doesn't need to be tracked as an 'in-play' card - it only sits on 'top' of the draw pile
-        drawPileTop = InstantiateCardObjectFromPOD(new CardPODClient(), drawPileDefaultPosition, CardState.drawPile, -1);
+        //drawPileTop = InstantiateCardObjectFromPOD(new CardPODClient(), drawPileDefaultPosition, CardState.drawPile, -1);
+        
+        //drawPileTop.transform.SetParent(null);
 
         // This will call GameStateClient.InitGameStateClient() which will result in a log-error.
         // Not sure how I should do the order of calls as I need gameStateClient setup
         serverDispatch.StartHotseatGame(playerIds, playerNames);
-
+        SetDrawPileTopCard(GameStateClient.GetDeckTopCardColor());
         //TurnStart();
     }
 
-    void EndGame()
+    public void EndGameClient()
     {
-        Debug.Log("GameManager->EndGame()");
+        Debug.Log("GameManager->EndGameClient()");
         EndGameCleanup();
         //LoadScene(Scenes.GameOver);
+    }
+
+    public void EndTurnClient()
+    {
+        Debug.Log("GameManager->EndTurnClient()");
+        
+        if (currentMultiplayerMode == MultiplayerMode.LocalHotseat)
+        {
+            // Clear board
+            // (draw pile top card?)
+            // Clear cards in play
+            ClearObjectsInPlay();
+        }
     }
 
     void EndGameCleanup()
@@ -397,26 +412,31 @@ public class GameManager : MonoBehaviour
 
     void SetDrawPileTopCard(CardColor color)
     {
-        if (gameStateServer.GetDrawPileCount() == 0)
+        if (color == CardColor.invalid)
         {
+            Debug.LogWarning("GameManager->SetDrawPileTopCard(): color is invalid, removing drawPileTop card.");
             if (drawPileTop != null)
             {
                 Destroy(drawPileTop.gameObject);
                 drawPileTop = null;
             }
-            Debug.LogWarning("SetDrawPileTopCard: draw pile empty!");
             return;
         }
+        //else
+
         CardPODClient topPOD = new CardPODClient();
         // topPOD.cardID = ownerPlayerID = -1; // defaults
         topPOD.color = color;
-        drawPileTop.SetCardPOD(topPOD);
-        drawPileTop.cardPOD.state = CardState.drawPile;
+        if (drawPileTop == null)
+        {
+            drawPileTop = InstantiateCardObjectFromPOD(topPOD, drawPileDefaultPosition, CardState.drawPile, -1);
+        }
+        else
+        {
+            drawPileTop.SetCardPOD(topPOD);
+            drawPileTop.cardPOD.state = CardState.drawPile;
+        }
         return;
-    }
-    void SetDrawPileTopCard()
-    {
-        SetDrawPileTopCard(gameStateServer.PeekTopDrawCard().GetFacingColor());
     }
 
     //[Rpc(SendTo.Server)]
@@ -452,6 +472,7 @@ public class GameManager : MonoBehaviour
                 cardObjects[i].cardPOD.state = CardState.playerHolder;
             }
         }
+        SetDrawPileTopCard(GameStateClient.GetDeckTopCardColor());
     }
 
     // Client-side
@@ -495,6 +516,7 @@ public class GameManager : MonoBehaviour
 
             //gameStateClient.playersClient[playerNum].hand[i] = cardObjects[i].cardPOD;
         }
+        SetDrawPileTopCard(GameStateClient.GetDeckTopCardColor());
         // Animate from deck to player/position (?)
         //GameStateClient.CurrentGameStateClient.SetCardsForPlayer(playerNum, hand);
     }
@@ -502,6 +524,13 @@ public class GameManager : MonoBehaviour
     public void StartPlayerTurnClient(int playerNum, int playerId, TurnAction availableActions)
     {
         Debug.Log("GameManager->StartPlayerTurnClient(): Player " + playerId + "'s turn started.");
+        // This should be done at TurnEnd:
+        //ClearObjectsInPlay();
+
+        if (currentMultiplayerMode == MultiplayerMode.LocalHotseat)
+        {
+            DealAllHandsClientFromState();
+        }
         //StartTurnClient(playerId, availableActions);
     }
 
@@ -518,36 +547,32 @@ public class GameManager : MonoBehaviour
             }
             cardsInPlay.Clear();
         }
+        Destroy(cardsParentGO);
+        cardsParentGO = null;
+        drawPileTop = null;
     }
 
-    public void EndTurnClient()
+    public void EndPlayerTurnClient()
     {
-        //gameStateServer.isClientTurn = false;
-        // Notify server that turn is ending
-        //EndTurnServerRpc();
+        Debug.Log("GameManager->EndPlayerTurnClient()");
+        ClearObjectsInPlay();
 
-    }
-    //[Rpc(SendTo.Server)]
-    //[ServerRpc]
-    void EndTurnServerRpc()
-    {
-        //gameStateServer.EndTurnServer();
     }
 
 
 #region Client-Side
     private CardObject InstantiateCardObjectFromPOD(CardPODClient cardPOD, Vector3 position, CardState newState = CardState.playerHolder, int playerID = -1)
     {
-        if (deckParentGO == null)
+        if (cardsParentGO == null)
         {
-            deckParentGO = new GameObject("_Cards");            
+            cardsParentGO = new GameObject("_Cards");            
         }
         if (cardPrefab == null)
         {
             cardPrefab = Resources.Load<GameObject>("Prefabs/CardPF");
         }
 
-        GameObject cardGO = GameObject.Instantiate(cardPrefab, position, Quaternion.identity, deckParentGO.transform);
+        GameObject cardGO = GameObject.Instantiate(cardPrefab, position, Quaternion.identity, cardsParentGO.transform);
         
         CardObject cardObject = cardGO.GetComponent<CardObject>();
 
@@ -664,7 +689,7 @@ public class GameManager : MonoBehaviour
     {
         // Find the CardObject with the given cardID
         CardObject cardToFlip = null;
-        foreach (Transform cardTransform in deckParentGO.transform)
+        foreach (Transform cardTransform in cardsParentGO.transform)
         {
             CardObject cardObject = cardTransform.GetComponent<CardObject>();
             if (cardObject != null && cardObject.cardPOD.cardID == cardID)

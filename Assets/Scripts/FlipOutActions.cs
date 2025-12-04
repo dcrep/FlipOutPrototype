@@ -33,14 +33,14 @@ public class FlipOutActions
 
     public int playerTakingActionId = -1;
     public int playerTargetId = -1;
-    
+
     //int[] cardSourceIds = null;
     //int[] cardDestIds = null;
     public CardActionInfo[] cardSourceInfos = null;
     public CardActionInfo[] cardDestInfos = null;
     public int[] positions = null;
 
-    static public FlipOutActions CreateDealAction(int playerTargetId, CardActionInfo[] cardInfos, int[] positions)
+    static public FlipOutActions CreateDealAction(int playerTargetId, CardActionInfo[] cardInfos, int[] positions, CardColor deckTopColor)
     {
         if (cardInfos.Length != positions.Length)
         {
@@ -51,6 +51,7 @@ public class FlipOutActions
         action.actionTaken = FlipOutAction.Deal;
         action.playerTargetId = playerTargetId;
         action.cardSourceInfos = cardInfos;
+        action.cardDestInfos = new CardActionInfo[] { new() { cardID = -1, cardColor = deckTopColor } }; // deck top info
         action.positions = positions;
         return action;
     }

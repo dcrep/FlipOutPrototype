@@ -40,6 +40,12 @@ public class GameStateClient
     private int currentPlayerActionsTaken = 0;
     public static List<FlipOutActions> actionsTakenFull = new List<FlipOutActions>();
 
+    private int actionsTakenListLastIndex = 0;
+
+    TurnAction actionsAvailableThisTurn = TurnAction.None;
+
+    public static CardColor deckTopCardColor = CardColor.invalid;
+
 #endregion
 
    // Client-side initialization
@@ -57,6 +63,7 @@ public class GameStateClient
             hotseatGameStates[i].localPlayerNumber = i;
             hotseatGameStates[i].AssignPlayersClient(playerIds, playerNames);
             hotseatGameStates[i].currentPlayerActionsTaken = 0;
+            hotseatGameStates[i].actionsTakenListLastIndex = 0;
         }
 
         CurrentGameStateClient = hotseatGameStates[0];
@@ -75,6 +82,7 @@ public class GameStateClient
                 hotseatGameStates[i].CleanupClient();
                 hotseatGameStates[i].DestroyPlayers();
                 hotseatGameStates[i].currentPlayerActionsTaken = 0;
+                hotseatGameStates[i].actionsTakenListLastIndex = 0;
             }
         }
         CurrentGameStateClient = hotseatGameStates[0];
@@ -122,6 +130,16 @@ public class GameStateClient
     public void AddUncountedActionTaken(FlipOutActions action)
     {
         actionsTakenFull.Add(action);
+        //actionsTakenListLastIndex++;  // set at AdvanceToNextPlayer()
+    }
+
+    public static void AddUncountedActionTakenForAll(FlipOutActions action)
+    {
+        for (int playerIdx = 0; playerIdx < totalPlayers; playerIdx++)
+        {
+            Debug.Log("AddUncountedActionTakenForAll: adding uncounted action (" + action.actionTaken.ToString() + ") for player " + playerIdx);
+            hotseatGameStates[playerIdx].AddUncountedActionTaken(action);
+        }
     }
 
     public void AddPlayerActionTaken(int playerNum, FlipOutActions action)
@@ -139,6 +157,30 @@ public class GameStateClient
         actionsTakenFull.Add(action);
         // Could track per-player actions if needed
         currentPlayerActionsTaken++;
+        //actionsTakenListLastIndex++;  // set at AdvanceToNextPlayer()
+    }
+
+    public static void AddPlayerActionTakenForOpponentViews(int playerNum, FlipOutActions action, bool isUncounted)
+    {
+        for (int playerIdx = 0; playerIdx < totalPlayers; playerIdx++)
+        {
+            if (playerIdx != playerNum)
+            {
+                Debug.Log("AddPlayerActionTakenForOpponentViews: adding action (" + action.actionTaken.ToString() + ") for player " + playerIdx + " view of player " + playerNum);
+                if (isUncounted)
+                {
+                    hotseatGameStates[playerIdx].AddUncountedActionTaken(action);
+                }
+                else
+                {
+                    hotseatGameStates[playerIdx].AddPlayerActionTaken(playerIdx, action);
+                }
+            }
+        }
+    }
+    public static void AddUncountedActionTakenForOpponentViews(int playerNum, FlipOutActions action)
+    {
+        AddPlayerActionTakenForOpponentViews(playerNum, action, true);
     }
 
     public int GetCurrentPlayerActionsTaken()
@@ -194,12 +236,46 @@ public class GameStateClient
         }
     }
 
+    public static void AssignDeckTopCard(CardColor cardColor)
+    {
+        deckTopCardColor = cardColor;
+    }
+    public static CardColor GetDeckTopCardColor()
+    {
+        return deckTopCardColor;
+    }
+
+    public void SetActionsAvailableThisTurn(TurnAction actions)
+    {
+        actionsAvailableThisTurn = actions;
+    }
+    public TurnAction GetActionsAvailableThisTurn()
+    {
+        return actionsAvailableThisTurn;
+    }
+
     public int AdvanceToNextPlayer()
     {
         currentPlayerIndex = (currentPlayerIndex + 1) % totalPlayers;
         currentPlayerActionsTaken = 0;
+        //! -1?
+        actionsTakenListLastIndex = actionsTakenFull.Count;
         CurrentGameStateClient = hotseatGameStates[currentPlayerIndex];
         return currentPlayerIndex;
+    }
+
+    public List<FlipOutActions> GetListOfActionsSinceLastTurn()
+    {
+        //! -1?
+        if (actionsTakenListLastIndex < actionsTakenFull.Count)
+        {
+            int actionsToGet = actionsTakenFull.Count - actionsTakenListLastIndex;
+            return actionsTakenFull.GetRange(actionsTakenListLastIndex, actionsToGet);
+        }
+        else
+        {
+            return new List<FlipOutActions>();
+        }
     }
 
     public static GameStateClient GetHotseatGameStateForPlayerNumber(int localPlayerNum)

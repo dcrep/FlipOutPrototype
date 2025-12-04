@@ -234,6 +234,7 @@ public class InputManager : MonoBehaviour
             else if (keyValue == 0)
             {
                 //
+                GameManager.Instance.serverDispatch.EndTurn();
             }
         }
     }

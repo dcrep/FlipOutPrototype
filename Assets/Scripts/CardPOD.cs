@@ -1,7 +1,7 @@
 using UnityEngine;
 
 public enum CardState { invalid, drawPile, playerHolder, scorePile }
-public enum CardColor { red, green, blue, purple, yellow }
+public enum CardColor { red, green, blue, purple, yellow , invalid }
 public enum CardFace { sideA, sideB }
 
 // Data container for CardObject
