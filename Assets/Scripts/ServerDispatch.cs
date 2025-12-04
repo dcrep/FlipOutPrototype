@@ -387,7 +387,9 @@ public class ServerDispatch
             );
 
             //GameManager.Instance.FlipCardClient(cardId, oppositeSideInfo.cardColor);
-            FlipOutActions.ActOnFlipOutActionForCurrentPlayer(flipAction);
+            //FlipOutActions.ActOnFlipOutActionForCurrentPlayer(flipAction);
+            //GameStateClient.CurrentGameStateClient.ClearActionsSinceLastTurn();
+            FlipOutActions.ActOnFlipOutActionsForCurrentPlayer();
         }
         else
         {

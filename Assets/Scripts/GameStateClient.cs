@@ -276,16 +276,14 @@ public class GameStateClient
 
     public List<FlipOutActions> GetListOfActionsSinceLastTurn()
     {
-        //! -1?
-        if (actionsTakenListLastIndex < actionsTakenFull.Count)
-        {
-            int actionsToGet = actionsTakenFull.Count - actionsTakenListLastIndex;
-            return actionsTakenFull.GetRange(actionsTakenListLastIndex, actionsToGet);
-        }
-        else
-        {
-            return new List<FlipOutActions>();
-        }
+        return actionsTakenFull;
+    }
+
+    public void ClearActionsSinceLastTurn()
+    {
+        actionsTakenFull.Clear();
+        Debug.Log("ClearActionsSinceLastTurn: cleared actions taken list; count is now " + actionsTakenFull.Count);
+        actionsTakenListLastIndex = 0;
     }
 
     public static GameStateClient GetHotseatGameStateForPlayerNumber(int localPlayerNum)

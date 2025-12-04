@@ -217,6 +217,8 @@ public class FlipOutActions
             Debug.Log("ActOnFlipOutActionsForCurrentPlayer: Action " + i + " is " + listofActions[i].actionTaken.ToString());
             ActOnFlipOutActionForCurrentPlayer(listofActions[i]); 
         }
+
+        GameStateClient.CurrentGameStateClient.ClearActionsSinceLastTurn();
     }
 
 }
