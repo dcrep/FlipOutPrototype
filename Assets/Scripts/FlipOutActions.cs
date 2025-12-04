@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 [Flags]
@@ -56,13 +57,14 @@ public class FlipOutActions
         return action;
     }
 
-    static public FlipOutActions CreateFlipAction(int playerTakingActionId, int playerTargetId, CardActionInfo cardInfo)
+    static public FlipOutActions CreateFlipAction(int playerTakingActionId, int playerTargetId, CardActionInfo cardInfo, CardActionInfo oppositeSideInfo)
     {
         FlipOutActions action = new FlipOutActions();
         action.actionTaken = FlipOutAction.Flip;
         action.playerTakingActionId = playerTakingActionId;
         action.playerTargetId = playerTargetId;
         action.cardSourceInfos = new CardActionInfo[] { cardInfo };
+        action.cardDestInfos = new CardActionInfo[] { oppositeSideInfo };
         return action;
     }
 
@@ -149,6 +151,72 @@ public class FlipOutActions
         action.actionTaken = FlipOutAction.EndGame;
         action.playerTakingActionId = playerTakingActionId;
         return action;
+    }
+
+
+    static public void ActOnFlipOutActionForCurrentPlayer(FlipOutActions action)
+    {
+        Debug.Log("ActOnFlipOutActionForCurrentPlayer: Acting on action " + action.actionTaken.ToString() + " for current player.");
+
+           switch (action.actionTaken)
+            {
+                case FlipOutAction.Flip:
+                    GameManager.Instance.FlipCardClient(action.cardDestInfos[0].cardID, action.cardDestInfos[0].cardColor);
+                    break;
+                case FlipOutAction.Switch:
+                    // Do something for switch
+                    break;
+                case FlipOutAction.Swap1:
+                    // Do something for swap1
+                    break;
+                case FlipOutAction.Swap2:
+                    // Do something for swap2
+                    break;
+                case FlipOutAction.Score:
+                    // Do something for score
+                    break;
+                case FlipOutAction.Swipe:
+                    // Do something for swipe
+                    break;
+                case FlipOutAction.Deal:
+                    List<CardPODClient> dealtCards = new List<CardPODClient>();
+                    for (int j = 0; j < action.cardSourceInfos.Length; j++)
+                    {
+                        CardPODClient cardPOD = new CardPODClient
+                        {
+                            cardID = action.cardSourceInfos[j].cardID,
+                            color = action.cardSourceInfos[j].cardColor,
+                            state = CardState.playerHolder,
+                            ownerPlayerID = action.playerTargetId
+                        };
+                        dealtCards.Add(cardPOD);
+                    }
+                    GameStateClient.CurrentGameStateClient.AssignCardsToPlayerHand(
+                        action.playerTargetId,
+                        dealtCards,
+                        action.positions);
+                    break;
+                case FlipOutAction.TurnEnd:
+                    break;
+                case FlipOutAction.EndGame:
+                    break;
+                default:
+                    Debug.LogWarning("ActOnFlipOutActionsForCurrentPlayer: Unknown action encountered.");
+                    break;
+            }
+    }
+
+
+    static public void ActOnFlipOutActionsForCurrentPlayer()
+    {
+        List<FlipOutActions> listofActions = GameStateClient.CurrentGameStateClient.GetListOfActionsSinceLastTurn();
+        Debug.Log("ActOnFlipOutActionsForCurrentPlayer: Acting on " + listofActions.Count + " actions for current player.");
+
+        for (int i = 0; i < listofActions.Count; i++)
+        {
+            Debug.Log("ActOnFlipOutActionsForCurrentPlayer: Action " + i + " is " + listofActions[i].actionTaken.ToString());
+            ActOnFlipOutActionForCurrentPlayer(listofActions[i]); 
+        }
     }
 
 }

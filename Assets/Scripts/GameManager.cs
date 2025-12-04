@@ -93,7 +93,7 @@ public class GameManager : MonoBehaviour
 
     [SerializeField] private CardObject drawPileTop;
 
-    List<CardObject> cardsInPlay;
+    [SerializeField] private List<CardObject> cardsInPlay;
 
     // Debugging purposes
     //Vector3 moveToPosition = new Vector3(1, 1, 0);
@@ -289,6 +289,52 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public static void Quit()
+    {
+#if UNITY_EDITOR
+        EditorApplication.ExitPlaymode();
+#else
+        Application.Quit(); // For standalone builds
+#endif
+        Debug.Log("Player Has Quit the Game");
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        // Quick test: press L to load the configured scene
+        if (Input.GetKeyDown(KeyCode.L))
+        {
+            //LoadScene("xDCExperiments");
+            LoadScene(Scenes.DCExperiments);
+        }
+        // workaround for Start() timing issue (avoiding Script Execution Order change)
+        if (currentScene == Scenes.Game && gameStateServer.serverDrawPile != null && !cardsShowing)
+        {
+            //UpdateDrawPile();
+            //DrawPileDisplayTopCard();
+            cardsShowing = true;
+        }
+    }
+
+
+    // Called when a card is clicked - responds based on player turn, action, etc.
+    void OnCardClicked(CardObject card)
+    {
+        AudioManager.PlaySoundAt(AudioManager.audioSourcesSO.clickCard, 1f);
+        Debug.Log("GameManager->OnCardClicked - Card clicked: " + card.gameObject.name + " currentPlayerIndex: " + gameStateServer.GetActivePlayerNumber());
+
+        if (card.cardPOD.state == CardState.playerHolder)
+        {
+            Debug.Log("Actions available: " + string.Join(", ", GameStateClient.CurrentGameStateClient.GetAvailableActionsForCard(card.cardPOD)));
+        }
+        else
+        {
+            Debug.Log("Max run player 0: " + GameStateClient.GetTotalAdjacentColorCount(GameStateClient.CurrentGameStateClient.GetPlayerByNumber(0)));
+            Debug.Log("Max run player 1: " + GameStateClient.GetTotalAdjacentColorCount(GameStateClient.CurrentGameStateClient.GetPlayerByNumber(1)));
+        }
+    }
+
    // Called by NetworkManager when online game is ready to start (?)
     void StartOnlineGame(int[] playerIds, string[] playerNames)
     {
@@ -372,6 +418,8 @@ public class GameManager : MonoBehaviour
         SetDrawPileTopCard(GameStateClient.GetDeckTopCardColor());
         //TurnStart();
     }
+
+    #region Methods-dispatched-to
 
     public void EndGameClient()
     {
@@ -463,7 +511,7 @@ public class GameManager : MonoBehaviour
 
             for (int i = 0; i < hand.Length; i++)
             {
-                cardObjects[i] = CardObjectFromPODClient(ownerPlayerID, hand[i].Clone());
+                cardObjects[i] = CardObjectFromPODClient(ownerPlayerID, hand[i]); //.Clone());
                 // Set card position to player position
                 cardObjects[i].SetLocalPosition(playerPositions[playerNum] + cardHolderOffset * i);
                 // Slight offset for visibility
@@ -506,7 +554,7 @@ public class GameManager : MonoBehaviour
 
         for (int i = 0; i < hand.Length; i++)
         {
-            cardObjects[i] = CardObjectFromPODClient(ownerPlayerID, hand[i].Clone());
+            cardObjects[i] = CardObjectFromPODClient(ownerPlayerID, hand[i]);  //.Clone());
             // Set card position to player position
             cardObjects[i].SetLocalPosition(playerPositions[playerNum] + cardHolderOffset * i);
             // Slight offset for visibility
@@ -529,7 +577,18 @@ public class GameManager : MonoBehaviour
 
         if (currentMultiplayerMode == MultiplayerMode.LocalHotseat)
         {
-            DealAllHandsClientFromState();
+            if (GameStateClient.CurrentGameStateClient.handsDealt)
+            {
+                DealAllHandsClientFromState();
+                FlipOutActions.ActOnFlipOutActionsForCurrentPlayer();
+            }
+            else
+            {
+                FlipOutActions.ActOnFlipOutActionsForCurrentPlayer();
+                DealAllHandsClientFromState();
+                GameStateClient.CurrentGameStateClient.handsDealt = true;
+            }
+            
         }
         //StartTurnClient(playerId, availableActions);
     }
@@ -559,8 +618,6 @@ public class GameManager : MonoBehaviour
 
     }
 
-
-#region Client-Side
     private CardObject InstantiateCardObjectFromPOD(CardPODClient cardPOD, Vector3 position, CardState newState = CardState.playerHolder, int playerID = -1)
     {
         if (cardsParentGO == null)
@@ -581,9 +638,11 @@ public class GameManager : MonoBehaviour
         cardPOD.ownerPlayerID = playerID;
         cardObject.SetCardPOD(cardPOD);
 
+        cardsInPlay.Add(cardObject);
+
         return cardObject;
     }
-#endregion
+
 
     public CardObject CardObjectFromPODClient(int playerID, CardPODClient cardPOD)
     {
@@ -591,105 +650,11 @@ public class GameManager : MonoBehaviour
     }
 
 
-    public static void Quit()
-    {
-#if UNITY_EDITOR
-        EditorApplication.ExitPlaymode();
-#else
-        Application.Quit(); // For standalone builds
-#endif
-        Debug.Log("Player Has Quit the Game");
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        // Quick test: press L to load the configured scene
-        if (Input.GetKeyDown(KeyCode.L))
-        {
-            //LoadScene("xDCExperiments");
-            LoadScene(Scenes.DCExperiments);
-        }
-        // workaround for Start() timing issue (avoiding Script Execution Order change)
-        if (currentScene == Scenes.Game && gameStateServer.serverDrawPile != null && !cardsShowing)
-        {
-            //UpdateDrawPile();
-            //DrawPileDisplayTopCard();
-            cardsShowing = true;
-        }
-    }
-
-
-    // Called when a card is clicked - responds based on player turn, action, etc.
-    void OnCardClicked(CardObject card)
-    {
-        AudioManager.PlaySoundAt(AudioManager.audioSourcesSO.clickCard, 1f);
-        Debug.Log("GameManager->OnCardClicked - Card clicked: " + card.gameObject.name + " currentPlayerIndex: " + gameStateServer.GetActivePlayerNumber());
-
-        if (card.cardPOD.state == CardState.playerHolder)
-        {
-            Debug.Log("Actions available: " + string.Join(", ", GameStateClient.CurrentGameStateClient.GetAvailableActionsForCard(card.cardPOD)));
-        }
-        else
-        {
-            Debug.Log("Max run player 0: " + GameStateClient.GetTotalAdjacentColorCount(GameStateClient.CurrentGameStateClient.GetPlayerByNumber(0)));
-            Debug.Log("Max run player 1: " + GameStateClient.GetTotalAdjacentColorCount(GameStateClient.CurrentGameStateClient.GetPlayerByNumber(1)));
-        }
-    }
-
-#region Client-Server
-    /*void TurnEnd()
-    {
-        if (currentMultiplayerMode == MultiplayerMode.LocalHotseat)
-        {
-            currentPlayerIndex++;
-            if (currentPlayerIndex >= totalPlayers)
-                currentPlayerIndex = 0;
-            Debug.Log("GameManager->TurnEnd(): Current player is now Player " + currentPlayerIndex);
-            inputManager.activePlayer = players[currentPlayerIndex];
-            return;
-        }
-        //else - online mode
-    }*/
-
-
-    // Client-side
-    public void RequestFlipCard(int playerId, int cardId)
-    {
-        SendServerRpc_FlipCard(playerId, cardId);
-    }
-    // Send message to server to flip card
-    public void SendServerRpc_FlipCard(int playerId, int cardId)
-    {
-        // This calls the actual ServerRpc defined below
-        FlipCardServerRpc(playerId, cardId);
-    }
-    // Server-side
-    //[ServerRpc]
-    public void FlipCardServerRpc(int playerId, int cardId)
-    {
-        Debug.Log("GameManager->FlipCardServerRpc(): Player " + playerId + " requested flip of cardID " + cardId);
-        // Validate action
-        // CanPlayerFlipCard() // no need yet - debugging only
-        //gameStateServer.FlipCard(playerId, cardId);
-        if (true)
-        {
-            //BroadcastFlipCardClientRpc(playerId, cardId, gameStateServer.GetCardPODByID(cardId).facingOwner);
-        }
-        else
-        {
-            Debug.LogWarning("GameManager->FlipCardServerRpc(): Player " + playerId + " not allowed to flip cardID " + cardId);
-            //SendActionRejectedClientRpc(playerId, TurnAction.FlipCard, cardId);
-            return;
-        }
-    }
-
-#endregion
-    public void FlipCard(int cardID)
+    public void FlipCardClient(int cardID, CardColor newColor)
     {
         // Find the CardObject with the given cardID
         CardObject cardToFlip = null;
-        foreach (Transform cardTransform in cardsParentGO.transform)
+        /*foreach (Transform cardTransform in cardsParentGO.transform)
         {
             CardObject cardObject = cardTransform.GetComponent<CardObject>();
             if (cardObject != null && cardObject.cardPOD.cardID == cardID)
@@ -697,17 +662,41 @@ public class GameManager : MonoBehaviour
                 cardToFlip = cardObject;
                 break;
             }
+        }*/
+        for (int i = 0; i < cardsInPlay.Count; i++)
+        {
+            if (cardsInPlay[i].cardPOD.cardID == cardID)
+            {
+                cardToFlip = cardsInPlay[i];
+                break;
+            }
         }
 
         if (cardToFlip != null)
         {
             //cardToFlip.FlipCard();
+            cardToFlip.UpdateColor(newColor);
         }
         else
         {
             Debug.LogError("GameManager->FlipCard(): No card found with cardID " + cardID);
         }
     }
+
+#endregion
+
+
+
+#region Client-Server
+
+
+    // Client-side
+    //public void RequestFlipCard(int playerId, int cardId)
+    //{
+    //    SendServerRpc_FlipCard(playerId, cardId);
+    ////}
+
+#endregion
 
 }
 

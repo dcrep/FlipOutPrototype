@@ -23,19 +23,6 @@ public class CardPODClient //: MonoBehaviour
     [System.NonSerialized]
     public CardObject cardObject = null;    // link to CardObject (owner) script object
 
-    public void RequestFlipCard()
-    {
-        GameManager.Instance.RequestFlipCard(ownerPlayerID, cardID);
-        /*if (cardObject != null)
-        {
-            cardObject.FlipCard();
-        }
-        else
-        {
-            Debug.LogError("CardPODClient->RequestFlipCard(): cardObject is null for cardID " + cardID);
-        }*/
-    }
-
     // Clone to create a copy (rather than a reference)
     // This whole class might better be a struct which is a value type
     public CardPODClient Clone()
@@ -66,7 +53,6 @@ public class CardPODServer
             cardSideBColor = ColorBasedOnPlayer(playerID);
     }
 
-
     public CardColor ColorBasedOnPlayer(int playerID)
     {
         return (ownerPlayerID == playerID || playerID == -1) ? GetFacingColor() : GetOppositeColor();
@@ -94,6 +80,14 @@ public class CardPODServer
             return cardSideBColor;
         else
             return cardSideAColor;
+    }
+
+    public void FlipCard()
+    {
+        if (facingOwner == CardFace.sideA)
+            facingOwner = CardFace.sideB;
+        else
+            facingOwner = CardFace.sideA;
     }
 
     // Clone to create a copy (rather than a reference)

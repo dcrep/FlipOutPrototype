@@ -176,26 +176,30 @@ public class GameStateServer
         actionsTakenFull.Add(action);
     }
 
-    public void AddPlayerActionTaken(int playerNum, FlipOutActions action)
+    public bool AddPlayerActionTaken(int playerNum, FlipOutActions action)
     {
         if (!isServer)
         {
             Debug.LogError("AddPlayerActionTaken: not server!");
-            return;
+            return false;
         }
+        // Tracking other player actions?
         if (playerNum != currentPlayerIndex)
         {
-            Debug.LogError("AddPlayerActionTaken: NOT for current player - called for player # " + playerNum);
-            return;
+            actionsTakenFull.Add(action);
+            return true;
         }
+        // else: current player action
+
         if (currentPlayerActionsTaken >= 2)
         {
             Debug.LogError("AddPlayerActionTaken: current player has already taken 2 actions this turn!");
-            return;
+            return false;
         }
         actionsTakenFull.Add(action);
         // Could track per-player actions if needed
         currentPlayerActionsTaken++;
+        return true;
     }
 
     public int GetCurrentPlayerActionsTaken()

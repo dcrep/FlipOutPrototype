@@ -172,9 +172,9 @@ public class ServerDispatch
                 GameStateClient.GetHotseatGameStateForPlayerNumber(playerNum).AddUncountedActionTaken(dealAction);
                 GameStateClient.AddUncountedActionTakenForOpponentViews(playerNum, dealActionForOpponents);
 
-                GameStateClient.GetHotseatGameStateForPlayerNumber(playerNum).AssignCardsToPlayerHand(playerNum, cardsForPlayer, positions);
+                //GameStateClient.GetHotseatGameStateForPlayerNumber(playerNum).AssignCardsToPlayerHand(playerNum, cardsForPlayer, positions);
                 // Update GameStateClient for each player (static method for obvious reasons)
-                GameStateClient.AssignCardsToPlayerHandForOpponentViews(playerNum, cardsForOpponentViews, positions);
+                //GameStateClient.AssignCardsToPlayerHandForOpponentViews(playerNum, cardsForOpponentViews, positions);
             }
             else
             {
@@ -274,7 +274,7 @@ public class ServerDispatch
         //SetActionsAvailableThisTurn
     }
 
-    // call directly:
+    // call directly or roundabout through network message:
     public void EndTurn()
     {
         if (!isServer)
@@ -287,6 +287,7 @@ public class ServerDispatch
         FlipOutActions endTurnAction = FlipOutActions.CreateTurnEndAction(
             gameStateServer.GetActivePlayer().playerId
         );
+        gameStateServer.AddUncountedActionTaken(endTurnAction);
 
         //if (isHotseatGame) // no Hotseat check required here, if 1 client, 1 action tracked
         GameStateClient.AddUncountedActionTakenForAll(endTurnAction);
@@ -304,6 +305,99 @@ public class ServerDispatch
         }
         StartTurn();
     }
+
+    // call directly or roundabout through network message:
+    public void FlipCard(int playerId, int cardId)
+    {
+        if (!isServer)
+        {
+            Debug.LogError("FlipCardServer: not server!");
+            return;
+        }
+        if (gameStateServer.GetActivePlayer().playerId != playerId)
+        {
+            Debug.LogError("ServerDispatch->FlipCard(): It's not player " + playerId + "'s turn!");
+            return;
+        }
+        
+        if (gameStateServer.GetCurrentPlayerActionsTaken() == 2)
+        {
+            Debug.LogError("ServerDispatch->FlipCard(): Player " + playerId + " has already taken 2 actions this turn!");
+            return;
+        }
+        Debug.Log("ServerDispatch->FlipCard(): Player " + playerId + " flipping card " + cardId);
+
+        // Validate (in this case, flip card is always available)
+        /*if (!gameStateServer.GetAvailableActionsForPlayer(gameStateServer.GetPlayerByID(playerId)).HasFlag(TurnAction.Flip))
+        {
+            Debug.LogError("ServerDispatch->FlipCard(): Player " + playerId + " cannot flip card now!");
+            return;
+        }*/
+
+        PlayerXServer player = gameStateServer.GetPlayerByID(playerId);
+        CardPODServer cardPOD = gameStateServer.GetCardByID(cardId);
+        if (player == null || cardPOD == null)
+        {
+            Debug.LogError("ServerDispatch->FlipCard(): invalid player or card!");
+            return;
+        }
+
+        int owningPlayerId = cardPOD.ownerPlayerID;        
+
+        // Create Flip action
+        CardActionInfo flippedCardInfo = new CardActionInfo
+        {
+            cardID = cardPOD.cardID,
+            cardColor = (playerId == owningPlayerId) ? cardPOD.GetFacingColor() : cardPOD.GetOppositeColor()
+        };
+        CardActionInfo oppositeSideInfo = new CardActionInfo
+        {
+            cardID = cardPOD.cardID,
+            cardColor = (playerId == owningPlayerId) ? cardPOD.GetOppositeColor() : cardPOD.GetFacingColor()
+        };
+        FlipOutActions flipAction = FlipOutActions.CreateFlipAction(
+            playerId,
+            owningPlayerId,
+            flippedCardInfo,    // source - current facing-player color
+            oppositeSideInfo    // dest - opposite color
+        );
+        FlipOutActions flipActionForOpponents = FlipOutActions.CreateFlipAction(
+            playerId,
+            owningPlayerId,
+            oppositeSideInfo,
+            flippedCardInfo
+        );
+
+        cardPOD.FlipCard();
+
+        // Apply to GameStateServer
+        gameStateServer.AddPlayerActionTaken(gameStateServer.GetActivePlayerNumber(), flipAction);
+
+        // Apply to GameStateClient(s)
+        if (isHotseatGame)
+        {
+            GameStateClient.CurrentGameStateClient.AddPlayerActionTaken(
+                playerId,
+                flipAction
+            );
+            
+            GameStateClient.AddPlayerActionTakenForOpponentViews(
+                playerId,
+                flipActionForOpponents, false
+            );
+
+            //GameManager.Instance.FlipCardClient(cardId, oppositeSideInfo.cardColor);
+            FlipOutActions.ActOnFlipOutActionForCurrentPlayer(flipAction);
+        }
+        else
+        {
+            // Send message server->client
+            //GameManager.Instance.networkManager.SendFlipOutActionToAllClients(flipAction);
+        }
+    }
+
+
+    //private void FlipCardClient(int playerId, FlipOutActions flipAction)
 
     //public void TurnActionComplete() {}
 

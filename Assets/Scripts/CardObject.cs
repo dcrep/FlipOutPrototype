@@ -130,7 +130,7 @@ public class CardObject : MonoBehaviour
             Debug.LogError("CardObject: FlipCard() - cardPOD is null!");
             return;
         }
-        cardPOD.RequestFlipCard();
+        //cardPOD.RequestFlipCard();
    }
 
 }

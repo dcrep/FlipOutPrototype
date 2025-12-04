@@ -26,6 +26,8 @@ public class GameStateClient
 
     // This reference is important and is setup on Init
     public static GameStateClient CurrentGameStateClient;   // = hotseatGameStates[0];
+
+    public bool handsDealt = false;
 #endregion
 
 #region Client-Data-Altered-From-Server
@@ -34,11 +36,11 @@ public class GameStateClient
 
 #region Server-Client-Propagated-Data
 
-    [SerializeField]private static int currentPlayerIndex = 0;
-    [SerializeField]private static int totalPlayers = 0;
+    [SerializeField] private static int currentPlayerIndex = 0;
+    [SerializeField] private static int totalPlayers = 0;
 
     private int currentPlayerActionsTaken = 0;
-    public static List<FlipOutActions> actionsTakenFull = new List<FlipOutActions>();
+    [SerializeField] public List<FlipOutActions> actionsTakenFull = new List<FlipOutActions>();
 
     private int actionsTakenListLastIndex = 0;
 
@@ -83,12 +85,15 @@ public class GameStateClient
                 hotseatGameStates[i].DestroyPlayers();
                 hotseatGameStates[i].currentPlayerActionsTaken = 0;
                 hotseatGameStates[i].actionsTakenListLastIndex = 0;
+                hotseatGameStates[i].actionsTakenFull.Clear();
+                hotseatGameStates[i].actionsTakenFull = new List<FlipOutActions>();
+                hotseatGameStates[i].handsDealt = false;
             }
         }
         CurrentGameStateClient = hotseatGameStates[0];
         //DestroyPlayers();
-        actionsTakenFull.Clear();
-        actionsTakenFull = new List<FlipOutActions>();
+        //actionsTakenFull.Clear();
+        //actionsTakenFull = new List<FlipOutActions>();
         //currentPlayerActionsTaken = 0;    // set per-client
         currentPlayerIndex = 0;
         totalPlayers = 0;
@@ -142,22 +147,27 @@ public class GameStateClient
         }
     }
 
-    public void AddPlayerActionTaken(int playerNum, FlipOutActions action)
+    public bool AddPlayerActionTaken(int playerNum, FlipOutActions action)
     {
+        // Tracking other player actions?
         if (playerNum != currentPlayerIndex)
         {
-            Debug.LogError("AddPlayerActionTaken: NOT for current player - called for player # " + playerNum);
-            return;
+            actionsTakenFull.Add(action);
+            return true;
         }
+        // else: current player action
+
         if (currentPlayerActionsTaken >= 2)
         {
             Debug.LogError("AddPlayerActionTaken: current player has already taken 2 actions this turn!");
-            return;
+            return false;
         }
+
         actionsTakenFull.Add(action);
+
         // Could track per-player actions if needed
         currentPlayerActionsTaken++;
-        //actionsTakenListLastIndex++;  // set at AdvanceToNextPlayer()
+        return true;
     }
 
     public static void AddPlayerActionTakenForOpponentViews(int playerNum, FlipOutActions action, bool isUncounted)

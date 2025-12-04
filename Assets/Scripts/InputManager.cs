@@ -152,7 +152,8 @@ public class InputManager : MonoBehaviour
             if (hit2D.gameObject.TryGetComponent<CardObject>(out var card))
             {
                 Debug.Log("Right-clicked on card: " + card.gameObject.name);
-                card.FlipCardDEBUG();
+                //card.FlipCardDEBUG();
+                GameManager.Instance.serverDispatch.FlipCard(GameManager.Instance.gameStateClient.GetActivePlayer().playerId, card.cardPOD.cardID);
             }
         }
     }
@@ -210,6 +211,7 @@ public class InputManager : MonoBehaviour
             if (keyValue == 1)
             {
                 //TurnAction.Flip // flip your own or opponent's card
+                //GameManager.Instance.serverDispatch.FlipCard(GameManager.Instance.gameStateClient.GetActivePlayer().playerId, 1);
             }
             else if (keyValue == 2)
             {
