@@ -2,12 +2,17 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+// FlipOut Game rules @ https://www.ultraboardgames.com/flipout/game-rules.php
+
+
+// !Note: See TurnAction in GameStateServer - most values here overlap, although
+// there are more action types here to cover actions not defined in the game rules
 [Flags]
 public enum FlipOutAction
 {
     None  = 0x00,   // invalid
     Flip   = 0x01,  // flip your own or opponent's card
-    Switch = 0x02,  // switch one card's position with another - your own or opponent's hand
+    Switch = 0x02,  // switch one card's position with another - your own or opponent's hand (within same hand)
     Swap1  = 0x04,  // swap one of your cards with another player's - WITHOUT flipping either card
     Swap2  = 0x08,  // swap 2 adjacent same-color cards of yours with another player's 2 adjacent same-color cards
                     // (doesn't have to be the same colors as yours)
