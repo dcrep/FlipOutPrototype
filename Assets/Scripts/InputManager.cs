@@ -216,6 +216,9 @@ public class InputManager : MonoBehaviour
             else if (keyValue == 2)
             {
                 //TurnAction.Switch // switch 1 card with another of yours, or 1 of opponents with another of opponent's
+                GameManager.Instance.serverDispatch.SwitchCards(
+                    GameManager.Instance.gameStateClient.GetActivePlayer().playerId,
+                    1, 2); // DEBUG IDs
             }
             else if (keyValue == 3)
             {

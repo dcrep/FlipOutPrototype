@@ -24,19 +24,25 @@ public class PlayerXClient //: MonoBehaviour
         scorePile = new List<CardPODClient>();
     }
 
-    public int GetIndexOfCard(CardPODClient cardPOD)
+    public int GetIndexOfCardByID(int cardID)
     {
         if (hand == null)
         {
-            Debug.LogError("PlayerXC->IndexOfCard(): hand is null for player " + playerId);
+            Debug.LogError("PlayerXC->IndexOfCardByID(): hand is null for player " + playerId);
             return -1;
         }
         for (int i = 0; i < hand.Length; i++)
         {
-            if (hand[i].cardID == cardPOD.cardID)
+            if (hand[i].cardID == cardID)
                 return i;
         }
         return -1;
+    }
+
+    public int GetIndexOfCard(CardPODClient cardPOD)
+    {
+        int index = GetIndexOfCardByID(cardPOD.cardID);
+        return index;
     }
 
     public CardColor[] GetHandAsColors()
@@ -52,6 +58,30 @@ public class PlayerXClient //: MonoBehaviour
             handColors[i] = hand[i].color;
         }
         return handColors;
+    }
+
+    public void SwitchCardsInHandByID(int cardID1, int cardID2)
+    {
+        int index1 = -1;
+        int index2 = -1;
+        for (int i = 0; i < hand.Length; i++)
+        {
+            if (hand[i].cardID == cardID1)
+                index1 = i;
+            else if (hand[i].cardID == cardID2)
+                index2 = i;
+        }
+        if (index1 != -1 && index2 != -1)
+        {
+            // Swap the cards in hand
+            CardPODClient temp = hand[index1];
+            hand[index1] = hand[index2];
+            hand[index2] = temp;
+        }
+        else
+        {
+            Debug.LogError("PlayerXC->SwitchCardsInHandByID(): Could not find both cards to switch for player " + playerId);
+        }
     }
 }
 #endregion
@@ -74,19 +104,59 @@ public class PlayerXServer
         scorePile = new List<CardPODServer>();
     }
 
-    public int GetIndexOfCard(CardPODServer cardPOD)
+    public int GetIndexOfCardByID(int cardID)
     {
         if (hand == null)
         {
-            Debug.LogError("PlayerXS->IndexOfCard(): hand is null for player " + playerId);
+            Debug.LogError("PlayerXS->IndexOfCardByID(): hand is null for player " + playerId);
             return -1;
         }
         for (int i = 0; i < hand.Length; i++)
         {
-            if (hand[i].cardID == cardPOD.cardID)
+            if (hand[i].cardID == cardID)
                 return i;
         }
         return -1;
+    }
+
+    public int GetIndexOfCard(CardPODServer cardPOD)
+    {
+        int index = GetIndexOfCardByID(cardPOD.cardID);
+        return index;
+    }
+
+    public void SwitchCardsInHandByID(int cardID1, int cardID2)
+    {
+        int index1 = -1;
+        int index2 = -1;
+        for (int i = 0; i < hand.Length; i++)
+        {
+            if (hand[i].cardID == cardID1)
+                index1 = i;
+            else if (hand[i].cardID == cardID2)
+                index2 = i;
+        }
+        if (index1 != -1 && index2 != -1)
+        {
+            // Swap the cards in hand
+            CardPODServer temp = hand[index1];
+            hand[index1] = hand[index2];
+            hand[index2] = temp;
+        }
+        else
+        {
+            Debug.LogError("PlayerXS->SwitchCardsInHandByID(): Could not find both cards to switch for player " + playerId);
+        }
+    }
+
+    private List<CardPODClient> ScorePileToClientScorePile()
+    {
+        List<CardPODClient> clientScorePile = new List<CardPODClient>();
+        foreach (CardPODServer cardPOD in scorePile)
+        {
+            clientScorePile.Add(cardPOD.CopyToClientCard());
+        }
+        return clientScorePile;
     }
 
     private CardPODClient[] HandToClientHand()
@@ -102,17 +172,7 @@ public class PlayerXServer
         return clientHand;
     }
 
-    private List<CardPODClient> ScorePileToClientScorePile()
-    {
-        List<CardPODClient> clientScorePile = new List<CardPODClient>();
-        foreach (CardPODServer cardPOD in scorePile)
-        {
-            clientScorePile.Add(cardPOD.CopyToClientCard());
-        }
-        return clientScorePile;
-    }
-
-    //! Hand/Score pile...
+    //! ?? Hand/Score pile...
     public PlayerXClient CopyToClientPlayerX()
     {
         PlayerXClient clientPlayer = new PlayerXClient();

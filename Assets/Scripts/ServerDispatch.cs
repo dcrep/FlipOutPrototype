@@ -398,7 +398,116 @@ public class ServerDispatch
         }
     }
 
-    //public void SwitchCards()
+    public void SwitchCards(int playerId, int cardId1, int cardId2)
+    {
+        if (!isServer)
+        {
+            Debug.LogError("FlipCardServer: not server!");
+            return;
+        }
+        if (gameStateServer.GetActivePlayer().playerId != playerId)
+        {
+            Debug.LogError("ServerDispatch->SwitchCards(): It's not player " + playerId + "'s turn!");
+            return;
+        }
+        
+        if (gameStateServer.GetCurrentPlayerActionsTaken() == 2)
+        {
+            Debug.LogError("ServerDispatch->SwitchCards(): Player " + playerId + " has already taken 2 actions this turn!");
+            return;
+        }
+        Debug.Log("ServerDispatch->SwitchCards(): Player " + playerId + " switching cards " + cardId1 + " and " + cardId2);
+
+        // Validate (in this case, switch cards is always available)
+        /*if (!gameStateServer.GetAvailableActionsForPlayer(gameStateServer.GetPlayerByID(playerId)).HasFlag(TurnAction.Switch))
+        {
+            Debug.LogError("ServerDispatch->SwitchCards(): Player " + playerId + " cannot switch cards now!");
+            return;
+        }*/
+
+        PlayerXServer player = gameStateServer.GetPlayerByID(playerId);
+        CardPODServer cardPOD1 = gameStateServer.GetCardByID(cardId1);
+        CardPODServer cardPOD2 = gameStateServer.GetCardByID(cardId2);
+
+        if (player == null || cardPOD1 == null || cardPOD2 == null)
+        {
+            Debug.LogError("ServerDispatch->SwitchCards(): invalid player or card(s)!");
+            return;
+        }
+
+        int owningPlayerId = cardPOD1.ownerPlayerID;
+        if (cardPOD1.ownerPlayerID != cardPOD2.ownerPlayerID)
+        {
+            Debug.LogError("ServerDispatch->SwitchCards(): card'1s owner player id (" + owningPlayerId + 
+                ") != card2 owner player id (" + cardPOD2.ownerPlayerID + ")!");
+            return;
+        }
+
+        
+        // Create Flip action
+        CardActionInfo switchCard1Info = new CardActionInfo
+        {
+            cardID = cardPOD1.cardID,
+            cardColor = (playerId == owningPlayerId) ? cardPOD1.GetFacingColor() : cardPOD1.GetOppositeColor()
+        };
+        CardActionInfo oppositeSide1Info = new CardActionInfo
+        {
+            cardID = cardPOD1.cardID,
+            cardColor = (playerId == owningPlayerId) ? cardPOD1.GetOppositeColor() : cardPOD1.GetFacingColor()
+        };
+        CardActionInfo switchCard2Info = new CardActionInfo
+        {
+            cardID = cardPOD2.cardID,
+            cardColor = (playerId == owningPlayerId) ? cardPOD2.GetFacingColor() : cardPOD2.GetOppositeColor()
+        };
+        CardActionInfo oppositeSide2Info = new CardActionInfo
+        {
+            cardID = cardPOD2.cardID,
+            cardColor = (playerId == owningPlayerId) ? cardPOD2.GetOppositeColor() : cardPOD2.GetFacingColor()
+        };
+        FlipOutActions switchAction = FlipOutActions.CreateSwitchAction(
+            playerId,
+            owningPlayerId,
+            switchCard1Info,
+            switchCard2Info
+        );
+        FlipOutActions switchActionForOpponents = FlipOutActions.CreateSwitchAction(
+            playerId,
+            owningPlayerId,
+            oppositeSide1Info,
+            oppositeSide2Info
+        );
+
+        // Apply to GameStateServer
+        gameStateServer.AddPlayerActionTaken(gameStateServer.GetActivePlayerNumber(), switchAction);
+
+        //! Apply hand-switch to GameStateServer
+        gameStateServer.SwitchCardsInPlayerHand(owningPlayerId, cardId1, cardId2);
+        
+        // Apply to GameStateClient(s)
+        if (isHotseatGame)
+        {
+            GameStateClient.CurrentGameStateClient.AddPlayerActionTaken(
+                playerId,
+                switchAction
+            );
+            
+            GameStateClient.AddPlayerActionTakenForOpponentViews(
+                playerId,
+                switchActionForOpponents, false
+            );
+
+            //GameManager.Instance.SwitchCardsClient(cardId1, cardId2);
+            //FlipOutActions.ActOnFlipOutActionForCurrentPlayer(switchAction);
+            //GameStateClient.CurrentGameStateClient.ClearActionsSinceLastTurn();
+            FlipOutActions.ActOnFlipOutActionsForCurrentPlayer();
+        }
+        else
+        {
+            // Send message server->client
+            //GameManager.Instance.networkManager.SendFlipOutActionToAllClients(switchAction);
+        }
+    }
 
 
     //private void FlipCardClient(int playerId, FlipOutActions flipAction)

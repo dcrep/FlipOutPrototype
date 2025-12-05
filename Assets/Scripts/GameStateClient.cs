@@ -213,9 +213,11 @@ public class GameStateClient
         for (int i = 0; i < cards.Count; i++)
         {
             playersClient[playerNum].hand[positions[i]] = cards[i];
+            cardsInPlayClient.Add(cards[i]);
         }
     }
-
+/*
+    //! ? Use? - also, do we update cardsInPlayClient here?
     public void SetHandForPlayer(int playerNum, CardPODClient[] handCards)
     {
         if (playerNum < 0 || playerNum >= totalPlayers)
@@ -230,11 +232,11 @@ public class GameStateClient
         }
         for (int handIdx = 0; handIdx < 6; handIdx++)
         {
-            playersClient[playerNum].hand[handIdx] = handCards[handIdx].Clone();
+            playersClient[playerNum].hand[handIdx] = handCards[handIdx].Clone();    //! CLone ??
         }
-    }
+    }*/
 
-    public static void AssignCardsToPlayerHandForOpponentViews(int playerNum, List<CardPODClient> cardsForOpponentViews, int[] positions)
+    /*public static void AssignCardsToPlayerHandForOpponentViews(int playerNum, List<CardPODClient> cardsForOpponentViews, int[] positions)
     {
         for (int playerIdx = 0; playerIdx < totalPlayers; playerIdx++)
         {
@@ -244,6 +246,24 @@ public class GameStateClient
                 hotseatGameStates[playerIdx].AssignCardsToPlayerHand(playerNum, cardsForOpponentViews, positions);
             }
         }
+    }*/
+
+    public void SwitchCardsInPlayerHand(int owningPlayerId, int cardId1, int cardId2)
+    {
+        int playerNum = GetPlayerNumberByID(owningPlayerId);
+        if (playerNum < 0)
+        {
+            Debug.LogError("SwitchCardsInPlayerHand: invalid owningPlayerId " + owningPlayerId);
+            return;
+        }
+        CardPODClient card1 = GetCardByID(cardId1);
+        CardPODClient card2 = GetCardByID(cardId2);
+        if (card1.ownerPlayerID != owningPlayerId || card2.ownerPlayerID != owningPlayerId)
+        {
+            Debug.LogError("SwitchCardsInPlayerHand: one or both cards do not belong to playerId " + owningPlayerId);
+            return;
+        }
+        GetPlayerByID(owningPlayerId).SwitchCardsInHandByID(cardId1, cardId2);
     }
 
     public static void AssignDeckTopCard(CardColor cardColor)

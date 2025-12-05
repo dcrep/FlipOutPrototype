@@ -169,7 +169,7 @@ public class FlipOutActions
                     GameManager.Instance.FlipCardClient(action.cardDestInfos[0].cardID, action.cardDestInfos[0].cardColor);
                     break;
                 case FlipOutAction.Switch:
-                    // Do something for switch
+                    GameManager.Instance.SwitchCardsClient(action.cardSourceInfos[0].cardID, action.cardDestInfos[0].cardID);
                     break;
                 case FlipOutAction.Swap1:
                     // Do something for swap1
@@ -200,6 +200,8 @@ public class FlipOutActions
                         action.playerTargetId,
                         dealtCards,
                         action.positions);
+                    
+                    GameManager.Instance.DealFullHandClientFromState(action.playerTargetId);
                     break;
                 case FlipOutAction.TurnEnd:
                     break;

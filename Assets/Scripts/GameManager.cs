@@ -503,22 +503,27 @@ public class GameManager : MonoBehaviour
     {
         for (int playerNum = 0; playerNum < GameStateClient.GetTotalPlayers(); playerNum++)
         {
-            var hand = GameStateClient.CurrentGameStateClient.GetPlayerByNumber(playerNum).hand;
-            //! Can't create cardObjects for other players, just cardPODs
-            CardObject[] cardObjects = new CardObject[6];
+            DealFullHandClientFromState(playerNum);
+        }
+        //SetDrawPileTopCard(GameStateClient.GetDeckTopCardColor());
+    }
 
-            int ownerPlayerID = GameStateClient.CurrentGameStateClient.GetPlayerIDByNumber(playerNum);;
+    public void DealFullHandClientFromState(int handPlayerNum)
+    {
+        var hand = GameStateClient.CurrentGameStateClient.GetPlayerByNumber(handPlayerNum).hand;
+        //! Can't create cardObjects for other players, just cardPODs
+        CardObject[] cardObjects = new CardObject[6];
 
-            for (int i = 0; i < hand.Length; i++)
-            {
-                cardObjects[i] = CardObjectFromPODClient(ownerPlayerID, hand[i]); //.Clone());
-                // Set card position to player position
-                cardObjects[i].SetLocalPosition(playerPositions[playerNum] + cardHolderOffset * i);
-                // Slight offset for visibility
-                cardObjects[i].SetSortingOrder(50);
-                // Set card state to playerHolder
-                cardObjects[i].cardPOD.state = CardState.playerHolder;
-            }
+        int ownerPlayerID = GameStateClient.CurrentGameStateClient.GetPlayerIDByNumber(handPlayerNum);;
+        for (int i = 0; i < hand.Length; i++)
+        {
+            cardObjects[i] = CardObjectFromPODClient(ownerPlayerID, hand[i]); //.Clone());
+            // Set card position to player position
+            cardObjects[i].SetLocalPosition(playerPositions[handPlayerNum] + cardHolderOffset * i);
+            // Slight offset for visibility
+            cardObjects[i].SetSortingOrder(50);
+            // Set card state to playerHolder
+            cardObjects[i].cardPOD.state = CardState.playerHolder;
         }
         SetDrawPileTopCard(GameStateClient.GetDeckTopCardColor());
     }
@@ -585,7 +590,8 @@ public class GameManager : MonoBehaviour
             else
             {
                 FlipOutActions.ActOnFlipOutActionsForCurrentPlayer();
-                DealAllHandsClientFromState();
+                // Dealing is done through calls to DealFullHandClientFromState in FlipOutActions
+                //DealAllHandsClientFromState();
                 GameStateClient.CurrentGameStateClient.handsDealt = true;
             }
             
@@ -680,6 +686,45 @@ public class GameManager : MonoBehaviour
         else
         {
             Debug.LogError("GameManager->FlipCard(): No card found with cardID " + cardID);
+        }
+    }
+
+    public void SwitchCardsClient(int cardID1, int cardID2)
+    {
+        // Find the CardObjects with the given cardIDs
+        CardObject card1 = null;
+        CardObject card2 = null;
+
+        for (int i = 0; i < cardsInPlay.Count; i++)
+        {
+            if (cardsInPlay[i].cardPOD.cardID == cardID1)
+            {
+                card1 = cardsInPlay[i];
+            }
+            else if (cardsInPlay[i].cardPOD.cardID == cardID2)
+            {
+                card2 = cardsInPlay[i];
+            }
+        }
+
+        if (card1 != null && card2 != null)
+        {
+            // Swap positions
+            Vector3 tempPosition = card1.transform.position;
+            card1.transform.position = card2.transform.position;
+            card2.transform.position = tempPosition;
+
+            // Index of card in player's hand:
+            int cardsOwnerId = card1.cardPOD.ownerPlayerID;
+            //GameStateClient.CurrentGameStateClient.GetPlayerByID(cardsOwnerId).GetIndexOfCardByID(cardID1);
+            //GameStateClient.CurrentGameStateClient.GetPlayerByID(cardsOwnerId).GetIndexOfCardByID(cardID2);
+            
+            GameStateClient.CurrentGameStateClient.SwitchCardsInPlayerHand(cardsOwnerId, cardID1, cardID2);
+            //GameStateClient.CurrentGameStateClient.GetPlayerByID(cardsOwnerId).SwitchCardsInHandByID(cardID1,cardID2);
+        }
+        else
+        {
+            Debug.LogError("GameManager->SwitchCards(): Could not find both cards with IDs " + cardID1 + " and " + cardID2);
         }
     }
 

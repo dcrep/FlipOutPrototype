@@ -6,6 +6,7 @@ using System;
 using System.Linq;
 
 // FlipOut Game rules @ https://www.ultraboardgames.com/flipout/game-rules.php
+// Note: See FlipOutActions, duplicated enum values..
 // TurnActions - 2 per turn!
 // Flip - choose your own or opponent's card to flip
 // Switch - choose 2 cards to switch positions - can be your own or opponent's
@@ -17,7 +18,7 @@ public enum TurnAction
 {
     None  = 0x00,   // invalid
     Flip   = 0x01,  // flip your own or opponent's card
-    Switch = 0x02,  // switch one card's position with another - your own or opponent's hand
+    Switch = 0x02,  // switch one card's position with another - your own or opponent's hand (within same hand)
     Swap1  = 0x04,  // swap one of your cards with another player's - WITHOUT flipping either card
     Swap2  = 0x08,  // swap 2 adjacent same-color cards of yours with another player's 2 adjacent same-color cards
                     // (doesn't have to be the same colors as yours)
@@ -223,6 +224,24 @@ public class GameStateServer
         {
             playersServer[playerNum].hand[positions[i]] = cards[i];
         }
+    }
+
+    public void SwitchCardsInPlayerHand(int owningPlayerId, int cardId1, int cardId2)
+    {
+        int playerNum = GetPlayerNumberByID(owningPlayerId);
+        if (playerNum < 0)
+        {
+            Debug.LogError("SwitchCardsInPlayerHand: invalid owningPlayerId " + owningPlayerId);
+            return;
+        }
+        CardPODServer card1 = GetCardByID(cardId1);
+        CardPODServer card2 = GetCardByID(cardId2);
+        if (card1.ownerPlayerID != owningPlayerId || card2.ownerPlayerID != owningPlayerId)
+        {
+            Debug.LogError("SwitchCardsInPlayerHand: one or both cards do not belong to playerId " + owningPlayerId);
+            return;
+        }
+        GetPlayerByID(owningPlayerId).SwitchCardsInHandByID(cardId1, cardId2);
     }
 
     // This is in Client version, but not used so..
