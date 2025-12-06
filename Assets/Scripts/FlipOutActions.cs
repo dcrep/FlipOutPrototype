@@ -172,7 +172,11 @@ public class FlipOutActions
                     GameManager.Instance.SwitchCardsClient(action.cardSourceInfos[0].cardID, action.cardDestInfos[0].cardID);
                     break;
                 case FlipOutAction.Swap1:
-                    // Do something for swap1
+                    GameManager.Instance.SwapCards1Client(
+                        action.playerTakingActionId,
+                        action.playerTargetId,
+                        action.cardSourceInfos[0].cardID,
+                        action.cardDestInfos[0].cardID);
                     break;
                 case FlipOutAction.Swap2:
                     // Do something for swap2

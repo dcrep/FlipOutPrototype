@@ -730,6 +730,45 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public void SwapCards1Client(int playerSwappingId, int playerSwapWithId,int cardSwappingID1, int cardSwapWithID1)
+    {
+        PlayerXClient playerSwapping = GameStateClient.CurrentGameStateClient.GetPlayerByID(playerSwappingId);
+        PlayerXClient playerSwapWith = GameStateClient.CurrentGameStateClient.GetPlayerByID(playerSwapWithId);
+
+        if (playerSwapping == null || playerSwapWith == null)
+        {
+            Debug.LogError("GameManager->SwapCards1Client(): Could not find one of the players for swapping: " + playerSwappingId + " or " + playerSwapWithId);
+            return;
+        }
+
+        int indexSwappingCard1 = playerSwapping.GetIndexOfCardByID(cardSwappingID1);
+        int indexSwapWithCard1 = playerSwapWith.GetIndexOfCardByID(cardSwapWithID1);
+
+        if (indexSwappingCard1 == -1 || indexSwapWithCard1 == -1)
+        {
+            Debug.LogError("GameManager->SwapCards1Client(): Could not find one of the cards for swapping: " + cardSwappingID1 + " or " + cardSwapWithID1);
+            return;
+        }
+
+        CardObject cardSwapping1 = playerSwapping.hand[indexSwappingCard1].cardObject;
+        CardObject cardSwapWith1 = playerSwapWith.hand[indexSwapWithCard1].cardObject;
+
+        if (cardSwapping1 != null && cardSwapWith1 != null)
+        {
+            // Swap positions
+            Vector3 tempPosition = cardSwapping1.transform.position;
+            cardSwapping1.transform.position = cardSwapWith1.transform.position;
+            cardSwapWith1.transform.position = tempPosition;
+
+            // Update GameStateClient hands
+            GameStateClient.CurrentGameStateClient.Swap1CardBetweenPlayers(playerSwapping.playerId, playerSwapWith.playerId, cardSwappingID1, cardSwapWithID1);
+        }
+        else
+        {
+            Debug.LogError("GameManager->SwapCards1Client(): Could not find both cards with IDs " + cardSwappingID1 + " and " + cardSwapWithID1);
+        }
+    }
+
 #endregion
 
 

@@ -269,6 +269,39 @@ public class GameStateClient
         player.SwitchCardsInHandByID(cardId1, cardId2);
     }
 
+    public void Swap1CardBetweenPlayers(int player1Id, int playerSwapWithId, int cardId1, int cardSwapWith1)
+    {
+        if (player1Id == playerSwapWithId)
+        {
+            Debug.LogError("Swap1CardBetweenPlayers: cannot swap cards between the same player ID " + player1Id);
+            return;
+        }
+        PlayerXClient player1 = GetPlayerByID(player1Id);
+        PlayerXClient playerSwapWith = GetPlayerByID(playerSwapWithId);
+        if (player1 == null || playerSwapWith == null)
+        {
+            Debug.LogError("Swap1CardBetweenPlayers: could not find both players for IDs " + player1Id + " and " + playerSwapWithId);
+            return;
+        }
+        if (player1.playerId != player1Id || playerSwapWith.playerId != playerSwapWithId)
+        {
+            Debug.LogError("Swap1CardBetweenPlayers: player IDs need to be in same order as card ids!");
+            return;
+        }
+        int card1Index = player1.GetIndexOfCardByID(cardId1);
+        int cardSwappingWithIndex = playerSwapWith.GetIndexOfCardByID(cardSwapWith1);
+        if (card1Index == -1 || cardSwappingWithIndex == -1)
+        {
+            Debug.LogError("Swap1CardBetweenPlayers: could not find both cards for IDs " + cardId1 + " and " + cardSwapWith1);
+            return;
+        }
+        CardPODClient card1POD = player1.hand[card1Index];
+        CardPODClient card2POD = playerSwapWith.hand[cardSwappingWithIndex];
+        // Swap hands (no temp needed because we have the references)
+        player1.hand[card1Index] = card2POD;
+        playerSwapWith.hand[cardSwappingWithIndex] = card1POD;
+    }
+
     public static void AssignDeckTopCard(CardColor cardColor)
     {
         deckTopCardColor = cardColor;

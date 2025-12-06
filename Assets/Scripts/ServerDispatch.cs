@@ -402,7 +402,7 @@ public class ServerDispatch
     {
         if (!isServer)
         {
-            Debug.LogError("FlipCardServer: not server!");
+            Debug.LogError("SwitchCards: not server!");
             return;
         }
         if (gameStateServer.GetActivePlayer().playerId != playerId)
@@ -447,22 +447,22 @@ public class ServerDispatch
         // Create Flip action
         CardActionInfo switchCard1Info = new CardActionInfo
         {
-            cardID = cardPOD1.cardID,
+            cardID = cardId1,
             cardColor = (playerId == owningPlayerId) ? cardPOD1.GetFacingColor() : cardPOD1.GetOppositeColor()
         };
         CardActionInfo oppositeSide1Info = new CardActionInfo
         {
-            cardID = cardPOD1.cardID,
+            cardID = cardId1,
             cardColor = (playerId == owningPlayerId) ? cardPOD1.GetOppositeColor() : cardPOD1.GetFacingColor()
         };
         CardActionInfo switchCard2Info = new CardActionInfo
         {
-            cardID = cardPOD2.cardID,
+            cardID = cardId2,
             cardColor = (playerId == owningPlayerId) ? cardPOD2.GetFacingColor() : cardPOD2.GetOppositeColor()
         };
         CardActionInfo oppositeSide2Info = new CardActionInfo
         {
-            cardID = cardPOD2.cardID,
+            cardID = cardId2,
             cardColor = (playerId == owningPlayerId) ? cardPOD2.GetOppositeColor() : cardPOD2.GetFacingColor()
         };
         FlipOutActions switchAction = FlipOutActions.CreateSwitchAction(
@@ -483,7 +483,7 @@ public class ServerDispatch
 
         //! Apply hand-switch to GameStateServer
         gameStateServer.SwitchCardsInPlayerHand(owningPlayerId, cardId1, cardId2);
-        
+
         // Apply to GameStateClient(s)
         if (isHotseatGame)
         {
@@ -506,6 +506,133 @@ public class ServerDispatch
         {
             // Send message server->client
             //GameManager.Instance.networkManager.SendFlipOutActionToAllClients(switchAction);
+        }
+    }
+
+    public void SwapCards1(int playerId, int cardId1, int cardSwapWith1)
+    {
+        if (!isServer)
+        {
+            Debug.LogError("SwapCards: not server!");
+            return;
+        }
+        if (gameStateServer.GetActivePlayer().playerId != playerId)
+        {
+            Debug.LogError("ServerDispatch->SwapCards1(): It's not player " + playerId + "'s turn!");
+            return;
+        }
+        
+        if (gameStateServer.GetCurrentPlayerActionsTaken() == 2)
+        {
+            Debug.LogError("ServerDispatch->SwapCards1(): Player " + playerId + " has already taken 2 actions this turn!");
+            return;
+        }
+        Debug.Log("ServerDispatch->SwapCards1(): Player " + playerId + " swapping cards " + cardId1 + " and " + cardSwapWith1);
+
+        // Validate (in this case, swap1 cards is always available)
+        /*if (!gameStateServer.GetAvailableActionsForPlayer(gameStateServer.GetPlayerByID(playerId)).HasFlag(TurnAction.Swap1))
+        {
+            Debug.LogError("ServerDispatch->SwapCards1(): Player " + playerId + " cannot swap cards now!");
+            return;
+        }*/
+
+        PlayerXServer playerSwapping = gameStateServer.GetPlayerByCardId(cardId1);
+        PlayerXServer playerSwapWith = gameStateServer.GetPlayerByCardId(cardSwapWith1);
+
+        if (playerSwapping == null || playerSwapWith == null)
+        {
+            Debug.LogError("ServerDispatch->SwapCards1(): invalid player(s)!");
+            return;
+        }        
+        if (playerSwapping.playerId != playerId && playerSwapWith.playerId != playerId)
+        {
+            Debug.LogError("ServerDispatch->SwapCards1(): Player " + playerId + " does not own either card " + cardId1 + " or card " + cardSwapWith1 + "!");
+            return;
+        }
+        if (playerSwapping == playerSwapWith)
+        {
+            Debug.LogError("ServerDispatch->SwapCards1(): both cards belong to same player (only Switch can be used for that)!");
+            return;
+        }
+        // Establish playerSwapping as owner of cardId1, playerSwapWith as owner of cardSwapWith1
+        if (playerSwapping.playerId != playerId)
+        {
+            //playerSwapWith is playerId
+            // swap players and ids for clarity's sake
+            PlayerXServer tempPlayer = playerSwapping;
+            playerSwapping = playerSwapWith;
+            playerSwapWith = tempPlayer;
+            // Now playerSwapping.playerId == playerId. But cardId1 belongs to playerSwapWith
+            int tempId = cardId1;
+            cardId1 = cardSwapWith1;
+            cardSwapWith1 = tempId;
+        }
+
+        CardPODServer cardPOD1 = playerSwapping.GetCardInHandByID(cardId1);
+        CardPODServer cardPOD2 = playerSwapWith.GetCardInHandByID(cardSwapWith1);
+    
+        // Create Swap action
+        CardActionInfo swapCard1Info = new CardActionInfo
+        {
+            cardID = cardId1,
+            cardColor = (playerId == cardPOD1.ownerPlayerID) ? cardPOD1.GetFacingColor() : cardPOD1.GetOppositeColor()
+        };
+        CardActionInfo oppositeSide1Info = new CardActionInfo
+        {
+            cardID = cardId1,
+            cardColor = (playerId == cardPOD1.ownerPlayerID) ? cardPOD1.GetOppositeColor() : cardPOD1.GetFacingColor()
+        };
+        CardActionInfo swapCard2Info = new CardActionInfo
+        {
+            cardID = cardSwapWith1,
+            cardColor = (playerId == cardPOD2.ownerPlayerID) ? cardPOD2.GetFacingColor() : cardPOD2.GetOppositeColor()
+        };
+        CardActionInfo oppositeSide2Info = new CardActionInfo
+        {
+            cardID = cardSwapWith1,
+            cardColor = (playerId == cardPOD2.ownerPlayerID) ? cardPOD2.GetOppositeColor() : cardPOD2.GetFacingColor()
+        };
+        FlipOutActions swap1Action = FlipOutActions.CreateSwap1Action(
+            playerId,
+            playerSwapWith.playerId,
+            swapCard1Info,
+            swapCard2Info
+        );
+        FlipOutActions swap1ActionForOpponents = FlipOutActions.CreateSwap1Action(
+            playerId,
+            playerSwapWith.playerId,
+            oppositeSide1Info,
+            oppositeSide2Info
+        );
+
+        // Apply to GameStateServer
+        gameStateServer.AddPlayerActionTaken(gameStateServer.GetActivePlayerNumber(), swap1Action);
+
+        //! Apply hand-swap to GameStateServer
+        gameStateServer.Swap1CardBetweenPlayers(playerId, playerSwapWith.playerId, cardId1, cardSwapWith1);
+        
+        // Apply to GameStateClient(s)
+        if (isHotseatGame)
+        {
+            GameStateClient.CurrentGameStateClient.AddPlayerActionTaken(
+                playerId,
+                swap1Action
+            );
+            
+            GameStateClient.AddPlayerActionTakenForOpponentViews(
+                playerId,
+                swap1ActionForOpponents, false
+            );
+
+            //GameManager.Instance.SwitchCardsClient(cardId1, cardId2);
+            //FlipOutActions.ActOnFlipOutActionForCurrentPlayer(swapAction);
+            //GameStateClient.CurrentGameStateClient.ClearActionsSinceLastTurn();
+            FlipOutActions.ActOnFlipOutActionsForCurrentPlayer();
+        }
+        else
+        {
+            // Send message server->client
+            //GameManager.Instance.networkManager.SendFlipOutActionToAllClients(swapAction);
         }
     }
 

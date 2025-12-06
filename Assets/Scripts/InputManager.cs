@@ -223,6 +223,9 @@ public class InputManager : MonoBehaviour
             else if (keyValue == 3)
             {
                 //TurnAction.Swap1 // swap 1 of your cards with another player's
+                GameManager.Instance.serverDispatch.SwapCards1(
+                    GameManager.Instance.gameStateClient.GetActivePlayer().playerId,
+                    10, 4); // DEBUG IDs
             }
             else if (keyValue == 4)
             {
