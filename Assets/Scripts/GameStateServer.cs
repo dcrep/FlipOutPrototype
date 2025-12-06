@@ -226,22 +226,30 @@ public class GameStateServer
         }
     }
 
+    public PlayerXServer GetPlayerByCardId(int cardID)
+    {
+        for (int playerNum = 0; playerNum < totalPlayers; playerNum++)
+        {
+            PlayerXServer player = playersServer[playerNum];
+            int handIdx = player.GetIndexOfCardByID(cardID);
+            if (handIdx != -1)
+            {
+                return player;
+            }
+        }
+        Debug.LogError("GetPlayerByCardId: could not find cardID " + cardID + " in any player's hand");
+        return null;
+    }
+
     public void SwitchCardsInPlayerHand(int owningPlayerId, int cardId1, int cardId2)
     {
-        int playerNum = GetPlayerNumberByID(owningPlayerId);
-        if (playerNum < 0)
+        PlayerXServer player = GetPlayerByID(owningPlayerId);
+        if (player == null)
         {
-            Debug.LogError("SwitchCardsInPlayerHand: invalid owningPlayerId " + owningPlayerId);
+            Debug.LogError("SwitchCardsInPlayerHand: player not found for owningPlayerId " + owningPlayerId);
             return;
         }
-        CardPODServer card1 = GetCardByID(cardId1);
-        CardPODServer card2 = GetCardByID(cardId2);
-        if (card1.ownerPlayerID != owningPlayerId || card2.ownerPlayerID != owningPlayerId)
-        {
-            Debug.LogError("SwitchCardsInPlayerHand: one or both cards do not belong to playerId " + owningPlayerId);
-            return;
-        }
-        GetPlayerByID(owningPlayerId).SwitchCardsInHandByID(cardId1, cardId2);
+        player.SwitchCardsInHandByID(cardId1, cardId2);
     }
 
     // This is in Client version, but not used so..

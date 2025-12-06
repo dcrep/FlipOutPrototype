@@ -42,8 +42,6 @@ public class GameStateClient
     private int currentPlayerActionsTaken = 0;
     [SerializeField] public List<FlipOutActions> actionsTakenFull = new List<FlipOutActions>();
 
-    private int actionsTakenListLastIndex = 0;
-
     TurnAction actionsAvailableThisTurn = TurnAction.None;
 
     public static CardColor deckTopCardColor = CardColor.invalid;
@@ -65,7 +63,6 @@ public class GameStateClient
             hotseatGameStates[i].localPlayerNumber = i;
             hotseatGameStates[i].AssignPlayersClient(playerIds, playerNames);
             hotseatGameStates[i].currentPlayerActionsTaken = 0;
-            hotseatGameStates[i].actionsTakenListLastIndex = 0;
         }
 
         CurrentGameStateClient = hotseatGameStates[0];
@@ -84,7 +81,6 @@ public class GameStateClient
                 hotseatGameStates[i].CleanupClient();
                 hotseatGameStates[i].DestroyPlayers();
                 hotseatGameStates[i].currentPlayerActionsTaken = 0;
-                hotseatGameStates[i].actionsTakenListLastIndex = 0;
                 hotseatGameStates[i].actionsTakenFull.Clear();
                 hotseatGameStates[i].actionsTakenFull = new List<FlipOutActions>();
                 hotseatGameStates[i].handsDealt = false;
@@ -135,7 +131,6 @@ public class GameStateClient
     public void AddUncountedActionTaken(FlipOutActions action)
     {
         actionsTakenFull.Add(action);
-        //actionsTakenListLastIndex++;  // set at AdvanceToNextPlayer()
     }
 
     public static void AddUncountedActionTakenForAll(FlipOutActions action)
@@ -213,7 +208,7 @@ public class GameStateClient
         for (int i = 0; i < cards.Count; i++)
         {
             playersClient[playerNum].hand[positions[i]] = cards[i];
-            cardsInPlayClient.Add(cards[i]);
+            //! cardsInPlayClient.Add(cards[i]);
         }
     }
 /*
@@ -248,22 +243,30 @@ public class GameStateClient
         }
     }*/
 
+    public PlayerXClient GetPlayerByCardId(int cardID)
+    {
+        for (int playerNum = 0; playerNum < totalPlayers; playerNum++)
+        {
+            PlayerXClient player = playersClient[playerNum];
+            int handIdx = player.GetIndexOfCardByID(cardID);
+            if (handIdx != -1)
+            {
+                return player;
+            }
+        }
+        Debug.LogError("GetPlayerByCardId: could not find cardID " + cardID + " in any player's hand");
+        return null;
+    }
+
     public void SwitchCardsInPlayerHand(int owningPlayerId, int cardId1, int cardId2)
     {
-        int playerNum = GetPlayerNumberByID(owningPlayerId);
-        if (playerNum < 0)
+        PlayerXClient player = GetPlayerByID(owningPlayerId);
+        if (player == null)
         {
-            Debug.LogError("SwitchCardsInPlayerHand: invalid owningPlayerId " + owningPlayerId);
+            Debug.LogError("SwitchCardsInPlayerHand: player not found for owningPlayerId " + owningPlayerId);
             return;
         }
-        CardPODClient card1 = GetCardByID(cardId1);
-        CardPODClient card2 = GetCardByID(cardId2);
-        if (card1.ownerPlayerID != owningPlayerId || card2.ownerPlayerID != owningPlayerId)
-        {
-            Debug.LogError("SwitchCardsInPlayerHand: one or both cards do not belong to playerId " + owningPlayerId);
-            return;
-        }
-        GetPlayerByID(owningPlayerId).SwitchCardsInHandByID(cardId1, cardId2);
+        player.SwitchCardsInHandByID(cardId1, cardId2);
     }
 
     public static void AssignDeckTopCard(CardColor cardColor)
@@ -288,8 +291,6 @@ public class GameStateClient
     {
         currentPlayerIndex = (currentPlayerIndex + 1) % totalPlayers;
         currentPlayerActionsTaken = 0;
-        //! -1?
-        actionsTakenListLastIndex = actionsTakenFull.Count;
         CurrentGameStateClient = hotseatGameStates[currentPlayerIndex];
         return currentPlayerIndex;
     }
@@ -303,7 +304,6 @@ public class GameStateClient
     {
         actionsTakenFull.Clear();
         Debug.Log("ClearActionsSinceLastTurn: cleared actions taken list; count is now " + actionsTakenFull.Count);
-        actionsTakenListLastIndex = 0;
     }
 
     public static GameStateClient GetHotseatGameStateForPlayerNumber(int localPlayerNum)

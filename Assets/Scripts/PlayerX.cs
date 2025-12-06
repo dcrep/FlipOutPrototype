@@ -45,6 +45,15 @@ public class PlayerXClient //: MonoBehaviour
         return index;
     }
 
+    public CardPODClient GetCardInHandByID(int cardID)
+    {
+        int index = GetIndexOfCardByID(cardID);
+        if (index != -1)
+            return hand[index];
+        else
+            return null;
+    }
+
     public CardColor[] GetHandAsColors()
     {
         CardColor[] handColors = new CardColor[6];
@@ -123,6 +132,15 @@ public class PlayerXServer
     {
         int index = GetIndexOfCardByID(cardPOD.cardID);
         return index;
+    }
+
+    public CardPODServer GetCardInHandByID(int cardID)
+    {
+        int index = GetIndexOfCardByID(cardID);
+        if (index != -1)
+            return hand[index];
+        else
+            return null;
     }
 
     public void SwitchCardsInHandByID(int cardID1, int cardID2)

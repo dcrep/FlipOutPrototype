@@ -669,14 +669,15 @@ public class GameManager : MonoBehaviour
                 break;
             }
         }*/
-        for (int i = 0; i < cardsInPlay.Count; i++)
+
+        PlayerXClient player = GameStateClient.CurrentGameStateClient.GetPlayerByCardId(cardID);
+        if (player == null)
         {
-            if (cardsInPlay[i].cardPOD.cardID == cardID)
-            {
-                cardToFlip = cardsInPlay[i];
-                break;
-            }
+            Debug.LogError("GameManager->FlipCard(): Could not find owner player for cardID " + cardID);
+            return;
         }
+        int index = player.GetIndexOfCardByID(cardID);
+        cardToFlip = player.hand[index].cardObject;
 
         if (cardToFlip != null)
         {
@@ -695,17 +696,18 @@ public class GameManager : MonoBehaviour
         CardObject card1 = null;
         CardObject card2 = null;
 
-        for (int i = 0; i < cardsInPlay.Count; i++)
+        PlayerXClient player = GameStateClient.CurrentGameStateClient.GetPlayerByCardId(cardID1);
+        if (player == null)
         {
-            if (cardsInPlay[i].cardPOD.cardID == cardID1)
-            {
-                card1 = cardsInPlay[i];
-            }
-            else if (cardsInPlay[i].cardPOD.cardID == cardID2)
-            {
-                card2 = cardsInPlay[i];
-            }
+            Debug.LogError("GameManager->SwitchCards(): Could not find owner player for cardID " + cardID1);
+            return;
         }
+
+        int index1 = player.GetIndexOfCardByID(cardID1);
+        int index2 = player.GetIndexOfCardByID(cardID2);
+
+        card1 = player.hand[index1].cardObject;
+        card2 = player.hand[index2].cardObject;
 
         if (card1 != null && card2 != null)
         {
