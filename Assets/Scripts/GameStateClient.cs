@@ -5,17 +5,13 @@ using NUnit.Framework;
 using System;
 
 //!! GameStateClient is duplicated (except for static data) for each hotseat player
-// shared data: currentPlayerIndex, totalPlayers, playersClient;
-// localPlayerNumber would be unique per hotseat player
-//!playersClient, since it has hands, should be changed with each player turn to reflect what that player sees?
-// No - then a savestate wouldn't work. Have to set playersClient for each player!
-// cardsInPlayClient is unique to each player (card side/color will differ based on player view)
 
 [System.Serializable]
 public class GameStateClient
 {
 
 #region Client-Only-Data
+    //! No use for cardsInPlayClient now - cards are only looked for in players' hands
     // similar to server cardsInPlay, but only cards generated/known to client (and specific to that client view)
     [SerializeField] public List<CardPODClient> cardsInPlayClient = new List<CardPODClient>();
 
@@ -297,6 +293,9 @@ public class GameStateClient
         }
         CardPODClient card1POD = player1.hand[card1Index];
         CardPODClient card2POD = playerSwapWith.hand[cardSwappingWithIndex];
+        // update ownerPlayerID
+        card1POD.ownerPlayerID = playerSwapWithId;
+        card2POD.ownerPlayerID = player1Id;
         // Swap hands (no temp needed because we have the references)
         player1.hand[card1Index] = card2POD;
         playerSwapWith.hand[cardSwappingWithIndex] = card1POD;

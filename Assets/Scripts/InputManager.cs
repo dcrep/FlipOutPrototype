@@ -220,16 +220,33 @@ public class InputManager : MonoBehaviour
             else if (keyValue == 2)
             {
                 //TurnAction.Switch // switch 1 card with another of yours, or 1 of opponents with another of opponent's
+                if (GameManager.Instance.cardsHighlighted.Count != 2)
+                {
+                    Debug.Log("Need to highlight exactly 2 cards to swap (1 of yours and 1 of another player's)!");
+                    return;
+                }
                 GameManager.Instance.serverDispatch.SwitchCards(
                     GameManager.Instance.gameStateClient.GetActivePlayer().playerId,
-                    1, 2); // DEBUG IDs
+                    GameManager.Instance.cardsHighlighted[0].cardPOD.cardID,
+                    GameManager.Instance.cardsHighlighted[1].cardPOD.cardID);
+                GameManager.Instance.ClearHighlightedCards();
+                    //1, 2); // DEBUG IDs
             }
             else if (keyValue == 3)
             {
                 //TurnAction.Swap1 // swap 1 of your cards with another player's
+                if (GameManager.Instance.cardsHighlighted.Count != 2)
+                {
+                    Debug.Log("Need to highlight exactly 2 cards to swap (1 of yours and 1 of another player's)!");
+                    return;
+                }
                 GameManager.Instance.serverDispatch.SwapCards1(
                     GameManager.Instance.gameStateClient.GetActivePlayer().playerId,
-                    10, 4); // DEBUG IDs
+                    GameManager.Instance.cardsHighlighted[0].cardPOD.cardID,
+                    GameManager.Instance.cardsHighlighted[1].cardPOD.cardID);
+
+                GameManager.Instance.ClearHighlightedCards();
+                    //10, 4); // DEBUG IDs
             }
             else if (keyValue == 4)
             {

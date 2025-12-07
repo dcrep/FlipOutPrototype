@@ -280,9 +280,13 @@ public class GameStateServer
         }
         CardPODServer card1POD = player1.hand[card1Index];
         CardPODServer card2POD = playerSwapWith.hand[cardSwappingWithIndex];
+        // update ownerPlayerID
+        card1POD.ownerPlayerID = playerSwapWithId;
+        card2POD.ownerPlayerID = player1Id;
         // Swap hands (no temp needed because we have the references)
         player1.hand[card1Index] = card2POD;
         playerSwapWith.hand[cardSwappingWithIndex] = card1POD;
+
     }
 
     // This is in Client version, but not used so..

@@ -91,14 +91,11 @@ public class GameManager : MonoBehaviour
     GameObject cardPrefab;
     GameObject cardsParentGO;
 
-    GameObject highlightPrefab;
-    GameObject highlightGO;
-
     [SerializeField] private CardObject drawPileTop;
 
     [SerializeField] private List<CardObject> cardsInPlay;
 
-    [SerializeField] private List<CardObject> cardsHighlighted = new List<CardObject>();
+    [SerializeField] public List<CardObject> cardsHighlighted = new List<CardObject>();
 
     // Debugging purposes
     //Vector3 moveToPosition = new Vector3(1, 1, 0);
@@ -466,6 +463,7 @@ public class GameManager : MonoBehaviour
     {
         if (cardsInPlay != null)
         {
+            ClearHighlightedCards();
             foreach (CardObject card in cardsInPlay)
             {
                 if (card != null)
@@ -478,6 +476,21 @@ public class GameManager : MonoBehaviour
         Destroy(cardsParentGO);
         cardsParentGO = null;
         drawPileTop = null;
+    }
+
+    public void ClearHighlightedCards()
+    {
+        if (cardsHighlighted != null)
+        {
+            foreach (CardObject card in cardsHighlighted)
+            {
+                if (card != null)
+                {
+                    card.HighlightCardToggle();
+                }
+            }
+            cardsHighlighted.Clear();
+        }
     }
 
 
