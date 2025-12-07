@@ -91,9 +91,14 @@ public class GameManager : MonoBehaviour
     GameObject cardPrefab;
     GameObject cardsParentGO;
 
+    GameObject highlightPrefab;
+    GameObject highlightGO;
+
     [SerializeField] private CardObject drawPileTop;
 
     [SerializeField] private List<CardObject> cardsInPlay;
+
+    [SerializeField] private List<CardObject> cardsHighlighted = new List<CardObject>();
 
     // Debugging purposes
     //Vector3 moveToPosition = new Vector3(1, 1, 0);
@@ -327,6 +332,16 @@ public class GameManager : MonoBehaviour
         if (card.cardPOD.state == CardState.playerHolder)
         {
             Debug.Log("Actions available: " + string.Join(", ", GameStateClient.CurrentGameStateClient.GetAvailableActionsForCard(card.cardPOD)));
+            if (cardsHighlighted.Contains(card))
+            {
+                card.HighlightCardToggle();
+                cardsHighlighted.Remove(card);
+                return;
+            }
+            else {
+                card.HighlightCardToggle();
+                cardsHighlighted.Add(card);
+            }
         }
         else
         {
@@ -395,6 +410,7 @@ public class GameManager : MonoBehaviour
         currentGameState = GameStatus.Playing;
 
         cardsInPlay = new List<CardObject>();
+        cardsHighlighted = new List<CardObject>();
 
         playersParentGO = new GameObject("_Players");
         for (int i = 0; i < numPlayers; i++)
@@ -440,6 +456,30 @@ public class GameManager : MonoBehaviour
             ClearObjectsInPlay();
         }
     }
+    /*public void EndPlayerTurnClient()
+    {
+        Debug.Log("GameManager->EndPlayerTurnClient()");
+        ClearObjectsInPlay();
+    }*/
+
+    public void ClearObjectsInPlay()
+    {
+        if (cardsInPlay != null)
+        {
+            foreach (CardObject card in cardsInPlay)
+            {
+                if (card != null)
+                {
+                    Destroy(card.gameObject);
+                }
+            }
+            cardsInPlay.Clear();
+        }
+        Destroy(cardsParentGO);
+        cardsParentGO = null;
+        drawPileTop = null;
+    }
+
 
     void EndGameCleanup()
     {
@@ -453,9 +493,38 @@ public class GameManager : MonoBehaviour
             cardsInPlay.Clear();
             cardsInPlay = null;
         }
+        if (cardsHighlighted != null)
+        {
+            cardsHighlighted.Clear();
+            cardsHighlighted = null;
+        }
         gameStateServer.Cleanup();
         GameStateClient.CleanupClients();
         currentMultiplayerMode = MultiplayerMode.Disconnected;
+    }
+    public void StartPlayerTurnClient(int playerNum, int playerId, TurnAction availableActions)
+    {
+        Debug.Log("GameManager->StartPlayerTurnClient(): Player " + playerId + "'s turn started.");
+        // This should be done at TurnEnd:
+        //ClearObjectsInPlay();
+
+        if (currentMultiplayerMode == MultiplayerMode.LocalHotseat)
+        {
+            if (GameStateClient.CurrentGameStateClient.handsDealt)
+            {
+                DealAllHandsClientFromState();
+                FlipOutActions.ActOnFlipOutActionsForCurrentPlayer();
+            }
+            else
+            {
+                FlipOutActions.ActOnFlipOutActionsForCurrentPlayer();
+                // Dealing is done through calls to DealFullHandClientFromState in FlipOutActions
+                //DealAllHandsClientFromState();
+                GameStateClient.CurrentGameStateClient.handsDealt = true;
+            }
+            
+        }
+        //StartTurnClient(playerId, availableActions);
     }
 
     void SetDrawPileTopCard(CardColor color)
@@ -521,7 +590,7 @@ public class GameManager : MonoBehaviour
             // Set card position to player position
             cardObjects[i].SetLocalPosition(playerPositions[handPlayerNum] + cardHolderOffset * i);
             // Slight offset for visibility
-            cardObjects[i].SetSortingOrder(50);
+            cardObjects[i].SetSortingOrder(1);
             // Set card state to playerHolder
             cardObjects[i].cardPOD.state = CardState.playerHolder;
         }
@@ -574,55 +643,6 @@ public class GameManager : MonoBehaviour
         //GameStateClient.CurrentGameStateClient.SetCardsForPlayer(playerNum, hand);
     }
 
-    public void StartPlayerTurnClient(int playerNum, int playerId, TurnAction availableActions)
-    {
-        Debug.Log("GameManager->StartPlayerTurnClient(): Player " + playerId + "'s turn started.");
-        // This should be done at TurnEnd:
-        //ClearObjectsInPlay();
-
-        if (currentMultiplayerMode == MultiplayerMode.LocalHotseat)
-        {
-            if (GameStateClient.CurrentGameStateClient.handsDealt)
-            {
-                DealAllHandsClientFromState();
-                FlipOutActions.ActOnFlipOutActionsForCurrentPlayer();
-            }
-            else
-            {
-                FlipOutActions.ActOnFlipOutActionsForCurrentPlayer();
-                // Dealing is done through calls to DealFullHandClientFromState in FlipOutActions
-                //DealAllHandsClientFromState();
-                GameStateClient.CurrentGameStateClient.handsDealt = true;
-            }
-            
-        }
-        //StartTurnClient(playerId, availableActions);
-    }
-
-    public void ClearObjectsInPlay()
-    {
-        if (cardsInPlay != null)
-        {
-            foreach (CardObject card in cardsInPlay)
-            {
-                if (card != null)
-                {
-                    Destroy(card.gameObject);
-                }
-            }
-            cardsInPlay.Clear();
-        }
-        Destroy(cardsParentGO);
-        cardsParentGO = null;
-        drawPileTop = null;
-    }
-
-    public void EndPlayerTurnClient()
-    {
-        Debug.Log("GameManager->EndPlayerTurnClient()");
-        ClearObjectsInPlay();
-
-    }
 
     private CardObject InstantiateCardObjectFromPOD(CardPODClient cardPOD, Vector3 position, CardState newState = CardState.playerHolder, int playerID = -1)
     {

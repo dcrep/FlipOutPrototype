@@ -48,9 +48,13 @@ public class InputManager : MonoBehaviour
         numKeyAction = playerControls.Player.NumKeys;
         numKeyAction.Enable();
         numKeyAction.performed += NumKeyPressed;
+
+        CardObject.onCardClicked += onCardClicked;
     }
     void OnDisable()
     {
+        CardObject.onCardClicked -= onCardClicked;
+
         numKeyAction.performed -= NumKeyPressed;
         numKeyAction.Disable();        
 
@@ -245,6 +249,21 @@ public class InputManager : MonoBehaviour
                 GameManager.Instance.serverDispatch.EndTurn();
             }
         }
+    }
+
+    private void onCardClicked(CardObject card)
+    {
+        Debug.Log("InputManager: onCardClicked() - Card clicked: " + card.gameObject.name);
+        if (GameManager.Instance.currentGameState != GameStatus.Playing)
+            return;
+
+        if (card.cardPOD.state == CardState.playerHolder)
+        {
+            //
+        }
+
+        // For now, just flip the card on left-click
+        //GameManager.Instance.serverDispatch.FlipCard(GameManager.Instance.gameStateClient.GetActivePlayer().playerId, card.cardPOD.cardID);
     }
 
 }

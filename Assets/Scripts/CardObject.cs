@@ -21,12 +21,27 @@ public class CardObject : MonoBehaviour
     public delegate void OnCardClicked(CardObject card);
     public static event OnCardClicked onCardClicked;
 
+    private static GameObject highlightPrefab = null;
+    private GameObject highlightInstance = null;
+
     public void Awake()
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
         //deck = FindFirstObjectByType<CardManager>();
         //sideA = spriteRenderer.sprite;
         //sideB = sideA;
+    }
+
+    void OnEnable()
+    {
+
+    }
+    void OnDisable()
+    {
+        if (highlightInstance != null)
+        {
+            Destroy(highlightInstance);
+        }
     }
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
@@ -123,14 +138,29 @@ public class CardObject : MonoBehaviour
         gameObject.transform.localPosition = pos;
     }
 
-    public void FlipCardDEBUG()
+    public void HighlightCardToggle()
     {
-        if (cardPOD == null)
+        if (highlightPrefab == null)
         {
-            Debug.LogError("CardObject: FlipCard() - cardPOD is null!");
+            highlightPrefab = Resources.Load<GameObject>("Prefabs/CircleHighlightPF");
+        }
+        if (highlightInstance != null)
+        {
+            Destroy(highlightInstance);
+            highlightInstance = null;
             return;
         }
-        //cardPOD.RequestFlipCard();
-   }
+        highlightInstance = Instantiate(highlightPrefab, this.transform);
+        highlightInstance.transform.localPosition = Vector3.zero; //new Vector3(0, 0, -2f);
+        highlightInstance.transform.localScale = Vector3.one;
+        // Make highlight render in front of the card
+        SpriteRenderer highlightRenderer = highlightInstance.GetComponent<SpriteRenderer>();
+        if (highlightRenderer != null)
+        {
+            highlightRenderer.sortingLayerName = spriteRenderer.sortingLayerName;
+            //highlightRenderer.sortingLayerID = spriteRenderer.sortingLayerID;
+            highlightRenderer.sortingOrder = spriteRenderer.sortingOrder + 1;
+        }
+    }
 
 }
