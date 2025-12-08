@@ -5,6 +5,7 @@ using Unity.Netcode;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using TMPro;
 
 [Serializable]
 public enum Scenes
@@ -102,6 +103,8 @@ public class GameManager : MonoBehaviour
     //int cardsMoved = 0;
 
     public bool forceHotseat = true;
+
+    public TextMeshProUGUI uiText; 
 
     // Awake - Called before first Scene, not destroyed or recreated on Scene load
     void Awake()
@@ -518,6 +521,15 @@ public class GameManager : MonoBehaviour
     public void StartPlayerTurnClient(int playerNum, int playerId, TurnAction availableActions)
     {
         Debug.Log("GameManager->StartPlayerTurnClient(): Player " + playerId + "'s turn started.");
+
+        if (uiText == null)
+        {
+            uiText = GameObject.Find("PlayerInfo").GetComponent<TextMeshProUGUI>();
+        }
+        if (uiText != null)
+        {
+            uiText.text = "Player " + playerId + "'s Turn";
+        }
         // This should be done at TurnEnd:
         //ClearObjectsInPlay();
 
@@ -714,6 +726,7 @@ public class GameManager : MonoBehaviour
 
         if (cardToFlip != null)
         {
+            Debug.Log("GameManager->FlipCard(): Flipping card with cardID " + cardID + " to color " + newColor.ToString());
             //cardToFlip.FlipCard();
             cardToFlip.UpdateColor(newColor);
         }
@@ -763,7 +776,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    public void SwapCards1Client(int playerSwappingId, int playerSwapWithId,int cardSwappingID1, int cardSwapWithID1)
+    public void SwapCards1Client(int playerSwappingId, int playerSwapWithId, int cardSwappingID1, int cardSwapWithID1, CardColor swappingNewColor, CardColor swapWithNewColor)
     {
         PlayerXClient playerSwapping = GameStateClient.CurrentGameStateClient.GetPlayerByID(playerSwappingId);
         PlayerXClient playerSwapWith = GameStateClient.CurrentGameStateClient.GetPlayerByID(playerSwapWithId);
@@ -788,17 +801,95 @@ public class GameManager : MonoBehaviour
 
         if (cardSwapping1 != null && cardSwapWith1 != null)
         {
+            // Only update color if neither player is the local player (appears as a flip+move)
+            if (playerSwappingId != GameStateClient.GetCurrentPlayerId() && playerSwapWithId != GameStateClient.GetCurrentPlayerId())
+            {
+                // Update color of both cards (appears as a flip+move)
+                cardSwapping1.UpdateColor(swappingNewColor);
+                cardSwapWith1.UpdateColor(swapWithNewColor);                
+            }
+            
             // Swap positions
             Vector3 tempPosition = cardSwapping1.transform.position;
             cardSwapping1.transform.position = cardSwapWith1.transform.position;
             cardSwapWith1.transform.position = tempPosition;
 
             // Update GameStateClient hands
-            GameStateClient.CurrentGameStateClient.Swap1CardBetweenPlayers(playerSwapping.playerId, playerSwapWith.playerId, cardSwappingID1, cardSwapWithID1);
+            GameStateClient.CurrentGameStateClient.Swap1CardBetweenPlayers(playerSwappingId, playerSwapWithId, cardSwappingID1, cardSwapWithID1);
         }
         else
         {
             Debug.LogError("GameManager->SwapCards1Client(): Could not find both cards with IDs " + cardSwappingID1 + " and " + cardSwapWithID1);
+        }
+    }
+
+    public void SwapCards2Client(int playerSwappingId, int playerSwapWithId, int cardId1, int cardId2, int cardSwapWithID1, int cardSwapWithID2,
+         CardColor swapping1NewColor, CardColor swapping2NewColor, CardColor swapWith1NewColor, CardColor swapWith2NewColor)
+    {
+        PlayerXClient playerSwapping = GameStateClient.CurrentGameStateClient.GetPlayerByID(playerSwappingId);
+        PlayerXClient playerSwapWith = GameStateClient.CurrentGameStateClient.GetPlayerByID(playerSwapWithId);
+
+        if (playerSwapping == null || playerSwapWith == null)
+        {
+            Debug.LogError("GameManager->SwapCards2Client(): Could not find one of the players for swapping: " + playerSwappingId + " or " + playerSwapWithId);
+            return;
+        }
+
+        int indexSwapCard1 = playerSwapping.GetIndexOfCardByID(cardId1);
+        int indexSwapCard2 = playerSwapping.GetIndexOfCardByID(cardId2);
+        int indexSwapWithCard1 = playerSwapWith.GetIndexOfCardByID(cardSwapWithID1);
+        int indexSwapWithCard2 = playerSwapWith.GetIndexOfCardByID(cardSwapWithID2);
+
+        if (indexSwapCard1 == -1 || indexSwapWithCard1 == -1 || indexSwapCard2 == -1 || indexSwapWithCard2 == -1)
+        {
+            Debug.LogError("GameManager->SwapCards2Client(): Could not find one of the cards for swapping.");
+            return;
+        }
+        // Enforce consecutive order
+        if (indexSwapCard1 > indexSwapCard2)
+        {
+            int temp = indexSwapCard1;
+            indexSwapCard1 = indexSwapCard2;
+            indexSwapCard2 = temp;
+        }
+        if (indexSwapWithCard1 > indexSwapWithCard2)
+        {
+            int temp = indexSwapWithCard1;
+            indexSwapWithCard1 = indexSwapWithCard2;
+            indexSwapWithCard2 = temp;
+        }
+
+        CardObject cardSwapping1 = playerSwapping.hand[indexSwapCard1].cardObject;
+        CardObject cardSwapping2 = playerSwapping.hand[indexSwapCard2].cardObject;
+        CardObject cardSwapWith2 = playerSwapWith.hand[indexSwapWithCard2].cardObject;
+        CardObject cardSwapWith1 = playerSwapWith.hand[indexSwapWithCard1].cardObject;
+
+        if (cardSwapping1 != null && cardSwapWith1 != null && cardSwapping2 != null && cardSwapWith2 != null)
+        {
+            // Only update color if neither player is the local player (appears as a flip+move)
+            if (playerSwappingId != GameStateClient.GetCurrentPlayerId() && playerSwapWithId != GameStateClient.GetCurrentPlayerId())
+            {
+                // Update color of both cards (appears as a flip+move)
+                cardSwapping1.UpdateColor(swapping1NewColor);
+                cardSwapping2.UpdateColor(swapping2NewColor);
+                cardSwapWith1.UpdateColor(swapWith1NewColor);
+                cardSwapWith2.UpdateColor(swapWith2NewColor);                
+            }
+            // Swap positions of first pair
+            Vector3 tempPosition = cardSwapping1.transform.position;
+            cardSwapping1.transform.position = cardSwapWith1.transform.position;
+            cardSwapWith1.transform.position = tempPosition;
+
+            // Swap positions of second pair
+            tempPosition = cardSwapping2.transform.position;
+            cardSwapping2.transform.position = cardSwapWith2.transform.position;
+            cardSwapWith2.transform.position = tempPosition;
+            // Update GameStateClient hands (note we pass ids that haven't had consecutive hand-order enforced)
+            GameStateClient.CurrentGameStateClient.Swap2CardsBetweenPlayers(playerSwappingId, playerSwapWithId, cardId1, cardId2, cardSwapWithID1, cardSwapWithID2);
+        }
+        else
+        {
+            Debug.LogError("GameManager->SwapCards2Client(): Could not find all four cards for swapping.");
         }
     }
 

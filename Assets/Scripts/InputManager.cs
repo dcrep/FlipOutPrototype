@@ -251,6 +251,18 @@ public class InputManager : MonoBehaviour
             else if (keyValue == 4)
             {
                 //TurnAction.Swap2 // swap 2 adjacent same-color cards of yours with another player's 2 adjacent same-color cards
+                if (GameManager.Instance.cardsHighlighted.Count != 4)
+                {
+                    Debug.Log("Need to highlight exactly 4 cards to swap (2 of yours and 2 of another player's)!");
+                    return;
+                }
+                GameManager.Instance.serverDispatch.SwapCards2(
+                    GameManager.Instance.gameStateClient.GetActivePlayer().playerId,
+                    GameManager.Instance.cardsHighlighted[0].cardPOD.cardID,
+                    GameManager.Instance.cardsHighlighted[1].cardPOD.cardID,
+                    GameManager.Instance.cardsHighlighted[2].cardPOD.cardID,
+                    GameManager.Instance.cardsHighlighted[3].cardPOD.cardID);
+                GameManager.Instance.ClearHighlightedCards();
             }
             else if (keyValue == 5)
             {

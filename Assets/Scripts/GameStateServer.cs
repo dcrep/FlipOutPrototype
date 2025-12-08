@@ -57,10 +57,12 @@ public class GameStateServer
     };
     [SerializeField] private CardPODServer[] deckPure = new CardPODServer[90];
     [SerializeField] private CardPODServer[] cardsInPlay = new CardPODServer[90];
+    [SerializeField] private CardPODServer[] cardsInPlayAtStart = new CardPODServer[90];
 
     //public CardPODServer topDrawCard = null;
 
     public List<int> serverDrawPile = new List<int>();
+    public List<int> serverDrawPileAtStart = new List<int>(); // initial state
 
     //! Usefulness?
     [SerializeField] private bool isServer = false;
@@ -72,17 +74,17 @@ public class GameStateServer
 
 #region Server-Client-Propagated-Data
 
-    private int currentPlayerIndex = 0;
-    private int totalPlayers = 0;
+    [SerializeField] private int currentPlayerIndex = 0;
+    [SerializeField] private int totalPlayers = 0;
 
-    private int currentPlayerActionsTaken = 0;
+    [SerializeField] private int currentPlayerActionsTaken = 0;
 
     public List<FlipOutActions> actionsTakenFull = new List<FlipOutActions>();
 
 #endregion
 
     // Server-side initialization
-    public void InitGameStateServer(int[] playerIds,string[] playerNames)
+    public void InitGameStateServer(int[] playerIds, string[] playerNames)
     {
         if (totalPlayers > 0)
         {
@@ -279,14 +281,93 @@ public class GameStateServer
             return;
         }
         CardPODServer card1POD = player1.hand[card1Index];
-        CardPODServer card2POD = playerSwapWith.hand[cardSwappingWithIndex];
+        CardPODServer cardSwapWith1POD = playerSwapWith.hand[cardSwappingWithIndex];
         // update ownerPlayerID
         card1POD.ownerPlayerID = playerSwapWithId;
-        card2POD.ownerPlayerID = player1Id;
+        cardSwapWith1POD.ownerPlayerID = player1Id;
+        // Swap sides to reflect coming from opposite view to facing view, and moving from facing to opposite view
+        card1POD.FlipCard();
+        cardSwapWith1POD.FlipCard();
         // Swap hands (no temp needed because we have the references)
-        player1.hand[card1Index] = card2POD;
+        player1.hand[card1Index] = cardSwapWith1POD;
         playerSwapWith.hand[cardSwappingWithIndex] = card1POD;
 
+    }
+
+    public void Swap2CardsBetweenPlayers(int player1Id, int playerSwapWithId, int cardId1, int cardId2, int cardSwapWith1, int cardSwapWith2)
+    {
+        if (player1Id == playerSwapWithId)
+        {
+            Debug.LogError("Swap2CardsBetweenPlayers: cannot swap cards between the same player ID " + player1Id);
+            return;
+        }
+        PlayerXServer player1 = GetPlayerByID(player1Id);
+        PlayerXServer playerSwapWith = GetPlayerByID(playerSwapWithId);
+        if (player1 == null || playerSwapWith == null)
+        {
+            Debug.LogError("Swap2CardsBetweenPlayers: could not find both players for IDs " + player1Id + " and " + playerSwapWithId);
+            return;
+        }
+        if (player1.playerId != player1Id || playerSwapWith.playerId != playerSwapWithId)
+        {
+            Debug.LogError("Swap2CardsBetweenPlayers: player IDs need to be in same order as card ids!");
+            return;
+        }
+        int card1Index = player1.GetIndexOfCardByID(cardId1);
+        int card2Index = player1.GetIndexOfCardByID(cardId2);
+        int cardSwappingWith1Index = playerSwapWith.GetIndexOfCardByID(cardSwapWith1);
+        int cardSwappingWith2Index = playerSwapWith.GetIndexOfCardByID(cardSwapWith2);
+        if (card1Index == -1 || card2Index == -1 || cardSwappingWith1Index == -1 || cardSwappingWith2Index == -1)
+        {
+            Debug.LogError("Swap2CardsBetweenPlayers: could not find all cards for IDs " + cardId1 + ", " + cardId2 + ", " + cardSwapWith1 + ", " + cardSwapWith2);
+            return;
+        }
+        if (Math.Abs(card1Index - card2Index) != 1 ||
+            Math.Abs(cardSwappingWith1Index - cardSwappingWith2Index) != 1)
+        {
+            Debug.LogError("Swap2CardsBetweenPlayers: card pairs to be swapped are not adjacent in hands!");
+            return;
+        }
+        // Consecutive order enforcement
+        if (card1Index > card2Index)
+        {
+            int temp = card1Index;
+            card1Index = card2Index;
+            card2Index = temp;
+        }
+        if (cardSwappingWith1Index > cardSwappingWith2Index)
+        {
+            int temp = cardSwappingWith1Index;
+            cardSwappingWith1Index = cardSwappingWith2Index;
+            cardSwappingWith2Index = temp;
+        }
+        CardPODServer card1POD = player1.hand[card1Index];
+        CardPODServer card2POD = player1.hand[card2Index];
+        CardPODServer cardSwapWith1POD = playerSwapWith.hand[cardSwappingWith1Index];
+        CardPODServer cardSwapWith2POD = playerSwapWith.hand[cardSwappingWith2Index];
+        //xx - This is not what we do here, especially as the colors will be different on playback for other clients
+        /*if (card1POD.GetFacingColor() != card2POD.GetFacingColor() ||
+            cardSwapWith1POD.GetOppositeColor() != cardSwapWith2POD.GetOppositeColor())
+        {
+            Debug.LogError("Swap2CardsBetweenPlayers: card pairs to be swapped are not adjacent matching colors!");
+            return;
+        }*/
+
+        // update ownerPlayerID
+        card1POD.ownerPlayerID = playerSwapWithId;
+        card2POD.ownerPlayerID = playerSwapWithId;
+        cardSwapWith1POD.ownerPlayerID = player1Id;
+        cardSwapWith2POD.ownerPlayerID = player1Id;
+       // Swap sides to reflect coming from opposite view to facing view, and moving from facing to opposite view
+        card1POD.FlipCard();
+        cardSwapWith1POD.FlipCard();
+        card2POD.FlipCard();
+        cardSwapWith2POD.FlipCard();
+        // Swap hands (no temp needed because we have the references)
+        player1.hand[card1Index] = cardSwapWith1POD;
+        player1.hand[card2Index] = cardSwapWith2POD;
+        playerSwapWith.hand[cardSwappingWith1Index] = card1POD;
+        playerSwapWith.hand[cardSwappingWith2Index] = card2POD;
     }
 
     // This is in Client version, but not used so..
@@ -347,6 +428,14 @@ public class GameStateServer
     public int GetActivePlayerNumber()
     {
         return currentPlayerIndex;
+    }
+    public  int GetCurrentPlayerNumber()
+    {
+        return currentPlayerIndex;
+    }
+    public  int GetCurrentPlayerId()
+    {
+        return playersServer[currentPlayerIndex].playerId;
     }
     public int GetTotalPlayers()
     {
@@ -563,8 +652,10 @@ public class GameStateServer
             cardCopy.cardID = cardID;
             cardCopy.state = CardState.drawPile;    // by default
             serverDrawPile.Add(cardCopy.cardID);
+            serverDrawPileAtStart.Add(cardCopy.cardID); // save initial state
             deckPull.RemoveAt(index);
             cardsInPlay[cardID] = cardCopy;
+            cardsInPlayAtStart[cardID] = cardCopy.Clone(); // save initial state
             cardID++;
         }
 

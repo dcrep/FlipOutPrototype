@@ -49,7 +49,7 @@ public class GameStateClient
     {
         if (totalPlayers > 0)
         {
-            Debug.LogError("InitGameStateClient: already initialized!");
+            Debug.LogWarning("InitGameStateClient: already initialized!");
             return;
         }
         
@@ -158,6 +158,20 @@ public class GameStateClient
 
         // Could track per-player actions if needed
         currentPlayerActionsTaken++;
+        return true;
+    }
+
+    public static bool AddPlayerActionTakenForAll(FlipOutActions action)
+    {
+        for (int playerIdx = 0; playerIdx < totalPlayers; playerIdx++)
+        {
+            Debug.Log("AddPlayerActionTakenForAll: adding action (" + action.actionTaken.ToString() + ") for player " + playerIdx);
+            if (!hotseatGameStates[playerIdx].AddPlayerActionTaken(playerIdx, action))
+            {
+                Debug.LogError("AddPlayerActionTakenForAll: failed to add action for player " + playerIdx);
+                return false;
+            }
+        }
         return true;
     }
 
@@ -301,6 +315,77 @@ public class GameStateClient
         playerSwapWith.hand[cardSwappingWithIndex] = card1POD;
     }
 
+    public void Swap2CardsBetweenPlayers(int player1Id, int playerSwapWithId, int cardId1, int cardId2, int cardSwapWith1, int cardSwapWith2)
+    {
+        if (player1Id == playerSwapWithId)
+        {
+            Debug.LogError("Swap2CardsBetweenPlayers: cannot swap cards between the same player ID " + player1Id);
+            return;
+        }
+        PlayerXClient player1 = GetPlayerByID(player1Id);
+        PlayerXClient playerSwapWith = GetPlayerByID(playerSwapWithId);
+        if (player1 == null || playerSwapWith == null)
+        {
+            Debug.LogError("Swap2CardsBetweenPlayers: could not find both players for IDs " + player1Id + " and " + playerSwapWithId);
+            return;
+        }
+        if (player1.playerId != player1Id || playerSwapWith.playerId != playerSwapWithId)
+        {
+            Debug.LogError("Swap2CardsBetweenPlayers: player IDs need to be in same order as card ids!");
+            return;
+        }
+        int card1Index = player1.GetIndexOfCardByID(cardId1);
+        int card2Index = player1.GetIndexOfCardByID(cardId2);
+        int cardSwappingWith1Index = playerSwapWith.GetIndexOfCardByID(cardSwapWith1);
+        int cardSwappingWith2Index = playerSwapWith.GetIndexOfCardByID(cardSwapWith2);
+        if (card1Index == -1 || card2Index == -1 || cardSwappingWith1Index == -1 || cardSwappingWith2Index == -1)
+        {
+            Debug.LogError("Swap2CardsBetweenPlayers: could not find all cards for IDs " + cardId1 + ", " + cardId2 + ", " + cardSwapWith1 + ", " + cardSwapWith2);
+            return;
+        }
+        if (Math.Abs(card1Index - card2Index) != 1 ||
+            Math.Abs(cardSwappingWith1Index - cardSwappingWith2Index) != 1)
+        {
+            Debug.LogError("Swap2CardsBetweenPlayers: card pairs to be swapped are not adjacent in hands!");
+            return;
+        }
+        // Consecutive order enforcement
+        if (card1Index > card2Index)
+        {
+            int temp = card1Index;
+            card1Index = card2Index;
+            card2Index = temp;
+        }
+        if (cardSwappingWith1Index > cardSwappingWith2Index)
+        {
+            int temp = cardSwappingWith1Index;
+            cardSwappingWith1Index = cardSwappingWith2Index;
+            cardSwappingWith2Index = temp;
+        }
+        CardPODClient card1POD = player1.hand[card1Index];
+        CardPODClient card2POD = player1.hand[card2Index];
+        CardPODClient cardSwapWith1POD = playerSwapWith.hand[cardSwappingWith1Index];
+        CardPODClient cardSwapWith2POD = playerSwapWith.hand[cardSwappingWith2Index];
+        //xx - This is not what we do here, especially as the colors will be different on playback for other clients
+        /*if (card1POD.color != card2POD.color ||
+            cardSwapWith1POD.color != cardSwapWith2POD.color)
+        {
+            Debug.LogError("Swap2CardsBetweenPlayers: card pairs to be swapped are not adjacent matching colors!");
+            return;
+        }*/
+
+        // update ownerPlayerID
+        card1POD.ownerPlayerID = playerSwapWithId;
+        card2POD.ownerPlayerID = playerSwapWithId;
+        cardSwapWith1POD.ownerPlayerID = player1Id;
+        cardSwapWith2POD.ownerPlayerID = player1Id;
+        // Swap hands (no temp needed because we have the references)
+        player1.hand[card1Index] = cardSwapWith1POD;
+        player1.hand[card2Index] = cardSwapWith2POD;
+        playerSwapWith.hand[cardSwappingWith1Index] = card1POD;
+        playerSwapWith.hand[cardSwappingWith2Index] = card2POD;
+    }
+
     public static void AssignDeckTopCard(CardColor cardColor)
     {
         deckTopCardColor = cardColor;
@@ -388,6 +473,14 @@ public class GameStateClient
     public static int GetActivePlayerNumber()
     {
         return currentPlayerIndex;
+    }
+    public static int GetCurrentPlayerNumber()
+    {
+        return currentPlayerIndex;
+    }
+    public static int GetCurrentPlayerId()
+    {
+        return CurrentGameStateClient.playersClient[currentPlayerIndex].playerId;
     }
     public static int GetTotalPlayers()
     {
