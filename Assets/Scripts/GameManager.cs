@@ -78,6 +78,15 @@ public class GameManager : MonoBehaviour
         new(7, 0, 0),     // Player 4 - Right center
         new(0, 0, 0)      // Player 5 - Center (?!!)
     };
+    [SerializeField] private Vector3[] playerScorePilePositions = new Vector3[5]
+    {
+    
+        new(-8, -3, 0),    // Player 1 - Bottom left
+        new(-8, 3, 0),     // Player 2 - Top left
+        new(-9, 0, 0),    // Player 3 - Left center back        
+        new(9, 0, 0),     // Player 4 - Right center back
+        new(0, 4, 0)      // Player 5 - Center top (?!!)
+    };
     [SerializeField] private Vector3 cardHolderOffset = new Vector3(2.5f, 0, 0);
 
 // CARDS
@@ -528,7 +537,7 @@ public class GameManager : MonoBehaviour
         }
         if (uiText != null)
         {
-            uiText.text = "Player " + playerId + "'s Turn";
+            uiText.text = "Player " + playerId + "'s " + (playerNum == 1 ? "^" : "v") + " Turn";
         }
         // This should be done at TurnEnd:
         //ClearObjectsInPlay();
@@ -538,6 +547,7 @@ public class GameManager : MonoBehaviour
             if (GameStateClient.CurrentGameStateClient.handsDealt)
             {
                 DealAllHandsClientFromState();
+                BuildScorePile();
                 FlipOutActions.ActOnFlipOutActionsForCurrentPlayer();
             }
             else
@@ -545,6 +555,7 @@ public class GameManager : MonoBehaviour
                 FlipOutActions.ActOnFlipOutActionsForCurrentPlayer();
                 // Dealing is done through calls to DealFullHandClientFromState in FlipOutActions
                 //DealAllHandsClientFromState();
+                BuildScorePile();
                 GameStateClient.CurrentGameStateClient.handsDealt = true;
             }
             
@@ -602,24 +613,127 @@ public class GameManager : MonoBehaviour
         //SetDrawPileTopCard(GameStateClient.GetDeckTopCardColor());
     }
 
-    public void DealFullHandClientFromState(int handPlayerNum)
+    public void DealFullHandClientFromState(int targetPlayerId)
     {
-        var hand = GameStateClient.CurrentGameStateClient.GetPlayerByNumber(handPlayerNum).hand;
+        var player = GameStateClient.CurrentGameStateClient.GetPlayerByID(targetPlayerId);
         //! Can't create cardObjects for other players, just cardPODs
         CardObject[] cardObjects = new CardObject[6];
 
-        int ownerPlayerID = GameStateClient.CurrentGameStateClient.GetPlayerIDByNumber(handPlayerNum);;
-        for (int i = 0; i < hand.Length; i++)
+        int playerNum = player.playerNumber;
+        for (int i = 0; i < player.hand.Length; i++)
         {
-            cardObjects[i] = CardObjectFromPODClient(ownerPlayerID, hand[i]); //.Clone());
+            cardObjects[i] = CardObjectFromPODClient(targetPlayerId, player.hand[i]); //.Clone());
             // Set card position to player position
-            cardObjects[i].SetLocalPosition(playerPositions[handPlayerNum] + cardHolderOffset * i);
+            cardObjects[i].SetLocalPosition(playerPositions[playerNum] + cardHolderOffset * i);
             // Slight offset for visibility
             cardObjects[i].SetSortingOrder(1);
             // Set card state to playerHolder
             cardObjects[i].cardPOD.state = CardState.playerHolder;
         }
         SetDrawPileTopCard(GameStateClient.GetDeckTopCardColor());
+    }
+
+    public void DealNewCardsToClient(int targetPlayerId, List<CardPODClient> dealtCards, int[] dealtCardIndices)
+    {
+        var player = GameStateClient.CurrentGameStateClient.GetPlayerByID(targetPlayerId);
+        if (player == null)
+        {
+            Debug.LogError("GameManager->DealNewCardsToClient(): Could not find player number for playerId " + targetPlayerId);
+            return;
+        }
+
+        int playerNum = player.playerNumber;
+        for (int i = 0; i < dealtCards.Count; i++)
+        {
+            int cardIndex = dealtCardIndices[i];
+            CardPODClient cardPOD = dealtCards[i];
+            CardObject cardObject = CardObjectFromPODClient(targetPlayerId, cardPOD);
+            // Set card position to player position
+            cardObject.SetLocalPosition(playerPositions[playerNum] + cardHolderOffset * cardIndex);
+            // Slight offset for visibility
+            cardObject.SetSortingOrder(1);
+            // Set card state to playerHolder
+            cardObject.cardPOD.state = CardState.playerHolder;
+        }
+        SetDrawPileTopCard(GameStateClient.GetDeckTopCardColor());
+    }
+
+    public void MoveCardsToScorePile(int playerId, int[] handIndices, CardColor cardColor)
+    {
+        PlayerXClient player = GameStateClient.CurrentGameStateClient.GetPlayerByID(playerId);
+        if (player == null)
+        {
+            Debug.LogError("GameManager->MoveCardsToScorePile(): Could not find player number for playerId " + playerId);
+            return;
+        }
+        if (handIndices.Length == 0 || handIndices[0] == -1)
+        {
+            Debug.LogWarning("GameManager->MoveCardsToScorePile(): handIndices is empty for playerId " + playerId);
+            return;
+        }
+
+        int playerNum = player.playerNumber;
+        Vector3 scorePilePosition = playerScorePilePositions[playerNum];
+
+        for (int i = 0; i < handIndices.Length; i++)
+        {
+            int handIndex = handIndices[i];
+            int cardID = player.hand[handIndex].cardID;
+
+            CardPODClient cardPOD = player.hand[handIndex];
+            
+            if (cardPOD != null)
+            {
+                CardObject cardObject = cardPOD.cardObject;
+                player.hand[handIndex] = new CardPODClient(); // Clear from player's hand
+                player.scorePile.Add(cardPOD); // Add to player's score pile
+
+                if (playerNum != GameStateClient.GetActivePlayerNumber())
+                {
+                    // for opponents, we need to 'flip' the card to the correct color
+                    cardObject.UpdateColor(cardColor);
+                }
+
+                // Move card to score pile position
+                Vector3 targetPosition = scorePilePosition;
+                
+                cardObject.SetLocalPosition(targetPosition);
+                cardObject.SetLocalScale(Vector3.one * 0.5f); // Slightly smaller
+                cardObject.SetSortingOrder((player.scorePile.Count -1) * 2); // On top of score pile
+                // Set card state to scorePile
+                cardObject.cardPOD.state = CardState.scorePile;
+            }
+            else
+            {
+                Debug.LogError("GameManager->MoveCardsToScorePile(): No card found with cardID " + cardID);
+            }
+        }
+        //this is called along with Score/Swipe to create/queue deal action:
+        // GameManager.Instance.serverDispatch.DealCardsToPlayerHandIndices(playerId, handIndices);
+    }
+
+    void BuildScorePile()
+    {
+        for (int playerNum = 0; playerNum < GameStateClient.GetTotalPlayers(); playerNum++)
+        {
+            PlayerXClient player = GameStateClient.CurrentGameStateClient.GetPlayerByNumber(playerNum);
+            Vector3 scorePilePosition = playerScorePilePositions[playerNum];
+
+            for (int i = 0; i < player.scorePile.Count; i++)
+            {
+                CardPODClient cardPOD = player.scorePile[i];
+                CardObject cardObject = CardObjectFromPODClient(player.playerId, cardPOD);
+                cardPOD.cardObject = cardObject;
+
+                Vector3 targetPosition = scorePilePosition;
+
+                cardObject.SetLocalPosition(targetPosition);
+                cardObject.SetLocalScale(Vector3.one * 0.5f); // Slightly smaller
+                cardObject.SetSortingOrder(i * 2); // On top of score pile
+                // Set card state to scorePile
+                cardObject.cardPOD.state = CardState.scorePile;
+            }
+        }
     }
 
     // Client-side

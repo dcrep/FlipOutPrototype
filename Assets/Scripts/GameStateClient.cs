@@ -386,6 +386,33 @@ public class GameStateClient
         playerSwapWith.hand[cardSwappingWith2Index] = card2POD;
     }
 
+    public void ScoreCardsFromPlayerHand(int playerId, int[] adjacentCardIndices)
+    {
+        PlayerXClient player = GetPlayerByID(playerId);
+        if (player == null)
+        {
+            Debug.LogError("ScoreCardsFromPlayerHand: player not found for playerId " + playerId);
+            return;
+        }
+        foreach (int handIdx in adjacentCardIndices)
+        {
+            if (handIdx < 0 || handIdx >= player.hand.Length)
+            {
+                Debug.LogError("ScoreCardsFromPlayerHand: invalid hand index " + handIdx + " for playerId " + playerId);
+                continue;
+            }
+            CardPODClient cardPOD = player.hand[handIdx];
+            if (cardPOD == null)
+            {
+                Debug.LogError("ScoreCardsFromPlayerHand: no card found at hand index " + handIdx + " for playerId " + playerId);
+                continue;
+            }
+            cardPOD.state = CardState.scorePile;
+            player.scorePile.Add(cardPOD); // Add to player's score pile
+            player.hand[handIdx] = new CardPODClient();
+        }
+    }
+
     public static void AssignDeckTopCard(CardColor cardColor)
     {
         deckTopCardColor = cardColor;
@@ -920,6 +947,53 @@ public class GameStateClient
             maxSameColorCount = sameColorCount;
         //Debug.Log("GetTotalAdjacentColorCount: player " + player.playerId + " max adjacent same color count = " + maxSameColorCount);
         return maxSameColorCount;
+    }
+
+    public static int[] GetStartAndEndIndicesOfAdjacentColorsBasedOnCardId(int cardId)
+    {
+         PlayerXClient ownerPlayer = CurrentGameStateClient.GetPlayerByCardId(cardId);
+        if (ownerPlayer == null)
+        {
+            Debug.LogError("GetStartAndEndIndicesOfAdjacentColorBasedOnCardId: could not find owner player for cardID " + cardId);
+            return new int[2] { -1, -1 };
+        }
+        int cardIndex = ownerPlayer.GetIndexOfCardByID(cardId);
+        CardColor color = ownerPlayer.hand[cardIndex].color;
+
+        // Check left
+        int startIndex = cardIndex;
+        for (int i = cardIndex - 1; i >= 0; i--)
+        {
+            if (ownerPlayer.hand[i].color == color)
+                startIndex = i;
+            else
+                break;
+        }
+        // Check right
+        int endIndex = cardIndex;
+        for (int i = cardIndex + 1; i < 6; i++)
+        {
+            if (ownerPlayer.hand[i].color == color)
+                endIndex = i;
+            else
+                break;
+        }
+        return new int[2] { startIndex, endIndex };
+    }
+
+    public static int[] GetAdjacentColorsIndicesBasedOnCardId(int cardId)
+    {
+        int[] startEnd = GetStartAndEndIndicesOfAdjacentColorsBasedOnCardId(cardId);
+        if (startEnd[0] == -1)
+        {
+            return new int[1] { -1 };
+        }
+        int[] returnIndices = new int[startEnd[1] - startEnd[0] + 1];
+        for (int i = startEnd[0]; i <= startEnd[1]; i++)
+        {
+            returnIndices[i - startEnd[0]] = i;
+        }
+        return returnIndices;
     }
 #endregion
 

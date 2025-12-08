@@ -97,6 +97,65 @@ public class ServerDispatch
         StartTurn();
     }
 
+    private void DealCardsToPlayerHandIndices(int playerId, int[] handIndices)
+    {
+        int playerNum = gameStateServer.GetPlayerNumberByID(playerId);
+        List<CardPODServer> cards = gameStateServer.DrawCards(handIndices.Length, playerId);
+
+        CardColor deckTopColor = gameStateServer.PeekTopDrawCardColor();
+
+        CardActionInfo[] dealtCardInfos = new CardActionInfo[handIndices.Length];
+        CardActionInfo[] dealtCardInfosForOpponents = new CardActionInfo[handIndices.Length];
+
+        for (int i = 0; i < handIndices.Length; i++)
+        {
+            dealtCardInfos[i] = new CardActionInfo
+            {
+                cardID = cards[i].cardID,
+                cardColor = cards[i].ColorBasedOnPlayer(playerId)
+            };
+            dealtCardInfosForOpponents[i] = new CardActionInfo
+            {
+                cardID = cards[i].cardID,
+                cardColor = cards[i].ColorBasedOnPlayer(-9999) // unknown to opponent
+            };
+
+            cards[i].state = CardState.playerHolder;
+            //cards[i].ownerPlayerID = playerId;    // already set in DrawCards()
+        }
+        // Create Deal action for player
+        FlipOutActions dealAction = FlipOutActions.CreateDealAction(
+            playerId,
+            dealtCardInfos,
+            handIndices, deckTopColor
+        );
+        FlipOutActions dealActionForOpponents = FlipOutActions.CreateDealAction(
+            playerId,
+            dealtCardInfosForOpponents,
+            handIndices, deckTopColor
+        );
+        // Apply to GameStateServer
+        //! GameStateServer won't 'see' both sides of cards in these actions, but can lookup based on cardID
+        gameStateServer.AddUncountedActionTaken(dealAction);
+        gameStateServer.AssignCardsToPlayerHand(playerNum, cards, handIndices);
+
+        GameStateClient.AssignDeckTopCard(deckTopColor);
+
+        if (isHotseatGame)
+        {
+            GameStateClient.GetHotseatGameStateForPlayerNumber(playerNum).AddUncountedActionTaken(dealAction);
+            GameStateClient.AddUncountedActionTakenForOpponentViews(playerNum, dealActionForOpponents);
+
+            //GameStateClient.GetHotseatGameStateForPlayerNumber(playerNum).AssignCardsToPlayerHand(playerNum, cardsForPlayer, positions);
+            // Update GameStateClient for each player (static method for obvious reasons)
+            //GameStateClient.AssignCardsToPlayerHandForOpponentViews(playerNum, cardsForOpponentViews, positions);
+        }
+        else
+        {
+            //
+        }
+    }
+
     private void DealCardsToPlayers()
     {
         if (!isServer)
@@ -179,11 +238,7 @@ public class ServerDispatch
             }
             else
             {
-                // Send message server->client
-                SendCardsToPlayer(playerId, dealAction);
-
-                // opponents see opposite sides of cards (server->client message)
-                ShowDealtCardsToOpponents(playerId, dealActionForOpponents);
+                //
             }
         }
         // Draw once all hands are configured
@@ -191,53 +246,6 @@ public class ServerDispatch
         //if (isHotseatGame) { GameManager.Instance.DealAllHandsClientFromState(); }
     }
 
-    // Server-Client message (actions inside are when received):
-    private void SendCardsToPlayer(int playerId, FlipOutActions dealAction)
-    {
-        // Send to specific player only
-        //GameManager.Instance.networkManager.SendFlipOutActionToPlayer(playerId, dealAction);
-        int playerNum = gameStateServer.GetPlayerNumberByID(playerId);
-
-        CardPODClient[] hand = new CardPODClient[6];
-        for (int i = 0; i < dealAction.cardSourceInfos.Length; i++)
-        { 
-            hand[dealAction.positions[i]] = new CardPODClient
-            {
-                cardID = dealAction.cardSourceInfos[i].cardID,
-                color = dealAction.cardSourceInfos[i].cardColor,
-                state = CardState.playerHolder,
-                ownerPlayerID = playerId
-            };
-        }
-
-        GameManager.Instance.DealFullHandClient(playerNum, hand);
-    }
-    
-    // Server-Client message (actions inside are when received):
-    private void ShowDealtCardsToOpponents(int dealtPlayerId, FlipOutActions dealActionForOpponent)
-    {
-        int dealtPlayerNum = gameStateServer.GetPlayerNumberByID(dealtPlayerId);
-        CardPODClient[] hand = new CardPODClient[6];
-        for (int i = 0; i < dealActionForOpponent.cardSourceInfos.Length; i++)
-        {
-            hand[dealActionForOpponent.positions[i]] = new CardPODClient
-            {
-                cardID = dealActionForOpponent.cardSourceInfos[i].cardID,
-                color = dealActionForOpponent.cardSourceInfos[i].cardColor,
-                state = CardState.playerHolder,
-                ownerPlayerID = dealtPlayerId
-            };
-        }
-        // Send to all other players except 'dealingPlayerId'
-        for (int playerNum = 0; playerNum < gameStateServer.GetTotalPlayers(); playerNum++)
-        {
-            int opponentPlayerId = gameStateServer.GetPlayerIDByNumber(playerNum);
-            if (dealtPlayerNum != playerNum)
-            {
-                GameManager.Instance.ShowOpponentFullHandClient(dealtPlayerNum, hand);
-            }
-        }
-    }
 
     // called internally:
     private void StartTurn()
@@ -866,7 +874,73 @@ public class ServerDispatch
         }
     }
 
+    public void ScoreCards(int playerId, int cardId)
+    {
+        if (!isServer)
+        {
+            Debug.LogError("ScoreCards: not server!");
+            return;
+        }
+        Debug.Log("ServerDispatch->ScoreCards(): Player " + playerId + " scoring card based on: " + cardId);
 
+
+        PlayerXServer player = gameStateServer.GetPlayerByID(playerId);
+        if (player == null)
+        {
+            Debug.LogError("ServerDispatch->ScoreCards(): invalid player!");
+            return;
+        }
+
+        if (player.GetIndexOfCardByID(cardId) == -1)    //! Difference between this and swipe (swipe must be another player)
+        {
+            Debug.LogError("ServerDispatch->ScoreCards(): player " + playerId + " does not own card " + cardId + "!");
+            return;
+        }
+    
+        //! This action needs to change for swipe (looking at opposite side colors)
+        int[] adjacentCardIndices = GameStateClient.GetAdjacentColorsIndicesBasedOnCardId(cardId);
+        if (adjacentCardIndices.Length < 4)
+        {
+            Debug.Log("ServerDispatch->ScoreCards(): need at least 4 adjacent same-color cards to score!");
+            return;
+        }
+ 
+        CardActionInfo[] cardInfos = new CardActionInfo[adjacentCardIndices.Length];;
+        for (int i = 0; i < adjacentCardIndices.Length; i++)
+        {
+            CardPODServer cardPOD = player.hand[adjacentCardIndices[i]];
+
+            cardInfos[i] = new CardActionInfo
+            {
+                cardID = cardPOD.cardID,
+                cardColor = cardPOD.GetFacingColor()   //! Main difference between this and swipe - facing/opposite cardface
+            };
+        }
+
+        FlipOutActions scoreAction = FlipOutActions.CreateScoreAction(
+            playerId,
+            cardInfos,
+            adjacentCardIndices
+        );
+
+        // Apply to GameStateServer
+        gameStateServer.AddPlayerActionTaken(player.playerNumber, scoreAction);
+        gameStateServer.ScoreCardsFromPlayerHand(playerId, adjacentCardIndices);        
+
+        if (isHotseatGame)
+        {
+            GameStateClient.AddPlayerActionTakenForAll(scoreAction);
+        }
+        //else {}
+
+        // 2nd action:
+        DealCardsToPlayerHandIndices(playerId, adjacentCardIndices);
+
+        if (isHotseatGame)
+        {
+            FlipOutActions.ActOnFlipOutActionsForCurrentPlayer();
+        } 
+    }
 
 
 

@@ -138,6 +138,11 @@ public class CardObject : MonoBehaviour
         gameObject.transform.localPosition = pos;
     }
 
+    public void SetLocalScale(Vector3 scale)
+    {
+        gameObject.transform.localScale = scale;
+    }
+
     public void HighlightCardToggle()
     {
         if (highlightPrefab == null)

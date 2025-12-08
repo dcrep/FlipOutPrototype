@@ -222,7 +222,7 @@ public class GameStateServer
             Debug.LogError("AssignCardsToPlayerHand: invalid card/position list for player " + playerNum);
             return;
         }
-        for (int i = 0; i < 6; i++)
+        for (int i = 0; i < cards.Count; i++)
         {
             playersServer[playerNum].hand[positions[i]] = cards[i];
         }
@@ -369,6 +369,34 @@ public class GameStateServer
         playerSwapWith.hand[cardSwappingWith1Index] = card1POD;
         playerSwapWith.hand[cardSwappingWith2Index] = card2POD;
     }
+
+    public void ScoreCardsFromPlayerHand(int playerId, int[] adjacentCardIndices)
+    {
+        PlayerXServer player = GetPlayerByID(playerId);
+        if (player == null)
+        {
+            Debug.LogError("ScoreCardsFromPlayerHand: player not found for playerId " + playerId);
+            return;
+        }
+        foreach (int handIdx in adjacentCardIndices)
+        {
+            if (handIdx < 0 || handIdx >= player.hand.Length)
+            {
+                Debug.LogError("ScoreCardsFromPlayerHand: invalid hand index " + handIdx + " for playerId " + playerId);
+                continue;
+            }
+            CardPODServer cardPOD = player.hand[handIdx];
+            if (cardPOD == null)
+            {
+                Debug.LogError("ScoreCardsFromPlayerHand: no card found at hand index " + handIdx + " for playerId " + playerId);
+                continue;
+            }
+            cardPOD.state = CardState.scorePile;
+            player.scorePile.Add(cardPOD); // Add to player's score pile
+            player.hand[handIdx] = new CardPODServer();
+        }
+    }
+
 
     // This is in Client version, but not used so..
     //public void SetHandForPlayer(int playerNum, CardPODClient[] handCards)

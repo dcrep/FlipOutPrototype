@@ -205,6 +205,7 @@ public class FlipOutActions
                     break;
                 case FlipOutAction.Score:
                     // Do something for score
+                    GameManager.Instance.MoveCardsToScorePile(action.playerTakingActionId, action.positions, action.cardSourceInfos[0].cardColor);
                     break;
                 case FlipOutAction.Swipe:
                     // Do something for swipe

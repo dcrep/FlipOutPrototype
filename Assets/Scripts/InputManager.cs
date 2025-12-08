@@ -267,10 +267,48 @@ public class InputManager : MonoBehaviour
             else if (keyValue == 5)
             {
                 //TurnAction.Score // score a set of 4 to 6 adjacent same-color cards from your hand, redraw up to 6
+                if (GameManager.Instance.cardsHighlighted.Count != 1)
+                {
+                    Debug.Log("Need to highlight 1 card to score!");
+                    return;
+                }
+                int[] adjacentCardIndices = GameStateClient.GetAdjacentColorsIndicesBasedOnCardId(GameManager.Instance.cardsHighlighted[0].cardPOD.cardID);
+                if (adjacentCardIndices.Length < 4)
+                {
+                    Debug.Log("Need to highlight a card that has at least 4 adjacent same-color cards to score!");
+                    return;
+                }
+                else
+                {
+                    // This will fail if current player doesn't own the highlighted card
+                    GameManager.Instance.serverDispatch.ScoreCards(GameStateClient.GetCurrentPlayerId(),
+                        GameManager.Instance.cardsHighlighted[0].cardPOD.cardID);
+                    GameManager.Instance.ClearHighlightedCards();
+                }
+                
             }
             else if (keyValue == 6)
             {
                 //TurnAction.Swipe  // score a set of 4 to 6 adjacent same-color cards from another player's hand
+                if (GameManager.Instance.cardsHighlighted.Count != 1)
+                {
+                    Debug.Log("Need to highlight 1 card to swipe score!");
+                    return;
+                }
+                int[] adjacentCardIndices = GameStateClient.GetAdjacentColorsIndicesBasedOnCardId(GameManager.Instance.cardsHighlighted[0].cardPOD.cardID);
+                if (adjacentCardIndices.Length < 4)
+                {
+                    Debug.Log("Need to highlight a card that has at least 4 adjacent same-color cards to score!");
+                    return;
+                }
+                else
+                {
+                    // This will fail if current player owns the highlighted card
+                    //GameManager.Instance.serverDispatch.SwipeCards(GameStateClient.GetCurrentPlayerId(),
+                    //    GameManager.Instance.cardsHighlighted[0].cardPOD.cardID);
+                    //GameManager.Instance.ClearHighlightedCards();
+
+                }
             }
             else if (keyValue == 0)
             {
