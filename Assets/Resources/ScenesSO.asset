@@ -13,6 +13,12 @@ MonoBehaviour:
   m_Name: ScenesSO
   m_EditorClassIdentifier: 
   mainMenuScene: MainMenu
+  mainMenuSceneEnum: 1
+  HotseatLobbyScene: LobbyHotseat
+  HotseatLobbySceneEnum: 2
   gameScene: CoreGame
+  gameSceneEnum: 3
   gameOverScene: GameOverX
+  gameOverSceneEnum: 4
   DCExperimentsScene: xDCExperiments
+  DCExperimentsSceneEnum: 3

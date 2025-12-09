@@ -8,6 +8,9 @@ public class ScenesSO : ScriptableObject
     //public SceneReference mainMenuScene;
     public string mainMenuScene;
     public Scenes mainMenuSceneEnum = Scenes.MainMenu;
+
+    public string HotseatLobbyScene;
+    public Scenes HotseatLobbySceneEnum = Scenes.Lobby;
     public string gameScene;
     public Scenes gameSceneEnum = Scenes.Game;
     public string gameOverScene;

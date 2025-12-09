@@ -12,6 +12,7 @@ public enum Scenes
 {
     LoadingScreen,
     MainMenu,
+    Lobby,
     Game,
     GameOver,
     DCExperiments
@@ -113,6 +114,8 @@ public class GameManager : MonoBehaviour
 
     public bool forceHotseat = true;
 
+    public List<string> hotseatPlayerNames = new List<string>() { "PlayerUNO", "Player2" };
+
     public TextMeshProUGUI uiText; 
 
     // Awake - Called before first Scene, not destroyed or recreated on Scene load
@@ -174,6 +177,12 @@ public class GameManager : MonoBehaviour
                 currentScene = scenesSO.mainMenuSceneEnum;
                 currentGameState = GameStatus.UI;
                 break;
+            case Scenes.Lobby:
+                SceneManager.LoadScene(scenesSO.HotseatLobbyScene);
+                //currentScene = Scenes.Lobby;
+                currentScene = scenesSO.HotseatLobbySceneEnum;
+                currentGameState = GameStatus.UI;
+                break;
             case Scenes.Game:
                 SceneManager.LoadScene(scenesSO.gameScene);
                 //currentScene = Scenes.Game;
@@ -207,6 +216,15 @@ public class GameManager : MonoBehaviour
             {
                 Debug.Log("currentScene mismatch; currentScene set to " + currentScene.ToString() + "; updating to " + Scenes.MainMenu.ToString());
                 currentScene = Scenes.MainMenu;
+                currentGameState = GameStatus.UI;
+            }
+        }
+        else if (activeSceneName == scenesSO.HotseatLobbyScene)
+        {
+            if (currentScene != Scenes.Lobby)
+            {
+                Debug.Log("currentScene mismatch; currentScene set to " + currentScene.ToString() + "; updating to " + Scenes.Lobby.ToString());
+                currentScene = Scenes.Lobby;
                 currentGameState = GameStatus.UI;
             }
         }
@@ -275,7 +293,8 @@ public class GameManager : MonoBehaviour
             if (forceHotseat && currentMultiplayerMode == MultiplayerMode.Disconnected)
             {
                 //StartHotseatGame(2, new string[] { Environment.UserName, "Player2" });
-                StartHotseatGame(2, new string[] { "PlayerUNO", "Player2" });
+                //StartHotseatGame(2, new string[] { "PlayerUNO", "Player2" });
+                StartHotseatGame(hotseatPlayerNames.Count, hotseatPlayerNames.ToArray());
             }
         }
     }
@@ -317,7 +336,7 @@ public class GameManager : MonoBehaviour
     void Update()
     {
         // Quick test: press L to load the configured scene
-        if (Input.GetKeyDown(KeyCode.L))
+        if (Input.GetKeyDown(KeyCode.Slash))
         {
             //LoadScene("xDCExperiments");
             LoadScene(Scenes.DCExperiments);
