@@ -570,9 +570,9 @@ public class GameManager : MonoBehaviour
     {
         if (color == CardColor.invalid)
         {
-            Debug.LogWarning("GameManager->SetDrawPileTopCard(): color is invalid, removing drawPileTop card.");
             if (drawPileTop != null)
             {
+                Debug.LogWarning("GameManager->SetDrawPileTopCard(): color is invalid, removing drawPileTop card.");
                 Destroy(drawPileTop.gameObject);
                 drawPileTop = null;
             }

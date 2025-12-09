@@ -207,7 +207,6 @@ public class FlipOutActions
                     GameManager.Instance.MoveCardsToScorePile(action.playerTakingActionId, action.positions, action.cardSourceInfos[0].cardColor);
                     break;
                 case FlipOutAction.Swipe:
-                    // Do something for swipe
                     GameManager.Instance.SwipeCardsToScorePiles(
                         action.playerTakingActionId,
                         action.playerTargetId,

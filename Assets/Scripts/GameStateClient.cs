@@ -168,7 +168,7 @@ public class GameStateClient
             Debug.Log("AddPlayerActionTakenForAll: adding action (" + action.actionTaken.ToString() + ") for player " + playerIdx);
             if (!hotseatGameStates[playerIdx].AddPlayerActionTaken(playerIdx, action))
             {
-                Debug.LogError("AddPlayerActionTakenForAll: failed to add action for player " + playerIdx);
+                Debug.LogError("AddPlayerActionTakenForAll: failed to add action " + action.actionTaken.ToString() + " for player #" + playerIdx);
                 return false;
             }
         }
