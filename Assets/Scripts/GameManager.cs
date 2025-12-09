@@ -352,8 +352,11 @@ public class GameManager : MonoBehaviour
                 cardsHighlighted.Add(card);
             }
         }
-        else
+        else if (card.cardPOD.state == CardState.scorePile)
         {
+            Debug.Log("Score pile count: " + GameStateClient.CurrentGameStateClient.GetPlayerByID(card.cardPOD.ownerPlayerID).scorePile.Count);
+        }
+        else {
             Debug.Log("Max run player 0: " + GameStateClient.GetTotalAdjacentColorCount(GameStateClient.CurrentGameStateClient.GetPlayerByNumber(0)));
             Debug.Log("Max run player 1: " + GameStateClient.GetTotalAdjacentColorCount(GameStateClient.CurrentGameStateClient.GetPlayerByNumber(1)));
         }
@@ -686,6 +689,9 @@ public class GameManager : MonoBehaviour
             {
                 CardObject cardObject = cardPOD.cardObject;
                 player.hand[handIndex] = new CardPODClient(); // Clear from player's hand
+
+                // Set card state to scorePile
+                cardObject.cardPOD.state = CardState.scorePile;
                 player.scorePile.Add(cardPOD); // Add to player's score pile
 
                 if (playerNum != GameStateClient.GetActivePlayerNumber())
@@ -700,13 +706,104 @@ public class GameManager : MonoBehaviour
                 cardObject.SetLocalPosition(targetPosition);
                 cardObject.SetLocalScale(Vector3.one * 0.5f); // Slightly smaller
                 cardObject.SetSortingOrder((player.scorePile.Count -1) * 2); // On top of score pile
-                // Set card state to scorePile
-                cardObject.cardPOD.state = CardState.scorePile;
             }
             else
             {
                 Debug.LogError("GameManager->MoveCardsToScorePile(): No card found with cardID " + cardID);
             }
+        }
+        //this is called along with Score/Swipe to create/queue deal action:
+        // GameManager.Instance.serverDispatch.DealCardsToPlayerHandIndices(playerId, handIndices);
+    }
+
+    public void SwipeCardsToScorePiles(int playerId, int targetPlayerId, int[] handIndices, CardColor cardColor)
+    {
+        // Similar to MoveCardsToScorePile but moving all but 1 to player's pile, and final to target player's pile
+        PlayerXClient player = GameStateClient.CurrentGameStateClient.GetPlayerByID(playerId);
+        PlayerXClient targetPlayer = GameStateClient.CurrentGameStateClient.GetPlayerByID(targetPlayerId);
+        if (player == null || targetPlayer == null)
+        {
+            Debug.LogError("GameManager->SwipeCardsToScorePiles(): Could not find player for one of the playerIds " + playerId + " or " + targetPlayerId);
+            return;
+        }
+        if (handIndices.Length == 0 || handIndices[0] == -1)
+        {
+            Debug.LogWarning("GameManager->SwipeCardsToScorePiles(): handIndices is empty for targetPlayerId " + targetPlayerId);
+            return;
+        }
+
+        int playerNum = player.playerNumber;
+        int playerTargetNum = targetPlayer.playerNumber;
+        Vector3 scorePilePosition = playerScorePilePositions[playerNum];
+        Vector3 targetScorePilePosition = playerScorePilePositions[playerTargetNum];
+
+        // Final card goes to target player's score pile
+        for (int i = 0; i < handIndices.Length - 1; i++)
+        {
+            int handIndex = handIndices[i];
+            int cardID = targetPlayer.hand[handIndex].cardID;
+
+            CardPODClient cardPOD = targetPlayer.hand[handIndex];
+            
+            if (cardPOD != null)
+            {
+                CardObject cardObject = cardPOD.cardObject;
+                targetPlayer.hand[handIndex] = new CardPODClient(); // Clear from player's hand
+
+                // update id, state
+                cardPOD.ownerPlayerID = playerId;
+                cardPOD.state = CardState.scorePile;
+                player.scorePile.Add(cardPOD); // Add to player's score pile
+
+                if (playerTargetNum == GameStateClient.GetActivePlayerNumber())
+                {
+                    // for owner, we need to 'flip' the card (to show opposite side) to the correct color
+                    cardObject.UpdateColor(cardColor);
+                }
+
+                // Move card to score pile position
+                Vector3 targetPosition = scorePilePosition;
+                
+                cardObject.SetLocalPosition(targetPosition);
+                cardObject.SetLocalScale(Vector3.one * 0.5f); // Slightly smaller
+                cardObject.SetSortingOrder((player.scorePile.Count -1) * 2); // On top of score pile
+            }
+            else
+            {
+                Debug.LogError("GameManager->SwipeCardsToScorePiles(): No card found with cardID " + cardID);
+            }
+        }
+
+        // Final card goes into target player's score pile
+        int finalHandIndex = handIndices[handIndices.Length - 1];
+        int finalCardID = targetPlayer.hand[finalHandIndex].cardID;
+        CardPODClient finalCardPOD = targetPlayer.hand[finalHandIndex];
+        if (finalCardPOD != null)
+        {
+            CardObject finalCardObject = finalCardPOD.cardObject;
+            targetPlayer.hand[finalHandIndex] = new CardPODClient(); // Clear from player's hand
+
+            // update id, state
+            //finalCardPOD.ownerPlayerID = targetPlayerId;  // stays the same
+            finalCardPOD.state = CardState.scorePile;
+            targetPlayer.scorePile.Add(finalCardPOD); // Add to target player's score pile
+
+            if (playerTargetNum == GameStateClient.GetActivePlayerNumber())
+            {
+                // for owner, we need to 'flip' the card (to show opposite side) to the correct color
+                finalCardObject.UpdateColor(cardColor);
+            }
+
+            // Move card to score pile position
+            Vector3 targetPosition = targetScorePilePosition;
+            
+            finalCardObject.SetLocalPosition(targetPosition);
+            finalCardObject.SetLocalScale(Vector3.one * 0.5f); // Slightly smaller
+            finalCardObject.SetSortingOrder((targetPlayer.scorePile.Count -1) * 2); // On top of score pile
+        }
+        else
+        {
+            Debug.LogError("GameManager->SwipeCardsToScorePiles(): No card found with cardID " + finalCardID);
         }
         //this is called along with Score/Swipe to create/queue deal action:
         // GameManager.Instance.serverDispatch.DealCardsToPlayerHandIndices(playerId, handIndices);

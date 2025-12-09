@@ -124,6 +124,7 @@ public class GameStateServer
 
         //cardsInPlay.Clear();
         cardsInPlay = new CardPODServer[90];    // reset
+        cardsInPlayAtStart = new CardPODServer[90]; // reset
 
         actionsTakenFull.Clear();
         actionsTakenFull = new List<FlipOutActions>();  // reset
@@ -397,6 +398,48 @@ public class GameStateServer
         }
     }
 
+    public void SwipeCardsFromPlayerHand(int playerSwipingId, int targetPlayerId, int[] adjacentCardIndices)
+    {
+        PlayerXServer swipingPlayer = GetPlayerByID(playerSwipingId);
+        PlayerXServer targetPlayer = GetPlayerByID(targetPlayerId);
+        if (swipingPlayer == null || targetPlayer == null)
+        {
+            Debug.LogError("SwipeCardsFromPlayerHand: player not found for given ids " + playerSwipingId + " or " + targetPlayerId);
+            return;
+        }
+        // the last card goes into target player's score pile
+
+        //foreach (int handIdx in adjacentCardIndices - 1)
+        for (int handIdx = 0; handIdx < adjacentCardIndices.Length - 1; handIdx++)
+        {
+            CardPODServer cardPOD = targetPlayer.hand[adjacentCardIndices[handIdx]];
+            if (cardPOD == null)
+            {
+                Debug.LogError("SwipeCardsFromPlayerHand: no card found at hand index " + handIdx + " for playerId " + targetPlayerId);
+                continue;
+            }
+            // update id
+            cardPOD.ownerPlayerID = playerSwipingId;
+            // 'facing' is side for owner, flip to opposite side for swiping player
+            cardPOD.FlipCard();
+            cardPOD.state = CardState.scorePile;
+            swipingPlayer.scorePile.Add(cardPOD); // Add to player's score pile
+            targetPlayer.hand[adjacentCardIndices[handIdx]] = new CardPODServer();
+        }
+        // Last card moves to target player's score pile
+        int lastHandIdx = adjacentCardIndices[adjacentCardIndices.Length - 1];
+        CardPODServer lastCardPOD = targetPlayer.hand[lastHandIdx];
+        if (lastCardPOD == null)
+        {
+            Debug.LogError("SwipeCardsFromPlayerHand: no card found at last hand index " + lastHandIdx + " for playerId " + targetPlayerId);
+            return;
+        }
+        // flip to opposite side so what is 'facing' owning player syncs
+        lastCardPOD.FlipCard();
+        lastCardPOD.state = CardState.scorePile;
+        targetPlayer.scorePile.Add(lastCardPOD); // Add to target player's score pile
+        targetPlayer.hand[lastHandIdx] = new CardPODServer();
+    }
 
     // This is in Client version, but not used so..
     //public void SetHandForPlayer(int playerNum, CardPODClient[] handCards)
@@ -579,7 +622,9 @@ public class GameStateServer
             Debug.LogError("PeekTopDrawCardColor: draw pile empty!");
             return CardColor.invalid;
         }
-        return cardsInPlay[serverDrawPile[0]].GetFacingColor();
+        // Change from original facingcolor return because the player will get that card, so it appears to flip to them
+        return cardsInPlay[serverDrawPile[0]].GetOppositeColor();
+        //return cardsInPlay[serverDrawPile[0]].GetFacingColor();
     }
 
     public int GetDrawPileCount()

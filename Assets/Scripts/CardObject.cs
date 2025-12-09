@@ -100,6 +100,9 @@ public class CardObject : MonoBehaviour
             case CardColor.yellow:
                 CardFace = cardSpritesSO.yellowCard;
                 break;
+            case CardColor.invalid:
+                CardFace = cardSpritesSO.whiteCard; // not a valid color but a safeguard
+                break;
         }
         if (spriteRenderer == null)
         {

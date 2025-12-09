@@ -10,7 +10,7 @@ public enum CardFace { sideA, sideB }
 public class CardPODClient //: MonoBehaviour
 {
     public CardState state = CardState.invalid;
-    public CardColor color = CardColor.red;
+    public CardColor color = CardColor.invalid;
 
     public int cardID = -1;   // unique identifier for this card
 
@@ -37,8 +37,8 @@ public class CardPODServer
     public CardState state = CardState.invalid;
     public CardFace facingOwner = CardFace.sideA;
 
-    public CardColor cardSideAColor = CardColor.red;
-    public CardColor cardSideBColor = CardColor.red;
+    public CardColor cardSideAColor = CardColor.invalid;
+    public CardColor cardSideBColor = CardColor.invalid;
 
     public int cardID = -1;   // unique identifier for this card
 

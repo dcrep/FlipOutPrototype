@@ -412,6 +412,44 @@ public class GameStateClient
             player.hand[handIdx] = new CardPODClient();
         }
     }
+    public void SwipeCardsFromPlayerHand(int playerSwipingId, int targetPlayerId, int[] adjacentCardIndices)
+    {
+        PlayerXClient swipingPlayer = GetPlayerByID(playerSwipingId);
+        PlayerXClient targetPlayer = GetPlayerByID(targetPlayerId);
+        if (swipingPlayer == null || targetPlayer == null)
+        {
+            Debug.LogError("SwipeCardsFromPlayerHand: player not found for given ids " + playerSwipingId + " or " + targetPlayerId);
+            return;
+        }
+        // the last card goes into target player's score pile
+
+        //foreach (int handIdx in adjacentCardIndices - 1)
+        for (int handIdx = 0; handIdx < adjacentCardIndices.Length - 1; handIdx++)
+        {
+            CardPODClient cardPOD = targetPlayer.hand[adjacentCardIndices[handIdx]];
+            if (cardPOD == null)
+            {
+                Debug.LogError("SwipeCardsFromPlayerHand: no card found at hand index " + handIdx + " for playerId " + targetPlayerId);
+                continue;
+            }
+            // update id
+            cardPOD.ownerPlayerID = playerSwipingId;
+            cardPOD.state = CardState.scorePile;
+            swipingPlayer.scorePile.Add(cardPOD); // Add to player's score pile
+            targetPlayer.hand[adjacentCardIndices[handIdx]] = new CardPODClient();
+        }
+        // Last card moves to target player's score pile
+        int lastHandIdx = adjacentCardIndices[adjacentCardIndices.Length - 1];
+        CardPODClient lastCardPOD = targetPlayer.hand[lastHandIdx];
+        if (lastCardPOD == null)
+        {
+            Debug.LogError("SwipeCardsFromPlayerHand: no card found at last hand index " + lastHandIdx + " for playerId " + targetPlayerId);
+            return;
+        }
+        lastCardPOD.state = CardState.scorePile;
+        targetPlayer.scorePile.Add(lastCardPOD); // Add to target player's score pile
+        targetPlayer.hand[lastHandIdx] = new CardPODClient();
+    }
 
     public static void AssignDeckTopCard(CardColor cardColor)
     {

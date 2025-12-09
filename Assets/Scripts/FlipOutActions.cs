@@ -28,7 +28,7 @@ public enum FlipOutAction
 public class CardActionInfo
 {
     public int cardID = -1;
-    public CardColor cardColor = CardColor.red;
+    public CardColor cardColor = CardColor.invalid;
 }
 
 
@@ -204,13 +204,19 @@ public class FlipOutActions
                     GameManager.Instance.ClearHighlightedCards();
                     break;
                 case FlipOutAction.Score:
-                    // Do something for score
                     GameManager.Instance.MoveCardsToScorePile(action.playerTakingActionId, action.positions, action.cardSourceInfos[0].cardColor);
                     break;
                 case FlipOutAction.Swipe:
                     // Do something for swipe
+                    GameManager.Instance.SwipeCardsToScorePiles(
+                        action.playerTakingActionId,
+                        action.playerTargetId,
+                        action.positions,
+                        action.cardSourceInfos[0].cardColor);
                     break;
                 case FlipOutAction.Deal:
+                    //! Note: Dealing actually flips for the owner player, but we're showing the deck top
+                    // as the opposite color (facing away from the player) so it looks correct
                     List<CardPODClient> dealtCards = new List<CardPODClient>();
                     for (int j = 0; j < action.cardSourceInfos.Length; j++)
                     {

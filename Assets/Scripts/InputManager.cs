@@ -304,9 +304,9 @@ public class InputManager : MonoBehaviour
                 else
                 {
                     // This will fail if current player owns the highlighted card
-                    //GameManager.Instance.serverDispatch.SwipeCards(GameStateClient.GetCurrentPlayerId(),
-                    //    GameManager.Instance.cardsHighlighted[0].cardPOD.cardID);
-                    //GameManager.Instance.ClearHighlightedCards();
+                    GameManager.Instance.serverDispatch.SwipeCards(GameStateClient.GetCurrentPlayerId(),
+                        GameManager.Instance.cardsHighlighted[0].cardPOD.cardID);
+                    GameManager.Instance.ClearHighlightedCards();
 
                 }
             }

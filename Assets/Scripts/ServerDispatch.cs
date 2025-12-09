@@ -2,6 +2,11 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+//!TODO: Deal action w/flip? (misunderstood game draw mechanic - player flips card instead of keeping face up -> facing player
+// The underside is actually what faces the player (i.e. the card flips and the upward-facing color is now outward-facing)
+// For now since just the top card of deck is shown, I show the opposite-facing color and then when moved to the hand,
+// the player sees the facing-color
+
 public class ServerDispatch
 {
     public bool isServer = false; // Placeholder for server check
@@ -101,6 +106,13 @@ public class ServerDispatch
     {
         int playerNum = gameStateServer.GetPlayerNumberByID(playerId);
         List<CardPODServer> cards = gameStateServer.DrawCards(handIndices.Length, playerId);
+
+        if (cards == null)
+        {
+            Debug.LogError("ServerDispatch->DealCardsToPlayerHandIndices(): end game - not enough draw cards for player " + playerId + "!");
+            EndGame();
+            return;
+        }
 
         CardColor deckTopColor = gameStateServer.PeekTopDrawCardColor();
 
@@ -881,7 +893,7 @@ public class ServerDispatch
             Debug.LogError("ScoreCards: not server!");
             return;
         }
-        Debug.Log("ServerDispatch->ScoreCards(): Player " + playerId + " scoring card based on: " + cardId);
+        Debug.Log("ServerDispatch->ScoreCards(): Player " + playerId + " scoring cards based on: " + cardId);
 
 
         PlayerXServer player = gameStateServer.GetPlayerByID(playerId);
@@ -942,7 +954,77 @@ public class ServerDispatch
         } 
     }
 
+    public void SwipeCards(int playerId, int cardId)
+    {
+        if (!isServer)
+        {
+            Debug.LogError("SwipeCards: not server!");
+            return;
+        }
+        Debug.Log("ServerDispatch->SwipeCards(): Player " + playerId + " swiping cards based on: " + cardId);
 
+
+        PlayerXServer player = gameStateServer.GetPlayerByID(playerId);
+        PlayerXServer targetPlayer = gameStateServer.GetPlayerByCardId(cardId);
+        if (player == null || targetPlayer == null)
+        {
+            Debug.LogError("ServerDispatch->SwipeCards(): one or more invalid players!");
+            return;
+        }
+
+        if (player.GetIndexOfCardByID(cardId) != -1)    // Player must not own card (swipe must be another player)
+        {
+            Debug.LogError("ServerDispatch->SwipeCards(): player " + playerId + " owns card " + cardId + "!");
+            return;
+        }
+    
+        //! This action ??needs to change?? in swipe (looking at opposite side colors)
+        // Thinking this through - the player sees the opposite-side colors and its represented as such in the
+        //  gamestateclient as opposite-side colors, soo it should be fine?
+        int[] adjacentCardIndices = GameStateClient.GetAdjacentColorsIndicesBasedOnCardId(cardId);
+        if (adjacentCardIndices.Length < 4)
+        {
+            Debug.Log("ServerDispatch->SwipeCards(): need at least 4 adjacent same-color cards to score!");
+            return;
+        }
+ 
+        CardActionInfo[] cardInfos = new CardActionInfo[adjacentCardIndices.Length];;
+        for (int i = 0; i < adjacentCardIndices.Length; i++)
+        {
+            CardPODServer cardPOD = targetPlayer.hand[adjacentCardIndices[i]];
+
+            cardInfos[i] = new CardActionInfo
+            {
+                cardID = cardPOD.cardID,
+                cardColor = cardPOD.GetOppositeColor()   //! Main difference between this and score - facing vs opposite cardface
+            };
+        }
+
+        //CreateSwipeAction(int playerTakingActionId, int playerTargetId, CardActionInfo[] cardInfos, int[] positions)
+        FlipOutActions swipeAction = FlipOutActions.CreateSwipeAction(
+            playerId, targetPlayer.playerId,
+            cardInfos,
+            adjacentCardIndices
+        );
+
+        // Apply to GameStateServer
+        gameStateServer.AddPlayerActionTaken(player.playerNumber, swipeAction);
+        gameStateServer.SwipeCardsFromPlayerHand(playerId, targetPlayer.playerId, adjacentCardIndices);        
+
+        if (isHotseatGame)
+        {
+            GameStateClient.AddPlayerActionTakenForAll(swipeAction);
+        }
+        //else {}
+
+        // 2nd action:
+        DealCardsToPlayerHandIndices(targetPlayer.playerId, adjacentCardIndices);
+
+        if (isHotseatGame)
+        {
+            FlipOutActions.ActOnFlipOutActionsForCurrentPlayer();
+        } 
+    }
 
 
     //public void TurnActionComplete() {}
