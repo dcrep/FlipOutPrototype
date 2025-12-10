@@ -16,9 +16,11 @@ MonoBehaviour:
   mainMenuSceneEnum: 1
   HotseatLobbyScene: LobbyHotseat
   HotseatLobbySceneEnum: 2
+  OnlineLobbyScene: LobbyOnline
+  OnlineLobbySceneEnum: 3
   gameScene: CoreGame
-  gameSceneEnum: 3
+  gameSceneEnum: 4
   gameOverScene: GameOverX
-  gameOverSceneEnum: 4
+  gameOverSceneEnum: 5
   DCExperimentsScene: xDCExperiments
-  DCExperimentsSceneEnum: 3
+  DCExperimentsSceneEnum: 4

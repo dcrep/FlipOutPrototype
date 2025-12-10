@@ -10,7 +10,9 @@ public class ScenesSO : ScriptableObject
     public Scenes mainMenuSceneEnum = Scenes.MainMenu;
 
     public string HotseatLobbyScene;
-    public Scenes HotseatLobbySceneEnum = Scenes.Lobby;
+    public Scenes HotseatLobbySceneEnum = Scenes.LobbyLocal;
+    public string OnlineLobbyScene;
+    public Scenes OnlineLobbySceneEnum = Scenes.LobbyOnline;
     public string gameScene;
     public Scenes gameSceneEnum = Scenes.Game;
     public string gameOverScene;

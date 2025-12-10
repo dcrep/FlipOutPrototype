@@ -12,7 +12,8 @@ public enum Scenes
 {
     LoadingScreen,
     MainMenu,
-    Lobby,
+    LobbyLocal,
+    LobbyOnline,
     Game,
     GameOver,
     DCExperiments
@@ -177,9 +178,9 @@ public class GameManager : MonoBehaviour
                 currentScene = scenesSO.mainMenuSceneEnum;
                 currentGameState = GameStatus.UI;
                 break;
-            case Scenes.Lobby:
+            case Scenes.LobbyLocal:
                 SceneManager.LoadScene(scenesSO.HotseatLobbyScene);
-                //currentScene = Scenes.Lobby;
+                //currentScene = Scenes.LobbyLocal;
                 currentScene = scenesSO.HotseatLobbySceneEnum;
                 currentGameState = GameStatus.UI;
                 break;
@@ -221,10 +222,10 @@ public class GameManager : MonoBehaviour
         }
         else if (activeSceneName == scenesSO.HotseatLobbyScene)
         {
-            if (currentScene != Scenes.Lobby)
+            if (currentScene != Scenes.LobbyLocal)
             {
-                Debug.Log("currentScene mismatch; currentScene set to " + currentScene.ToString() + "; updating to " + Scenes.Lobby.ToString());
-                currentScene = Scenes.Lobby;
+                Debug.Log("currentScene mismatch; currentScene set to " + currentScene.ToString() + "; updating to " + Scenes.LobbyLocal.ToString());
+                currentScene = Scenes.LobbyLocal;
                 currentGameState = GameStatus.UI;
             }
         }
@@ -287,15 +288,35 @@ public class GameManager : MonoBehaviour
         Debug.Log("GameManager->SceneAwake() for scene: " + SceneManager.GetActiveScene().name + " currentScene: " + currentScene.ToString());
         if (currentScene == Scenes.Game)
         {
+            if (currentMultiplayerMode == MultiplayerMode.Disconnected)
+            {
+                if (!forceHotseat)
+                {
+                    Debug.Log("Game scene loaded but in Disconnected mode.");
+                    LoadScene(Scenes.MainMenu);
+                    return;
+                }
+                currentMultiplayerMode = MultiplayerMode.LocalHotseat;
+            }
+            //else (connected) (or forced Hotseat)
+
+            Debug.Log("Starting in Multiplayer mode: " + currentMultiplayerMode.ToString());
+
+            if (currentMultiplayerMode == MultiplayerMode.Online)
+            {
+                // Register for network events
+                //NetworkManager.Singleton.OnClientConnectedCallback += (clientId) => OnMultiplayerConnect();
+                //NetworkManager.Singleton.OnClientDisconnectCallback += (clientId) => OnMultiplayerDisconnect();
+                Debug.LogError("Online multiplayer not yet implemented!");
+                LoadScene(Scenes.MainMenu);
+                return;
+            }
+            // else - LocalHotseat
             //Debug.Log("Current Multiplayer mode: " + currentMultiplayerMode.ToString());
             CardObject.onCardClicked += OnCardClicked;
 
-            if (forceHotseat && currentMultiplayerMode == MultiplayerMode.Disconnected)
-            {
-                //StartHotseatGame(2, new string[] { Environment.UserName, "Player2" });
-                //StartHotseatGame(2, new string[] { "PlayerUNO", "Player2" });
-                StartHotseatGame(hotseatPlayerNames.Count, hotseatPlayerNames.ToArray());
-            }
+            // Hotseat
+            StartHotseatGame(hotseatPlayerNames.Count, hotseatPlayerNames.ToArray());
         }
     }
 
@@ -403,9 +424,22 @@ public class GameManager : MonoBehaviour
         currentGameState = GameStatus.Playing;
     }
 
-    // Called by UI to start hotseat game (input number of players and player names)
-    void StartHotseatGame(int numPlayers, string[] playerNames)
+    // Called by UI to start hotseat game, or by Game scene
+    //  (input number of players and player names)
+    public void StartHotseatGame(int numPlayers, string[] playerNames)
     {
+        if (currentScene == Scenes.LobbyLocal)
+        {
+            hotseatPlayerNames.Clear();
+            for (int i = 0; i < numPlayers; i++)
+            {
+                Debug.Log("Hotseat Lobby - Player " + i + " name: " + playerNames[i]);
+                hotseatPlayerNames.Add(playerNames[i]);
+            }
+            LoadScene(Scenes.Game);
+            return;
+        }
+        // else should be in Game scene
         if (currentScene != Scenes.Game)
         {
             Debug.LogError("GameManager->StartHotseatGame(): Not in Game scene!");

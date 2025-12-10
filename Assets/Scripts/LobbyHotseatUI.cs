@@ -47,8 +47,8 @@ public class LobbyHotseatUI : MonoBehaviour
             Debug.Log("Active Player: " + name);
         }
 
-        GameManager.Instance.hotseatPlayerNames = activePlayers;
-        GameManager.Instance.LoadScene(Scenes.Game);
+        GameManager.Instance.StartHotseatGame(activePlayers.Count, activePlayers.ToArray());
+        //GameManager.Instance.LoadScene(Scenes.Game);
     }
 }
 
