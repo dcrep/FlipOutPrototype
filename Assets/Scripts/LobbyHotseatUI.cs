@@ -50,5 +50,9 @@ public class LobbyHotseatUI : MonoBehaviour
         GameManager.Instance.StartHotseatGame(activePlayers.Count, activePlayers.ToArray());
         //GameManager.Instance.LoadScene(Scenes.Game);
     }
+    public void OnMenuButton()
+    {
+        GameManager.Instance.LoadScene(Scenes.MainMenu);
+    }
 }
 

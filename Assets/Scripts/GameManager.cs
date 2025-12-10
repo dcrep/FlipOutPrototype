@@ -184,6 +184,12 @@ public class GameManager : MonoBehaviour
                 currentScene = scenesSO.HotseatLobbySceneEnum;
                 currentGameState = GameStatus.UI;
                 break;
+            case Scenes.LobbyOnline:
+                SceneManager.LoadScene(scenesSO.OnlineLobbyScene);
+                //currentScene = Scenes.LobbyOnline;
+                currentScene = scenesSO.OnlineLobbySceneEnum;
+                currentGameState = GameStatus.UI;
+                break;
             case Scenes.Game:
                 SceneManager.LoadScene(scenesSO.gameScene);
                 //currentScene = Scenes.Game;
@@ -226,6 +232,15 @@ public class GameManager : MonoBehaviour
             {
                 Debug.Log("currentScene mismatch; currentScene set to " + currentScene.ToString() + "; updating to " + Scenes.LobbyLocal.ToString());
                 currentScene = Scenes.LobbyLocal;
+                currentGameState = GameStatus.UI;
+            }
+        }
+        else if (activeSceneName == scenesSO.OnlineLobbyScene)
+        {
+            if (currentScene != Scenes.LobbyOnline)
+            {
+                Debug.Log("currentScene mismatch; currentScene set to " + currentScene.ToString() + "; updating to " + Scenes.LobbyOnline.ToString());
+                currentScene = Scenes.LobbyOnline;
                 currentGameState = GameStatus.UI;
             }
         }

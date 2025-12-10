@@ -9,7 +9,7 @@ public class MainMenuUI : MonoBehaviour
     }
     public void StartOnlineGameButton()
     {
-        //GameManager.Instance.LoadScene(Scenes.LobbyOnline);
+        GameManager.Instance.LoadScene(Scenes.LobbyOnline);
     }
     public void QuitButton()
     {
