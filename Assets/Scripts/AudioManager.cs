@@ -4,6 +4,7 @@ public class AudioManager : MonoBehaviour
 {
     //[SerializeField] private AudioClip[] soundClips;
 
+    private static bool audioMuted = false;
     private static AudioManager Instance;
     private static AudioSource audioSource;
 
@@ -24,6 +25,13 @@ public class AudioManager : MonoBehaviour
             Destroy(gameObject);
         }
     }
+
+    public static void Mute(bool isMuted)
+    {
+        audioMuted = isMuted;
+        audioSource.mute = isMuted;
+    }
+
     // Using audioSource to play 1 (and only 1) sound at a time
     // Useful for music or other long sounds
     // This will stop any currently playing sound before playing the new one

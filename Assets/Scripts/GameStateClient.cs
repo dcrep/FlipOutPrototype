@@ -18,6 +18,8 @@ public class GameStateClient
     // Hotseat-only:
     [SerializeField] public int localPlayerNumber = 0;
 
+    [SerializeField] public static string localPlayerName = "Player";
+
     [SerializeField] private static GameStateClient[] hotseatGameStates = new GameStateClient[5];
 
     // This reference is important and is setup on Init

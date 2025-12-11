@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEditor;
+using UnityEngine.UI;
 
 public class MainMenuUI : MonoBehaviour
 {
@@ -11,6 +12,24 @@ public class MainMenuUI : MonoBehaviour
     {
         GameManager.Instance.LoadScene(Scenes.LobbyOnline);
     }
+
+    public void MuteToggle(bool isMuted)
+    {
+        Debug.Log("Mute called, bool = " + isMuted);
+        //AudioManager.Mute();
+    }
+
+    public void PlayerBackButton()
+    {
+        InputField playerNameInput = GameObject.Find("PlayerNameInput").GetComponent<InputField>();
+        string name = playerNameInput.text;
+        if (name != "")
+        {
+            GameManager.Instance.SetLocalPlayerName(name);
+            Debug.Log("Player name changed to: " + name);
+        }
+    }
+
     public void QuitButton()
     {
 #if UNITY_EDITOR

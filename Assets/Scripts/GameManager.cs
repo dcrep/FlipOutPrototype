@@ -392,6 +392,10 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public void SetLocalPlayerName(string name)
+    {
+        GameStateClient.localPlayerName = name;
+    }
 
     // Called when a card is clicked - responds based on player turn, action, etc.
     void OnCardClicked(CardObject card)
