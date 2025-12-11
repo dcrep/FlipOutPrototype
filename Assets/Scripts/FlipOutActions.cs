@@ -241,6 +241,7 @@ public class FlipOutActions
                 case FlipOutAction.EndGame:
                     // ignore - game is already ended by previous player (i think)
                     //! (or should I trigger end-game notification here?)
+                    GameManager.Instance.EndGameClient(action.playerTakingActionId);
                     break;
                 default:
                     Debug.LogWarning("ActOnFlipOutActionsForCurrentPlayer: Unknown action encountered.");

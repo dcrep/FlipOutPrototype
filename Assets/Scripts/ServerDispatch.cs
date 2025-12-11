@@ -57,7 +57,7 @@ public class ServerDispatch
         //StartGameServer();
     }
 
-    // Call this directly
+    // Call this directly ~
     public void EndGame()
     {
         if (!isServer)
@@ -83,7 +83,7 @@ public class ServerDispatch
         isServer = false;
         gameStateServer = null;
         // if isHotseat
-        GameManager.Instance.EndGameClient();
+        GameManager.Instance.EndGameClient(-1);
     }
 
     // private (called by Hotseat or Online start)

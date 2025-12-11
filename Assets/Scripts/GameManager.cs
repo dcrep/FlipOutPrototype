@@ -91,6 +91,12 @@ public class GameManager : MonoBehaviour
     };
     [SerializeField] private Vector3 cardHolderOffset = new Vector3(2.5f, 0, 0);
 
+    private GameObject[] scoreKeeperGO = new GameObject[5];
+    [SerializeField] private TextMeshPro[] scoreText = new TextMeshPro[5];
+
+    public int finalScoredPlayers = 0;
+    public int[] finalScores = new int[5];
+
 // CARDS
     //private CardManager cardManager;
 
@@ -467,6 +473,20 @@ public class GameManager : MonoBehaviour
         Debug.Log("GameManager->StartHotseatGame()");
         Debug.Log("First name: " + playerNames[0]);
 
+        for (int i = 0; i < numPlayers; i++)
+        {
+            scoreKeeperGO[i] = new GameObject("Player" + i + " score");
+            
+            scoreKeeperGO[i].transform.localPosition = playerScorePilePositions[i];            
+            scoreKeeperGO[i].layer = LayerMask.NameToLayer("UI");
+            scoreText[i] = scoreKeeperGO[i].AddComponent<TextMeshPro>();
+            scoreText[i].GetComponent<Renderer>().sortingLayerName = "UI";
+            scoreText[i].GetComponent<Renderer>().sortingOrder = 100; // Optional: set render order
+            scoreText[i].text = "Score: 0";
+            scoreText[i].fontSize = 3;
+            scoreText[i].alignment = TextAlignmentOptions.Center;
+            scoreText[i].color = Color.blue;
+        }
 
         // Player Ids are separate from player numbers but for hotseat they are basically the same
         int[] playerIds = new int[numPlayers];
@@ -517,11 +537,20 @@ public class GameManager : MonoBehaviour
 
     #region Methods-dispatched-to
 
-    public void EndGameClient()
+    public void EndGameClient(int playerId)
     {
         Debug.Log("GameManager->EndGameClient()");
         EndGameCleanup();
-        //LoadScene(Scenes.GameOver);
+
+        finalScoredPlayers = GameStateClient.GetTotalPlayers();
+        for (int i = 0; i < finalScoredPlayers; i++)
+        {
+            PlayerXClient player = GameStateClient.CurrentGameStateClient.GetPlayerByNumber(i);
+            finalScores[i] = player.scorePile.Count;
+            Debug.Log("Final score for Player " + i + " (" + player.playerName + "): " + finalScores[i]);
+        }
+
+        LoadScene(Scenes.GameOver);
     }
 
     public void EndTurnClient()
@@ -608,8 +637,11 @@ public class GameManager : MonoBehaviour
         }
         if (uiText != null)
         {
-            uiText.text = "Player " + playerId + "'s " + (playerNum == 1 ? "^" : "v") + " Turn";
+            PlayerXClient player = GameStateClient.CurrentGameStateClient.GetPlayerByNumber(playerId);
+            uiText.text = "Player " + playerId + "'s " + (playerNum == 1 ? "^" : "v") + " (" + player.playerName + ") Turn";
         }
+        UpdateScoresDisplay();
+
         // This should be done at TurnEnd:
         //ClearObjectsInPlay();
 
@@ -780,6 +812,7 @@ public class GameManager : MonoBehaviour
                 Debug.LogError("GameManager->MoveCardsToScorePile(): No card found with cardID " + cardID);
             }
         }
+        UpdateScoresDisplay();
         //this is called along with Score/Swipe to create/queue deal action:
         // GameManager.Instance.serverDispatch.DealCardsToPlayerHandIndices(playerId, handIndices);
     }
@@ -873,8 +906,19 @@ public class GameManager : MonoBehaviour
         {
             Debug.LogError("GameManager->SwipeCardsToScorePiles(): No card found with cardID " + finalCardID);
         }
+
+        UpdateScoresDisplay();
         //this is called along with Score/Swipe to create/queue deal action:
         // GameManager.Instance.serverDispatch.DealCardsToPlayerHandIndices(playerId, handIndices);
+    }
+
+    void UpdateScoresDisplay()
+    {
+        for (int playerNum = 0; playerNum < GameStateClient.GetTotalPlayers(); playerNum++)
+        {
+            PlayerXClient player = GameStateClient.CurrentGameStateClient.GetPlayerByNumber(playerNum);
+            scoreText[playerNum].text = "Score: " + player.scorePile.Count.ToString();
+        }
     }
 
     void BuildScorePile()
@@ -960,7 +1004,7 @@ public class GameManager : MonoBehaviour
         }
 
         GameObject cardGO = GameObject.Instantiate(cardPrefab, position, Quaternion.identity, cardsParentGO.transform);
-        
+        cardGO.layer = LayerMask.NameToLayer("Cards");
         CardObject cardObject = cardGO.GetComponent<CardObject>();
 
         // Attach Card POD to CardObject
