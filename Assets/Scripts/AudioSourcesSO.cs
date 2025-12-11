@@ -6,4 +6,5 @@ public class AudioSourcesSO : ScriptableObject
     public AudioClip[] musicClips;
     public AudioClip UIMenuClick;
     public AudioClip clickCard;
+    public AudioClip UIMenuCancel;
 }

@@ -1,2 +1,14 @@
 fileFormatVersion: 2
 guid: 93a04d02a0077a746822b4010cd0bc38
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - UIMenuClick: {fileID: 8300000, guid: 039101cb975418e4cb7d909c8f516a31, type: 3}
+  - clickCard: {fileID: 8300000, guid: 039101cb975418e4cb7d909c8f516a31, type: 3}
+  - UIMenuCancel: {fileID: 8300000, guid: 2fefb59a7360c7b458ad7e5235632deb, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
