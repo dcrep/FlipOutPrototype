@@ -12,23 +12,97 @@ public class LobbyOnlineUI : MonoBehaviour
     {
         public bool isConnected = false;
         public string name;
-        public int playerId = -1;
+        public ulong playerNetworkId = 0;
         public bool isReady = false;
     }
 
-    public TMP_InputField hostIPInputField;
-    public Button hostButton, connectButton;
-
+    [SerializeField] private LobbyManager lobbyManager;
     [SerializeField] private List<PlayerLobbySlot> lobbySlots = new List<PlayerLobbySlot>();
 
-    public GameObject[] playerSlotObjects;
+    public TMP_InputField hostIPInputField;
+    public TMP_InputField playerNameInputField;
+    public Button hostButton, hostLocalButton, connectButton;
 
     public Button startButton;
+    public Button mainMenuButton;
+    public Toggle readyCheckbox;
+
+    public GameObject[] playerSlotObjects;
 
     public string debugPlayerName = "PlayerX";
     public bool debugAddPlayer = false;
 
     private string localIPAddress = "127.0.0.1";
+
+
+    void Awake()
+    {
+        string localIP = GetLocalIPAddress();
+        Debug.Log("Local IP: " + localIP);
+        hostIPInputField.text = localIP;
+    }
+
+    private void Start()
+    {
+        hostButton.onClick.AddListener(OnHost);
+        hostLocalButton.onClick.AddListener(OnHostLocal);
+        connectButton.onClick.AddListener(OnConnect);
+        startButton.onClick.AddListener(OnStartGame);
+        readyCheckbox.onValueChanged.AddListener(OnReadyToggle);
+        mainMenuButton.onClick.AddListener(OnMenuButton);
+
+        // Subscribe to lobby manager events
+        lobbyManager.OnPlayerJoined += HandlePlayerJoined;
+        lobbyManager.OnPlayerNameChanged += HandlePlayerNameChanged;
+        lobbyManager.OnPlayerLeft += HandlePlayerLeft;
+        lobbyManager.OnPlayerReadyChanged += HandlePlayerReadyChanged;
+        lobbyManager.OnAllPlayersReady += HandleGameStart;
+
+        //if (readyCheckbox != null)
+        //readyCheckbox.interactable = false;
+
+        //AddPlayerToLobby("LocalPlayer", 0);
+
+        //AddPlayerToLobby("LocalPlayer1", 0);
+
+        for (int i = 1; i < playerSlotObjects.Length; i++)
+        {
+            playerSlotObjects[i].SetActive(false);
+        }
+    }
+
+    void OnDestroy()
+    {
+        if (lobbyManager != null)
+        {
+            lobbyManager.OnPlayerJoined -= HandlePlayerJoined;
+            lobbyManager.OnPlayerNameChanged -= HandlePlayerNameChanged;
+            lobbyManager.OnPlayerLeft -= HandlePlayerLeft;
+            lobbyManager.OnPlayerReadyChanged -= HandlePlayerReadyChanged;
+            lobbyManager.OnAllPlayersReady -= HandleGameStart;
+        }
+    }
+
+    /*void Update()
+    {
+        CheckAndUpdatePlayerSlots();
+        if (debugAddPlayer)
+        {
+            debugAddPlayer = false;
+            AddPlayerToLobby(debugPlayerName + (lobbySlots.Count + 1), (ulong)lobbySlots.Count);
+        }
+        int readyCount = 0;
+        foreach (var slot in lobbySlots)
+        {
+            if (slot.isConnected && slot.isReady)
+            {
+                readyCount++;
+            }
+        }
+
+        // Example: require at least 2 ready players
+        startButton.interactable = readyCount == lobbySlots.Count && readyCount >= 2;
+    }*/
 
     public string GetLocalIPAddress()
     {
@@ -48,63 +122,126 @@ public class LobbyOnlineUI : MonoBehaviour
         return localIP;
     }
 
-    void Awake()
+    private void HandlePlayerJoined(PlayerSession player)
     {
-        string localIP = GetLocalIPAddress();
-        Debug.Log("Local IP: " + localIP);
-        hostIPInputField.text = localIP;
+        AddPlayerToLobby(player.playerName, player.playerNetworkId);
+        UpdateStartButton();
     }
 
-    private void Start()
+    private void HandlePlayerNameChanged(ulong playerNetworkId, string playerName)
     {
-        startButton.onClick.AddListener(OnStartGame);
-
-        AddPlayerToLobby("LocalPlayer1", 0);
-
-        for (int i = 1; i < playerSlotObjects.Length; i++)
+        var slot = lobbySlots.Find(s => s.playerNetworkId == playerNetworkId);
+        if (slot != null)
         {
-            playerSlotObjects[i].SetActive(false);
+            slot.name = playerName;
+            UpdatePlayerSlots();
         }
     }
 
-    void Update()
+    private void HandlePlayerLeft(ulong playerNetworkId)
     {
-        CheckAndUpdatePlayerSlots();
-        if (debugAddPlayer)
-        {
-            debugAddPlayer = false;
-            AddPlayerToLobby(debugPlayerName + (lobbySlots.Count + 1), lobbySlots.Count);
-        }
-        int readyCount = 0;
-        foreach (var slot in lobbySlots)
-        {
-            if (slot.isConnected && slot.isReady)
-            {
-                readyCount++;
-            }
-        }
-
-        // Example: require at least 2 ready players
-        startButton.interactable = readyCount == lobbySlots.Count && readyCount >= 2;
+        lobbySlots.RemoveAll(slot => slot.playerNetworkId == playerNetworkId);
+        UpdatePlayerSlots();
+        UpdateStartButton();
     }
 
-    public void AddPlayerToLobby(string playerName, int playerId)
+    private void HandlePlayerReadyChanged(ulong playerNetworkId, bool ready)
     {
-        if (lobbySlots.Count >= 4)
+        var slot = lobbySlots.Find(s => s.playerNetworkId == playerNetworkId);
+        if (slot != null) slot.isReady = ready;
+        UpdatePlayerSlots();
+        UpdateStartButton();
+    }
+
+    public void AddPlayerToLobby(string playerName, ulong playerNetworkId)
+    {
+        if (lobbySlots.Count >= playerSlotObjects.Length)   // 4 [5 in future maybe]
         {
             Debug.LogWarning("Lobby is full; cannot add more players.");
             return;
         }
+
+        // Check if player already exists
+        if (lobbySlots.Exists(slot => slot.playerNetworkId == playerNetworkId))
+        {
+            return;
+        }
+
         int numSlots = lobbySlots.Count;
 
-        PlayerLobbySlot newPlayer = new PlayerLobbySlot();
-        newPlayer.isConnected = true;
-        newPlayer.name = playerName;
-        newPlayer.playerId = playerId;
-        newPlayer.isReady = false;
+        var newPlayer = new PlayerLobbySlot
+        {
+            isConnected = true,
+            name = playerName,
+            playerNetworkId = playerNetworkId,
+            isReady = false
+        };
+
         lobbySlots.Add(newPlayer);
 
         playerSlotObjects[numSlots].SetActive(true);
+        UpdatePlayerSlots();
+    
+        // Enable ready checkbox if this is the local player
+        if (playerNetworkId == Unity.Netcode.NetworkManager.Singleton.LocalClientId)
+        {
+            readyCheckbox.interactable = true;
+        }
+    }
+
+    private void UpdatePlayerSlots()
+    {
+        for (int i = 0; i < playerSlotObjects.Length; i++)
+        {
+            if (i < lobbySlots.Count)
+            {
+                playerSlotObjects[i].SetActive(true);
+                var slot = lobbySlots[i];
+                
+                Transform nameTfm = playerSlotObjects[i].transform.Find("Player" + (i + 1) + "Name");
+                if (nameTfm != null)
+                    nameTfm.GetComponent<TextMeshProUGUI>().text = slot.name;
+
+                Transform readyTfm = playerSlotObjects[i].transform.Find("Player" + (i + 1) + "Toggle");
+                if (readyTfm != null)
+                    readyTfm.GetComponent<Toggle>().isOn = slot.isReady;
+                //if (readyTfm != null)
+                //    readyTfm.GetComponent<TextMeshProUGUI>().text = slot.isReady ? "✓" : "○";
+            }
+            else
+            {
+                playerSlotObjects[i].SetActive(false);
+            }
+        }
+    }
+
+    private void UpdateStartButton()
+    {
+        // Need at least 2 players
+        if (lobbySlots.Count < 2)
+        {
+            startButton.interactable = false;
+            return;
+        }
+
+        //int readyCount = 0;
+        //foreach (var slot in lobbySlots)
+        //{
+        //    if (slot.isConnected && slot.isReady) readyCount++;
+        //}
+
+        // All players must be ready
+        bool allReady = true;
+        foreach (var slot in lobbySlots)
+        {
+            if (!slot.isReady)
+            {
+                allReady = false;
+                break;
+            }
+        }
+        //startButton.interactable = readyCount == lobbySlots.Count && readyCount >= 2;
+        startButton.interactable = allReady && Unity.Netcode.NetworkManager.Singleton.IsServer;
     }
 
     public void CheckAndUpdatePlayerSlots()
@@ -141,14 +278,38 @@ public class LobbyOnlineUI : MonoBehaviour
         }
     }
 
-    public void OnCheckBoxToggle()
+    public void OnReadyToggle(bool isReady)
     {
-        lobbySlots[0].isReady = !lobbySlots[0].isReady;
+        if (isReady)
+        {
+            lobbyManager.LocalPlayerClickedReady();
+        }
+        else
+        {
+            lobbyManager.LocalPlayerClickedUnready();
+        }
+        //if (lobbySlots.Count > 0)
+        //{
+        //    lobbySlots[0].isReady = !lobbySlots[0].isReady;
+        //    lobbyManager.LocalPlayerClickedReady();
+        //}
+    }
+    
+    private void HandleGameStart()
+    {
+        Debug.Log("Game starting!");
     }
 
     public void OnStartGame()
     {
-        var activePlayers = new List<string>();
+        Debug.Log("OnStartGame button clicked.");
+        
+        if (lobbyManager != null)
+        {
+            lobbyManager.HostClickedStartGame();
+        }
+
+        /*var activePlayers = new List<string>();
 
         for (int i = 0; i < lobbySlots.Count; i++)
         {
@@ -171,18 +332,62 @@ public class LobbyOnlineUI : MonoBehaviour
         foreach (var name in activePlayers)
         {
             Debug.Log("Active Player: " + name);
-        }
+        }*/
 
         //GameManager.Instance.StartOnlineGame(activePlayers.Count, activePlayers.ToArray());
     }
 
     public void OnMenuButton()
     {
+        Debug.Log("Menu button clicked - disconnecting from network");
+        
+        if (Unity.Netcode.NetworkManager.Singleton.IsServer)
+        {
+            // Host: tell all clients to disconnect and load menu
+            lobbyManager.HostInitiatedShutdown();
+            // HostInitiatedShutdown's ClientRpc will handle loading MainMenu for everyone
+        }
+        else
+        {
+            // Client: just disconnect and load menu
+            if (Unity.Netcode.NetworkManager.Singleton != null && Unity.Netcode.NetworkManager.Singleton.IsListening)
+            {
+                Unity.Netcode.NetworkManager.Singleton.Shutdown();
+            }
+        }
+        // Small delay to allow shutdown to complete
+        //Invoke(nameof(LoadMainMenu), 0.1f);
+        
         GameManager.Instance.LoadScene(Scenes.MainMenu);
     }
 
     public void OnHost()
     {
+        string ipAddress = hostIPInputField.text;
+        string playerName = playerNameInputField.text;
+
+        if (string.IsNullOrEmpty(playerName))
+        {
+            Debug.LogError("Please enter a player name");
+            return;
+        }
+
+        Debug.Log("Host button clicked. IP: " + ipAddress + " Name: " + playerName);
+        
+        hostButton.interactable = false;
+        hostLocalButton.interactable = false;
+        connectButton.interactable = false;
+
+        if (Unity.Netcode.NetworkManager.Singleton != null)
+        {
+            Unity.Netcode.NetworkManager.Singleton.StartHost();
+            Debug.Log("Started as Host");
+            
+            // Set local player name
+            ulong localClientId = Unity.Netcode.NetworkManager.Singleton.LocalClientId;
+            lobbyManager.SetPlayerName(localClientId, playerName);
+        }
+        /*
         string ipAddress = hostIPInputField.text;
         Debug.Log("Host button clicked. IP Address: " + ipAddress);
         
@@ -202,12 +407,60 @@ public class LobbyOnlineUI : MonoBehaviour
                 Debug.LogError("Host IP address " + ipAddress + " does not match localhost 127.0.0.1 or local IP " + localIP);
             }
         }
+        hostButton.interactable = false;
+        connectButton.interactable = false;
         //! Commence with the HOSTing
+        
+        // Start the host (server + client)
+        if (Unity.Netcode.NetworkManager.Singleton != null)
+        {
+            Unity.Netcode.NetworkManager.Singleton.StartHost();
+            Debug.Log("Started as Host");
+        }
+        else
+        {
+            Debug.LogError("NetworkManager.Singleton is null - ensure NetworkManager exists in scene");
+        }*/
+    }
+
+    public void OnHostLocal()
+    {
+        hostIPInputField.text = "127.0.0.1";
+        OnHost(); // Same as OnHost for localhost
     }
 
     public void OnConnect()
     {
         string ipAddress = hostIPInputField.text;
+        string playerName = playerNameInputField.text;
+
+        if (string.IsNullOrEmpty(playerName))
+        {
+            Debug.LogError("Please enter a player name");
+            return;
+        }
+
+        if (string.IsNullOrEmpty(ipAddress))
+        {
+            Debug.LogError("Please enter a host IP address");
+            return;
+        }
+
+        Debug.Log("Connect: IP " + ipAddress + " Name: " + playerName);
+        
+        hostButton.interactable = false;
+        hostLocalButton.interactable = false;
+        connectButton.interactable = false;
+
+        if (Unity.Netcode.NetworkManager.Singleton != null)
+        {
+            Unity.Netcode.NetworkManager.Singleton.StartClient();
+            Debug.Log("Started as Client connecting to " + ipAddress);
+            
+            // Set local player name after connection
+            StartCoroutine(SetPlayerNameAfterConnection(playerName));
+        }
+        /*string ipAddress = hostIPInputField.text;
         Debug.Log("Connect button clicked. IP Address: " + ipAddress);
         if (ipAddress == localIPAddress && ipAddress != "127.0.0.1")
         {
@@ -231,7 +484,35 @@ public class LobbyOnlineUI : MonoBehaviour
             }
             Debug.Log("Connecting to remote host @ " + ipAddress);
         }
+        hostButton.interactable = false;
+        connectButton.interactable = false;
         //! Commence with the CONNECTing
+        var transport = Unity.Netcode.NetworkManager.Singleton.GetComponent<Unity.Netcode.Transports.UTP.UnityTransport>();
+        if (transport != null)
+        {
+            transport.SetConnectionData(ipAddress, 7777); // 7777 is default port
+        }      
+        // Start the client
+        if (Unity.Netcode.NetworkManager.Singleton != null)
+        {
+            // Set the connection address if needed (depends on your transport setup)
+            // For Unity Transport, you'd set the connection data here
+            Unity.Netcode.NetworkManager.Singleton.StartClient();
+            Debug.Log("Started as Client, attempting to connect to " + ipAddress);
+        }
+        else
+        {
+            Debug.LogError("NetworkManager.Singleton is null - ensure NetworkManager exists in scene");
+        }*/
+    }
+
+    private System.Collections.IEnumerator SetPlayerNameAfterConnection(string playerName)
+    {
+        // Wait for client to connect
+        yield return new WaitUntil(() => Unity.Netcode.NetworkManager.Singleton.IsConnectedClient);
+        
+        ulong localClientId = Unity.Netcode.NetworkManager.Singleton.LocalClientId;
+        lobbyManager.SetPlayerName(localClientId, playerName);
     }
 
 

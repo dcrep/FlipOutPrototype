@@ -474,7 +474,7 @@ public class GameManager : MonoBehaviour
         for (int i = 0; i < numPlayers; i++)
         {
             playerIds[i] = i;
-            sessionManager.AddSession(i, playerNames[i], "LocalHost");
+            sessionManager.AddSession((ulong)i, playerNames[i], "LocalHost");
         }
 
         // if (IsHost)
