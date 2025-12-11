@@ -4,6 +4,24 @@ using UnityEngine.UI;
 
 public class MainMenuUI : MonoBehaviour
 {
+    
+    public Button[] buttons;
+
+    public void Awake()
+    {
+
+        foreach (Button b in buttons)
+        {
+            b.onClick.AddListener(ButtonSound);
+        }
+
+    }
+
+    public void ButtonSound()
+    {
+        AudioManager.PlaySoundAt(AudioManager.audioSourcesSO.UIMenuClick, 1f);
+    }
+
     public void StartLocalGameButton()
     {
         GameManager.Instance.LoadScene(Scenes.LobbyLocal);
