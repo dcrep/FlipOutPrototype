@@ -26,10 +26,15 @@ public class AudioManager : MonoBehaviour
         }
     }
 
-    public static void Mute(bool isMuted)
+    public static void Mute()
     {
-        audioMuted = isMuted;
-        audioSource.mute = isMuted;
+        audioMuted = true;
+        audioSource.mute = true;
+    }
+    public static void UnMute()
+    {
+        audioMuted = false;
+        audioSource.mute = false;
     }
 
     // Using audioSource to play 1 (and only 1) sound at a time

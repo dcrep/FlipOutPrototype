@@ -437,7 +437,7 @@ GameObject:
   - component: {fileID: 637616312}
   - component: {fileID: 637616311}
   m_Layer: 5
-  m_Name: 'P2 Score '
+  m_Name: 'P2Score '
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -597,7 +597,7 @@ GameObject:
   - component: {fileID: 693979168}
   - component: {fileID: 693979167}
   m_Layer: 5
-  m_Name: P5 Score
+  m_Name: P5Score
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -675,6 +675,8 @@ GameObject:
   - component: {fileID: 885757665}
   - component: {fileID: 885757664}
   - component: {fileID: 885757663}
+  - component: {fileID: 885757667}
+  - component: {fileID: 885757666}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -756,6 +758,37 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &885757666
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 885757662}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bcf7380528e3b3543bf84e4b265db27a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  wonText: {fileID: 1323371005}
+  playersScoreText:
+  - {fileID: 1709173194}
+  - {fileID: 637616311}
+  - {fileID: 1823431202}
+  - {fileID: 2082140659}
+  - {fileID: 693979167}
+--- !u!114 &885757667
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 885757662}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 563c7eb058528de44af42504f13c4410, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1223367123
 GameObject:
   m_ObjectHideFlags: 0
@@ -926,7 +959,7 @@ GameObject:
   - component: {fileID: 1323371006}
   - component: {fileID: 1323371005}
   m_Layer: 5
-  m_Name: X Won!
+  m_Name: XWon
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1138,7 +1171,7 @@ GameObject:
   - component: {fileID: 1709173195}
   - component: {fileID: 1709173194}
   m_Layer: 5
-  m_Name: P1 Score
+  m_Name: P1Score
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1217,7 +1250,7 @@ GameObject:
   - component: {fileID: 1823431203}
   - component: {fileID: 1823431202}
   m_Layer: 5
-  m_Name: P3 Score
+  m_Name: P3Score
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1296,7 +1329,7 @@ GameObject:
   - component: {fileID: 2082140660}
   - component: {fileID: 2082140659}
   m_Layer: 5
-  m_Name: P4 Score
+  m_Name: P4Score
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

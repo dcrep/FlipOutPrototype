@@ -94,8 +94,12 @@ public class GameManager : MonoBehaviour
     private GameObject[] scoreKeeperGO = new GameObject[5];
     [SerializeField] private TextMeshPro[] scoreText = new TextMeshPro[5];
 
+    public int finalWinningScore = 0;
     public int finalScoredPlayers = 0;
+    public int finalWinnerPlayerNum = 0;
     public int[] finalScores = new int[5];
+
+    public string[] finalPlayers = new string[5];
 
 // CARDS
     //private CardManager cardManager;
@@ -547,12 +551,23 @@ public class GameManager : MonoBehaviour
         EndGameCleanup();
 
         finalScoredPlayers = GameStateClient.GetTotalPlayers();
+        int winnerIndex = -1;
+        int winnerScore = -1;
         for (int i = 0; i < finalScoredPlayers; i++)
         {
             PlayerXClient player = GameStateClient.CurrentGameStateClient.GetPlayerByNumber(i);
+            int score = player.scorePile.Count;
+            if (score > winnerScore)
+            {
+                winnerScore = score;
+                winnerIndex = i;
+            }
             finalScores[i] = player.scorePile.Count;
+            finalPlayers[i] = player.playerName;
             Debug.Log("Final score for Player " + i + " (" + player.playerName + "): " + finalScores[i]);
         }
+        finalWinnerPlayerNum = winnerIndex;
+        finalWinningScore = winnerScore;
 
         LoadScene(Scenes.GameOver);
     }

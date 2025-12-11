@@ -16,7 +16,15 @@ public class MainMenuUI : MonoBehaviour
     public void MuteToggle(bool isMuted)
     {
         Debug.Log("Mute called, bool = " + isMuted);
-        //AudioManager.Mute();
+        if (isMuted)
+            AudioManager.Mute();
+        else
+            AudioManager.UnMute();
+    }
+
+    public void VolumeChange()
+    {
+        Debug.Log("Volume changed");
     }
 
     public void PlayerBackButton()
