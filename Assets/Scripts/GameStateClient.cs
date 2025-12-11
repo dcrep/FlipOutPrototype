@@ -6,6 +6,17 @@ using System;
 
 //!! GameStateClient is duplicated (except for static data) for each hotseat player
 
+[Serializable]
+public class GameResults
+{
+    public int numberOfPlayers = 0;
+    public int winningPlayerNum = 0;
+    public int winningPlayerId = -1;
+    public int winningScore = 0;
+    public int[] finalScores = new int[5];
+    public string[] playerNames;
+}
+
 [System.Serializable]
 public class GameStateClient
 {
@@ -26,6 +37,10 @@ public class GameStateClient
     public static GameStateClient CurrentGameStateClient;   // = hotseatGameStates[0];
 
     public bool handsDealt = false;
+
+    public static GameResults gameResults = new GameResults();
+
+    public static MultiplayerMode currentMultiplayerMode = MultiplayerMode.LocalHotseat;
 #endregion
 
 #region Client-Data-Altered-From-Server
@@ -124,6 +139,41 @@ public class GameStateClient
         }
         //currentPlayerIndex = 0;
         //localPlayerNumber = 0;
+    }
+
+    public static void GatherResults()
+    {
+        if (totalPlayers > 0)
+        {
+            int winnerIndex = -1;
+            int winnerScore = -1;
+            int winnerId = -1;
+            int[] finalScores = new int[totalPlayers];
+            string[] finalPlayers = new string[totalPlayers];
+            for (int i = 0; i < totalPlayers; i++)
+            {
+                PlayerXClient player = GameStateClient.CurrentGameStateClient.GetPlayerByNumber(i);
+                int score = player.scorePile.Count;
+                if (score > winnerScore)
+                {
+                    winnerScore = score;
+                    winnerIndex = i;
+                    winnerId = player.playerId;
+                }
+                finalScores[i] = player.scorePile.Count;
+                finalPlayers[i] = player.playerName;
+                Debug.Log("Final score for Player " + i + " (" + player.playerName + "): " + finalScores[i]);
+            }
+            gameResults = new GameResults()
+            {
+                numberOfPlayers = totalPlayers,
+                winningPlayerNum = winnerIndex,
+                winningPlayerId = winnerId,
+                winningScore = winnerScore,
+                finalScores = finalScores,
+                playerNames = finalPlayers
+            };
+        }
     }
 
     public void AddUncountedActionTaken(FlipOutActions action)

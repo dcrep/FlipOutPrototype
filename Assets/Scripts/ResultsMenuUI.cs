@@ -9,21 +9,23 @@ public class ResultsMenuUI : MonoBehaviour
 
     void Awake()
     {
-        int totalPlayers = GameManager.Instance.finalScoredPlayers;
+        GameResults results = GameStateClient.gameResults;
+        int totalPlayers = results.numberOfPlayers;
 
-        wonText.text = "Player " + GameManager.Instance.finalPlayers[GameManager.Instance.finalWinnerPlayerNum] + "Won";
+        wonText.text = "Player " + results.playerNames[results.winningPlayerNum] + " Won";
 
-        for (int i = 0; i < GameManager.Instance.finalScoredPlayers; i++)
+        for (int i = 0; i < results.numberOfPlayers; i++)
         {
-            playersScoreText[i].text = GameManager.Instance.finalPlayers[i] + ": " + GameManager.Instance.finalScores[i];
+            playersScoreText[i].text = results.playerNames[i] + ": " + results.finalScores[i];
         }
         if (totalPlayers < 5)
         {
             for (int i = totalPlayers; i < 5; i++)
             {
-                playersScoreText[i].text = "--";
+                playersScoreText[i].text = "";
             }
         }
+        //GameStateClient.currentMultiplayerMode;
     }
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()

@@ -387,6 +387,10 @@ public class GameManager : MonoBehaviour
             //LoadScene("xDCExperiments");
             LoadScene(Scenes.DCExperiments);
         }
+        else if (Input.GetKeyDown(KeyCode.Z))
+        {
+            EndGameClient(0);
+        }
         // workaround for Start() timing issue (avoiding Script Execution Order change)
         if (currentScene == Scenes.Game && gameStateServer.serverDrawPile != null && !cardsShowing)
         {
@@ -547,27 +551,9 @@ public class GameManager : MonoBehaviour
 
     public void EndGameClient(int playerId)
     {
+        GameStateClient.GatherResults();
         Debug.Log("GameManager->EndGameClient()");
         EndGameCleanup();
-
-        finalScoredPlayers = GameStateClient.GetTotalPlayers();
-        int winnerIndex = -1;
-        int winnerScore = -1;
-        for (int i = 0; i < finalScoredPlayers; i++)
-        {
-            PlayerXClient player = GameStateClient.CurrentGameStateClient.GetPlayerByNumber(i);
-            int score = player.scorePile.Count;
-            if (score > winnerScore)
-            {
-                winnerScore = score;
-                winnerIndex = i;
-            }
-            finalScores[i] = player.scorePile.Count;
-            finalPlayers[i] = player.playerName;
-            Debug.Log("Final score for Player " + i + " (" + player.playerName + "): " + finalScores[i]);
-        }
-        finalWinnerPlayerNum = winnerIndex;
-        finalWinningScore = winnerScore;
 
         LoadScene(Scenes.GameOver);
     }
