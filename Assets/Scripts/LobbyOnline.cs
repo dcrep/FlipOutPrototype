@@ -23,7 +23,7 @@ public class LobbyOnlineUI : MonoBehaviour
 
     public TMP_InputField hostIPInputField;
     public TMP_InputField playerNameInputField;
-    public Button hostButton, hostLocalButton, connectButton;
+    public Button hostButton, hostLocalButton, hostInternetButton,connectButton;
 
     public Button startButton;
     public Button mainMenuButton;
@@ -43,6 +43,7 @@ public class LobbyOnlineUI : MonoBehaviour
         string localIP = GetLocalIPAddress();
         Debug.Log("Local IP: " + localIP);
         hostIPInputField.text = localIP;
+        startButton.interactable = false;
         StartCoroutine(FetchPublicIP());
     }
 
@@ -50,6 +51,7 @@ public class LobbyOnlineUI : MonoBehaviour
     {
         hostButton.onClick.AddListener(OnHost);
         hostLocalButton.onClick.AddListener(OnHostLocal);
+        hostInternetButton.onClick.AddListener(OnHostInternet);
         connectButton.onClick.AddListener(OnConnect);
         startButton.onClick.AddListener(OnStartGame);
         readyCheckbox.onValueChanged.AddListener(OnReadyToggle);
@@ -521,6 +523,17 @@ private System.Collections.IEnumerator FetchPublicIP()
         {
             Debug.LogError("NetworkManager.Singleton is null - ensure NetworkManager exists in scene");
         }*/
+    }
+
+    public void OnHostInternet()
+    {
+        if (publicIPAddress == "0.0.0.0")
+        {
+            Debug.LogError("Public IP not yet fetched. Wait a moment and try again.");
+            return;
+        }
+        hostIPInputField.text = publicIPAddress;
+        OnHost(); // Reuse existing host logic
     }
 
     public void OnHostLocal()
