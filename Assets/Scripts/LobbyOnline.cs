@@ -4,6 +4,8 @@ using UnityEngine.UI;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
+using Unity.Netcode;
+using Unity.Netcode.Transports.UTP;
 
 public class LobbyOnlineUI : MonoBehaviour
 {
@@ -34,6 +36,7 @@ public class LobbyOnlineUI : MonoBehaviour
 
     private string localIPAddress = "127.0.0.1";
     [SerializeField] private string publicIPAddress = "0.0.0.0";
+    private const ushort defaultPort = 7777;
 
     void Awake()
     {
@@ -451,19 +454,37 @@ private System.Collections.IEnumerator FetchPublicIP()
             return;
         }
 
+        if (!IsValidIP(ipAddress))
+        {
+            Debug.LogError("Please enter a valid host IP address");
+            return;
+        }
+
         Debug.Log("Host button clicked. IP: " + ipAddress + " Name: " + playerName);
         
         hostButton.interactable = false;
         hostLocalButton.interactable = false;
         connectButton.interactable = false;
 
-        if (Unity.Netcode.NetworkManager.Singleton != null)
+        var netMan = Unity.Netcode.NetworkManager.Singleton;
+        if (netMan != null)
         {
-            Unity.Netcode.NetworkManager.Singleton.StartHost();
-            Debug.Log("Started as Host");
+            var transport = netMan.NetworkConfig.NetworkTransport as UnityTransport;
+            if (transport == null)
+            {
+                Debug.LogError("UnityTransport not found on NetworkManager");
+                return;
+            }
+
+            // If hosting for others, listen on all interfaces; if 127.0.0.1, bind to loopback only.
+            string listenAddress = IPAddress.IsLoopback(IPAddress.Parse(ipAddress)) ? "127.0.0.1" : "0.0.0.0";
+            transport.SetConnectionData(listenAddress, defaultPort);
+
+            netMan.StartHost();
+            Debug.Log("Started as Host @ " + listenAddress + ":" + defaultPort);
             
             // Set local player name
-            ulong localClientId = Unity.Netcode.NetworkManager.Singleton.LocalClientId;
+            ulong localClientId = netMan.LocalClientId;
             lobbyManager.SetPlayerName(localClientId, playerName);
         }
         /*
@@ -531,10 +552,20 @@ private System.Collections.IEnumerator FetchPublicIP()
         hostLocalButton.interactable = false;
         connectButton.interactable = false;
 
-        if (Unity.Netcode.NetworkManager.Singleton != null)
+        var netMan = Unity.Netcode.NetworkManager.Singleton;
+        if (netMan != null)
         {
-            Unity.Netcode.NetworkManager.Singleton.StartClient();
-            Debug.Log("Started as Client connecting to " + ipAddress);
+            var transport = netMan.NetworkConfig.NetworkTransport as UnityTransport;
+            if (transport == null)
+            {
+                Debug.LogError("UnityTransport not found on NetworkManager");
+                return;
+            }
+
+            transport.SetConnectionData(ipAddress, defaultPort);
+
+            netMan.StartClient();
+            Debug.Log("Started as Client connecting to " + ipAddress + ":" + defaultPort);
             
             // Set local player name after connection
             StartCoroutine(SetPlayerNameAfterConnection(playerName));
