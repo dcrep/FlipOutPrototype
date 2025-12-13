@@ -87,6 +87,10 @@ public class InputManager : MonoBehaviour
             //Debug.Log("Quit triggered!");
             GameManager.Quit();
         }
+        else if (Input.GetKeyDown(KeyCode.O))
+        {
+            //UIManager.StartUITestTwoPlayer();
+        }
     }
     /*public bool PauseMenuClose()
     {

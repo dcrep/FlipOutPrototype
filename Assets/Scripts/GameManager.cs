@@ -16,7 +16,8 @@ public enum Scenes
     LobbyOnline,
     Game,
     GameOver,
-    DCExperiments
+    DCExperiments,
+    UITest
 }
 
 // AppState ? (avoids collision with GameState script)
@@ -218,6 +219,12 @@ public class GameManager : MonoBehaviour
                 currentScene = scenesSO.DCExperimentsSceneEnum;
                 currentGameState = GameStatus.Playing;
                 break;
+            case Scenes.UITest:
+                SceneManager.LoadScene(scenesSO.UITestScene);
+                //currentScene = Scenes.UITest;
+                currentScene = scenesSO.UITestSceneEnum;
+                currentGameState = GameStatus.Playing;
+                break;
             default:
                 Debug.LogError("Unknown scene: " + scene);
                 break;
@@ -277,6 +284,15 @@ public class GameManager : MonoBehaviour
             if (currentScene != Scenes.DCExperiments)
             {
                 Debug.Log("currentScene mismatch; currentScene set to " + currentScene.ToString() + "; updating to " + Scenes.DCExperiments.ToString());
+                currentScene = Scenes.Game; // !!
+                currentGameState = GameStatus.Playing;
+            }
+        }
+        else if (activeSceneName == scenesSO.UITestScene)
+        {
+            if (currentScene != Scenes.UITest)
+            {
+                Debug.Log("currentScene mismatch; currentScene set to " + currentScene.ToString() + "; updating to " + Scenes.UITest.ToString());
                 currentScene = Scenes.Game; // !!
                 currentGameState = GameStatus.Playing;
             }
@@ -551,6 +567,17 @@ public class GameManager : MonoBehaviour
 
     public void EndGameClient(int playerId)
     {
+        if (currentScene != Scenes.Game)
+        {
+            Debug.LogError("GameManager->EndGameClient(): Not in Game scene!");
+            return;
+        }
+        if (currentGameState != GameStatus.Playing)
+        {
+            Debug.LogError("GameManager->EndGameClient(): Game is not in Playing state!");
+            return;
+        }
+        currentGameState = GameStatus.GameOver;
         GameStateClient.GatherResults();
         Debug.Log("GameManager->EndGameClient()");
         EndGameCleanup();

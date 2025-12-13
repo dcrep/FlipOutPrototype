@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6178785574704803771}
   - component: {fileID: 7697491862663367847}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: CircleHighlightPF
   m_TagString: Untagged
   m_Icon: {fileID: 0}

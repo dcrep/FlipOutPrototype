@@ -24,3 +24,5 @@ MonoBehaviour:
   gameOverSceneEnum: 5
   DCExperimentsScene: xDCExperiments
   DCExperimentsSceneEnum: 4
+  UITestScene: UITest
+  UITestSceneEnum: 4

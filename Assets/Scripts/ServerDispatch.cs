@@ -77,13 +77,15 @@ public class ServerDispatch
         gameStateServer.Cleanup();
         if (isHotseatGame)
         {
-            GameStateClient.CleanupClients();
-            isHotseatGame = false;
+            // handled later (and needs to be):
+            //GameStateClient.CleanupClients();
+            //isHotseatGame = false;
         }
         isServer = false;
         gameStateServer = null;
         // if isHotseat
-        GameManager.Instance.EndGameClient(-1);
+        //GameManager.Instance.EndGameClient(-1);
+
     }
 
     // private (called by Hotseat or Online start)
@@ -102,7 +104,7 @@ public class ServerDispatch
         StartTurn();
     }
 
-    private void DealCardsToPlayerHandIndices(int playerId, int[] handIndices)
+    private bool DealCardsToPlayerHandIndices(int playerId, int[] handIndices)
     {
         int playerNum = gameStateServer.GetPlayerNumberByID(playerId);
         List<CardPODServer> cards = gameStateServer.DrawCards(handIndices.Length, playerId);
@@ -110,8 +112,8 @@ public class ServerDispatch
         if (cards == null)
         {
             Debug.LogError("ServerDispatch->DealCardsToPlayerHandIndices(): end game - not enough draw cards for player " + playerId + "!");
-            EndGame();
-            return;
+            //EndGame();
+            return false;
         }
 
         CardColor deckTopColor = gameStateServer.PeekTopDrawCardColor();
@@ -166,6 +168,7 @@ public class ServerDispatch
         {
             //
         }
+        return true;
     }
 
     private void DealCardsToPlayers()
@@ -946,7 +949,12 @@ public class ServerDispatch
         //else {}
 
         // 2nd action:
-        DealCardsToPlayerHandIndices(playerId, adjacentCardIndices);
+        if (!DealCardsToPlayerHandIndices(playerId, adjacentCardIndices))
+        {
+            Debug.LogError("ServerDispatch->ScoreCards(): end game reached");
+            EndGame();
+            //return;
+        }
 
         if (isHotseatGame)
         {
@@ -1018,7 +1026,12 @@ public class ServerDispatch
         //else {}
 
         // 2nd action:
-        DealCardsToPlayerHandIndices(targetPlayer.playerId, adjacentCardIndices);
+        if (!DealCardsToPlayerHandIndices(targetPlayer.playerId, adjacentCardIndices))
+        {
+            Debug.LogError("ServerDispatch->SwipeCards(): end game reached");
+            EndGame();
+            //return;
+        }
 
         if (isHotseatGame)
         {

@@ -9,6 +9,11 @@ public class ResultsMenuUI : MonoBehaviour
 
     void Awake()
     {
+        //GameStateClient.currentMultiplayerMode;
+    }
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    void Start()
+    {
         GameResults results = GameStateClient.gameResults;
         int totalPlayers = results.numberOfPlayers;
 
@@ -25,11 +30,7 @@ public class ResultsMenuUI : MonoBehaviour
                 playersScoreText[i].text = "";
             }
         }
-        //GameStateClient.currentMultiplayerMode;
     }
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    { }
 
     // Update is called once per frame
     void Update()

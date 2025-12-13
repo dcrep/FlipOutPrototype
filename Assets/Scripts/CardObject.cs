@@ -21,6 +21,9 @@ public class CardObject : MonoBehaviour
     public delegate void OnCardClicked(CardObject card);
     public static event OnCardClicked onCardClicked;
 
+    public static event System.Action<CardObject> OnHoverEnter;
+    public static event System.Action<CardObject> OnHoverExit;
+
     private static GameObject highlightPrefab = null;
     private GameObject highlightInstance = null;
 
@@ -128,6 +131,16 @@ public class CardObject : MonoBehaviour
     public void SetSortingOrder(int sortingOrder)
     {
 		spriteRenderer.sortingOrder = sortingOrder;
+    }
+
+    private void OnMouseEnter()
+    {
+        OnHoverEnter?.Invoke(this);
+    }
+
+    private void OnMouseExit()
+    {
+        OnHoverExit?.Invoke(this);
     }
 
     public void OnMouseUpAsButton()
