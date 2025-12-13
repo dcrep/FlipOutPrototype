@@ -33,13 +33,14 @@ public class LobbyOnlineUI : MonoBehaviour
     public bool debugAddPlayer = false;
 
     private string localIPAddress = "127.0.0.1";
-
+    [SerializeField] private string publicIPAddress = "0.0.0.0";
 
     void Awake()
     {
         string localIP = GetLocalIPAddress();
         Debug.Log("Local IP: " + localIP);
         hostIPInputField.text = localIP;
+        StartCoroutine(FetchPublicIP());
     }
 
     private void Start()
@@ -104,10 +105,88 @@ public class LobbyOnlineUI : MonoBehaviour
         startButton.interactable = readyCount == lobbySlots.Count && readyCount >= 2;
     }*/
 
+private System.Collections.IEnumerator FetchPublicIP()
+{
+    using (var req = UnityEngine.Networking.UnityWebRequest.Get("https://api.ipify.org"))
+    {
+        yield return req.SendWebRequest();
+
+#if UNITY_2020_2_OR_NEWER
+        if (req.result != UnityEngine.Networking.UnityWebRequest.Result.Success)
+#else
+        if (req.isNetworkError || req.isHttpError)
+#endif
+        {
+            Debug.LogWarning("Failed to get public IP: " + req.error);
+            yield break;
+        }
+
+        publicIPAddress = req.downloadHandler.text.Trim();
+        Debug.Log("Public IP: " + publicIPAddress);
+    }
+}
+
     public string GetLocalIPAddress()
     {
-        string localIP = null;
-        foreach (var ip in Dns.GetHostEntry(Dns.GetHostName()).AddressList)
+    foreach (var nic in System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces())
+    {
+        if (nic.OperationalStatus != System.Net.NetworkInformation.OperationalStatus.Up)
+            continue;
+
+        var type = nic.NetworkInterfaceType;
+        if (type != System.Net.NetworkInformation.NetworkInterfaceType.Ethernet &&
+            type != System.Net.NetworkInformation.NetworkInterfaceType.Wireless80211)
+            continue;
+
+        // Skip virtual/loopback-style adapters
+        string desc = nic.Description.ToLowerInvariant();
+        if (desc.Contains("virtual") || desc.Contains("hyper-v") || desc.Contains("vEthernet".ToLower()) ||
+            desc.Contains("loopback") || desc.Contains("docker") || desc.Contains("vmware"))
+            continue;
+
+        var props = nic.GetIPProperties();
+        bool hasGateway = props.GatewayAddresses != null && props.GatewayAddresses.Count > 0;
+
+        foreach (var ua in props.UnicastAddresses)
+        {
+            if (ua.Address.AddressFamily != AddressFamily.InterNetwork)
+                continue;
+            var ip = ua.Address.ToString();
+            // Skip APIPA/link-local
+            if (ip.StartsWith("169.254.")) continue;
+
+            if (hasGateway)
+            {
+                localIPAddress = ip;
+                return localIPAddress;
+            }
+        }
+    }
+    // Fallback: first non-loopback IPv4
+    foreach (var nic in System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces())
+    {
+        foreach (var ua in nic.GetIPProperties().UnicastAddresses)
+        {
+            if (ua.Address.AddressFamily == AddressFamily.InterNetwork &&
+                !ua.Address.ToString().StartsWith("169.254.") &&
+                !IPAddress.IsLoopback(ua.Address))
+            {
+                localIPAddress = ua.Address.ToString();
+                return localIPAddress;
+            }
+        }
+    }
+        return "127.0.0.1";
+        /*string localIP = null;
+        var addresses = Dns.GetHostEntry(Dns.GetHostName()).AddressList;
+        
+        // Debug: log all addresses
+        foreach (var addr in addresses)
+        {
+            Debug.Log("Found address: " + addr.ToString() + " Family: " + addr.AddressFamily);
+        }
+        
+        foreach (var ip in addresses)
         {
             if (ip.AddressFamily == AddressFamily.InterNetwork)
             {
@@ -119,7 +198,7 @@ public class LobbyOnlineUI : MonoBehaviour
             localIP = "127.0.0.1";
 
         localIPAddress = localIP;
-        return localIP;
+        return localIP;*/
     }
 
     private void HandlePlayerJoined(PlayerSession player)
