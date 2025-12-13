@@ -21,6 +21,7 @@ public class LobbyOnlineUI : MonoBehaviour
     [SerializeField] private LobbyManager lobbyManager;
     [SerializeField] private List<PlayerLobbySlot> lobbySlots = new List<PlayerLobbySlot>();
 
+    public TMP_Text localLanIPText, onlineIPText;
     public TMP_InputField hostIPInputField;
     public TMP_InputField playerNameInputField;
     public Button hostButton, hostLocalButton, hostInternetButton,connectButton;
@@ -42,6 +43,8 @@ public class LobbyOnlineUI : MonoBehaviour
     {
         string localIP = GetLocalIPAddress();
         Debug.Log("Local IP: " + localIP);
+        localLanIPText.text = "LAN IP: " + localIP + ":" + defaultPort;
+        onlineIPText.text = "Public IP: Fetching...";
         hostIPInputField.text = localIP;
         startButton.interactable = false;
         StartCoroutine(FetchPublicIP());
@@ -128,6 +131,7 @@ private System.Collections.IEnumerator FetchPublicIP()
 
         publicIPAddress = req.downloadHandler.text.Trim();
         Debug.Log("Public IP: " + publicIPAddress);
+        onlineIPText.text = "Public IP: " + publicIPAddress + ":" + defaultPort;
     }
 }
 
