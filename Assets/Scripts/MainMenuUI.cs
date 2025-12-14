@@ -45,7 +45,7 @@ public class MainMenuUI : MonoBehaviour
 
     public void MuteToggle(bool isMuted)
     {
-        Debug.Log("Mute called, bool = " + isMuted);
+        //Debug.Log("Mute called, bool = " + isMuted);
         if (isMuted)
         {
             AudioManager.Mute();
@@ -65,7 +65,7 @@ public class MainMenuUI : MonoBehaviour
     public void VolumeChange()
     {
         PlayerPreferences.Instance.SetMainVolume(mainVolumeSlider.value);
-        Debug.Log("Volume changed to " + mainVolumeSlider.value);
+        //Debug.Log("Volume changed to " + mainVolumeSlider.value);
     }
 
     public void PlayerBackButton()
@@ -83,7 +83,7 @@ public class MainMenuUI : MonoBehaviour
     {
         //InputField playerNameInput = GameObject.Find("PlayerNameInput").GetComponent<InputField>();
         PlayerPreferences.Instance.SetPlayerName(name);
-        Debug.Log("Player name set to: " + name);
+        //Debug.Log("Player name set to: " + name);
     }
 
     public void QuitButton()

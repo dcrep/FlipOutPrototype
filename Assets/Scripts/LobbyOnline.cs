@@ -512,6 +512,20 @@ private System.Collections.IEnumerator FetchPublicIP()
         DisconnectAndShutdownNetwork();
         // Small delay to allow shutdown to complete (?)
         //Invoke(nameof(LoadMainMenu), 0.1f);
+
+        // Destroy NetworkManager object to avoid persistence
+        var netMan = Unity.Netcode.NetworkManager.Singleton;
+        if (netMan != null)
+        {
+            // Cleanly disconnect all
+            if (netMan.IsListening)
+            {
+                netMan.Shutdown();
+            }
+
+            // Destroy the NetworkManager GameObject so it doesn't persist via DontDestroyOnLoad
+            Destroy(netMan.gameObject);
+        }
         
         GameManager.Instance.LoadScene(Scenes.MainMenu);
     }
