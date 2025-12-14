@@ -26,7 +26,7 @@ public class LobbyOnlineUI : MonoBehaviour
     public TMP_InputField playerNameInputField;
     public Button hostButton, hostLocalButton, hostInternetButton, connectButton, connectLocalButton;
 
-    public Button startButton;
+    public Button startButton, cancelButton;
     public Button mainMenuButton;
     public Toggle localReadyCheckbox;
     public Toggle hostReadyCheckbox;
@@ -50,6 +50,7 @@ public class LobbyOnlineUI : MonoBehaviour
         onlineIPText.text = "Public IP: Fetching...";
         hostIPInputField.text = localIP;
         startButton.interactable = false;
+        playerNameInputField.text = PlayerPreferences.Instance.playerName;
         StartCoroutine(FetchPublicIP());
     }
 
@@ -60,13 +61,15 @@ public class LobbyOnlineUI : MonoBehaviour
         hostInternetButton.onClick.AddListener(OnHostInternet);
         connectButton.onClick.AddListener(OnConnect);
         connectLocalButton.onClick.AddListener(OnConnectLocal);
-        startButton.onClick.AddListener(OnStartGame);
+        
         localReadyCheckbox.onValueChanged.AddListener(OnReadyToggle);
         if (hostReadyCheckbox != null)
         {
             hostReadyCheckbox.onValueChanged.AddListener(OnReadyToggle);
             hostReadyCheckbox.interactable = false;
         }
+        startButton.onClick.AddListener(OnStartGame);
+        cancelButton.onClick.AddListener(OnCancelButton);
         mainMenuButton.onClick.AddListener(OnMenuButton);
 
         // Subscribe to lobby manager events
@@ -75,6 +78,13 @@ public class LobbyOnlineUI : MonoBehaviour
         lobbyManager.OnPlayerLeft += HandlePlayerLeft;
         lobbyManager.OnPlayerReadyChanged += HandlePlayerReadyChanged;
         lobbyManager.OnAllPlayersReady += HandleGameStart;
+
+        // Subscribe to network disconnect events
+        var netMan = Unity.Netcode.NetworkManager.Singleton;
+        if (netMan != null)
+        {
+            netMan.OnClientDisconnectCallback += OnClientDisconnected;
+        }
 
         // Hide all slots initially
         localPlayerObject.SetActive(true);
@@ -96,6 +106,11 @@ public class LobbyOnlineUI : MonoBehaviour
             lobbyManager.OnPlayerLeft -= HandlePlayerLeft;
             lobbyManager.OnPlayerReadyChanged -= HandlePlayerReadyChanged;
             lobbyManager.OnAllPlayersReady -= HandleGameStart;
+        }
+        var netMan = Unity.Netcode.NetworkManager.Singleton;
+        if (netMan != null)
+        {
+            netMan.OnClientDisconnectCallback -= OnClientDisconnected;
         }
     }
 
@@ -457,28 +472,93 @@ private System.Collections.IEnumerator FetchPublicIP()
         }
     }
 
+    private void OnClientDisconnected(ulong clientId)
+    {
+        var netMan = Unity.Netcode.NetworkManager.Singleton;
+        
+        // If we're a client and we got disconnected, reset the UI
+        if (netMan != null && !netMan.IsServer && clientId == netMan.LocalClientId)
+        {
+            Debug.Log("Client disconnected from host - resetting UI");
+            ResetLobbyUI();
+        }
+    }
+
+    private void DisconnectAndShutdownNetwork()
+    {
+        var netMan = Unity.Netcode.NetworkManager.Singleton;
+        
+        if (netMan != null && netMan.IsListening)
+        {
+            if (netMan.IsServer)
+            {
+                // Host: shutdown and notify all clients
+                Debug.Log("Shutting down as Host");
+                lobbyManager.HostInitiatedShutdown(false);
+            }
+            else if (netMan.IsClient)
+            {
+                // Client: disconnect from server
+                Debug.Log("Disconnecting as Client");
+                netMan.Shutdown();
+            }
+        }
+    }
+
     public void OnMenuButton()
     {
         Debug.Log("Menu button clicked - disconnecting from network");
         
-        if (Unity.Netcode.NetworkManager.Singleton.IsServer)
-        {
-            // Host: tell all clients to disconnect and load menu
-            lobbyManager.HostInitiatedShutdown();
-            // HostInitiatedShutdown's ClientRpc will handle loading MainMenu for everyone
-        }
-        else
-        {
-            // Client: just disconnect and load menu
-            if (Unity.Netcode.NetworkManager.Singleton != null && Unity.Netcode.NetworkManager.Singleton.IsListening)
-            {
-                Unity.Netcode.NetworkManager.Singleton.Shutdown();
-            }
-        }
-        // Small delay to allow shutdown to complete
+        DisconnectAndShutdownNetwork();
+        // Small delay to allow shutdown to complete (?)
         //Invoke(nameof(LoadMainMenu), 0.1f);
         
         GameManager.Instance.LoadScene(Scenes.MainMenu);
+    }
+
+    public void OnCancelButton()
+    {
+        Debug.Log("Cancel button clicked - disconnecting from network");
+        
+        DisconnectAndShutdownNetwork();
+        
+        // Reset UI state
+        ResetLobbyUI();
+    }
+
+    private void ResetLobbyUI()
+    {
+        // Re-enable connection buttons
+        hostButton.interactable = true;
+        hostLocalButton.interactable = true;
+        hostInternetButton.interactable = true;
+        connectButton.interactable = true;
+        connectLocalButton.interactable = true;
+        
+        // Reset visibility
+        localPlayerObject.SetActive(true);
+        hostSlotObject.SetActive(false);
+        
+        // Clear lobby slots
+        lobbySlots.Clear();
+        
+        // Reset ready checkboxes
+        localReadyCheckbox.interactable = false;
+        localReadyCheckbox.isOn = false;
+        if (hostReadyCheckbox != null)
+        {
+            hostReadyCheckbox.interactable = false;
+            hostReadyCheckbox.isOn = false;
+        }
+        
+        // Hide all player slots
+        for (int i = 0; i < playerSlotObjects.Length; i++)
+        {
+            playerSlotObjects[i].SetActive(false);
+        }
+        
+        // Disable start button
+        startButton.interactable = false;
     }
 
     public void OnHost()

@@ -18,6 +18,7 @@ public class LobbyHotseatUI : MonoBehaviour
     private void Start()
     {
         startButton.onClick.AddListener(OnStartGame);
+        playerSlots[0].nameInput.text = PlayerPreferences.Instance.playerName;
     }
 
     void OnStartGame()

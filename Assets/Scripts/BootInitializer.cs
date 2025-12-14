@@ -10,6 +10,11 @@ public class BootInitializer : MonoBehaviour {
 	    GameObject.DontDestroyOnLoad(bootInit);
         
         // !! IMPORTANT: Order of Initialization is important in case there's a dependency on another script !!
+        GameObject playerPrefsObject = new("PlayerPreferences");
+        playerPrefsObject.AddComponent<PlayerPreferences>();
+        DontDestroyOnLoad(playerPrefsObject);
+        Debug.Log("[BI]: PlayerPreferences initialized.");
+
         // AudioManager create object + script component (can also be done in Script
         // with RuntimeInitializeOnLoadMethod, but this way keeps it centralized)
         GameObject audioManager = new("AudioManager");

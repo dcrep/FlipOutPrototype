@@ -272,7 +272,7 @@ public class LobbyManager : NetworkBehaviour
         GameManager.Instance.LoadScene(Scenes.MainMenu);
     }
 
-    public void HostInitiatedShutdown()
+    public void HostInitiatedShutdown(bool bLoadMainMenu = true)
     {
         if (!IsServer)
         {
@@ -280,11 +280,11 @@ public class LobbyManager : NetworkBehaviour
             return;
         }
         
-        ShutdownAllClientsClientRpc();
+        ShutdownAllClientsClientRpc(bLoadMainMenu);
     }
 
     [ClientRpc]
-    private void ShutdownAllClientsClientRpc()
+    private void ShutdownAllClientsClientRpc(bool bLoadMainMenu)
     {
         Debug.Log("Server initiated shutdown - returning to main menu");
         
@@ -295,7 +295,10 @@ public class LobbyManager : NetworkBehaviour
         }
         
         // Load main menu (small delay to allow shutdown)
-        GameManager.Instance.LoadScene(Scenes.MainMenu);
+        if (bLoadMainMenu)
+        {
+            GameManager.Instance.LoadScene(Scenes.MainMenu);
+        }
     }
 
     public override void OnDestroy()
