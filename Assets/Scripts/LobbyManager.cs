@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.SceneManagement;
+using Unity.Collections;
 
 public class LobbyManager : NetworkBehaviour
 {
@@ -30,19 +31,101 @@ public class LobbyManager : NetworkBehaviour
         
         if (IsServer)
         {
+            EnsureHostSession();
             Unity.Netcode.NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
             Unity.Netcode.NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
         }
     }
 
+    private void EnsureHostSession()
+    {
+        ulong hostId = Unity.Netcode.NetworkManager.ServerClientId;
+        if (sessionManager.GetPlayerSession(hostId) == null)
+        {
+            sessionManager.AddSession(hostId, $"Player{hostId}", "127.0.0.1");
+        }
+
+    }
+
     private void OnClientConnected(ulong clientId)
     {
-        ulong playerNetworkId = clientId;
-        string playerName = $"Player{playerNetworkId}";
-        string ipAddress = "127.0.0.1";
-        
-        sessionManager.AddSession(playerNetworkId, playerName, ipAddress);
-        NotifyPlayerJoinedClientRpc(playerNetworkId, playerName);
+        EnsureHostSession();
+        // Add the connecting client if missing
+        if (sessionManager.GetPlayerSession(clientId) == null)
+        {
+            string playerName = $"Player{clientId}";
+            string ipAddress = "127.0.0.1";
+            sessionManager.AddSession(clientId, playerName, ipAddress);
+            NotifyPlayerJoinedClientRpc(clientId, playerName);
+        }
+        // Broadcast updated roster to ALL clients so everyone knows about the new player
+        BroadcastRosterToAllClients();
+    }
+
+    private void BroadcastRosterToAllClients()
+    {
+        var list = new List<PlayerSession>(sessionManager.sessions.Values);
+        list.Sort((a, b) => a.playerNetworkId.CompareTo(b.playerNetworkId));
+        int count = list.Count;
+        ulong[] ids = new ulong[count];
+        FixedString64Bytes[] names = new FixedString64Bytes[count];
+        bool[] ready = new bool[count];
+
+        for (int i = 0; i < count; i++)
+        {
+            ids[i] = list[i].playerNetworkId;
+            names[i] = list[i].playerName;
+            ready[i] = list[i].isReady;
+        }
+
+        SyncAllPlayersClientRpc(ids, names, ready);
+    }
+
+    private void SendFullRosterToClient(ulong targetClientId)
+    {
+        var list = new List<PlayerSession>(sessionManager.sessions.Values);
+        // Sort by playerNetworkId to ensure consistent order across all clients
+        list.Sort((a, b) => a.playerNetworkId.CompareTo(b.playerNetworkId));
+        int count = list.Count;
+        ulong[] ids = new ulong[count];
+        FixedString64Bytes[] names = new FixedString64Bytes[count];
+        bool[] ready = new bool[count];
+
+        for (int i = 0; i < count; i++)
+        {
+            ids[i] = list[i].playerNetworkId;
+            names[i] = list[i].playerName;
+            ready[i] = list[i].isReady;
+        }
+
+        ClientRpcParams p = new ClientRpcParams
+        {
+            Send = new ClientRpcSendParams { TargetClientIds = new[] { targetClientId } }
+        };
+        SyncAllPlayersClientRpc(ids, names, ready, p);
+    }
+
+    [ClientRpc]
+    private void SyncAllPlayersClientRpc(ulong[] playerNetworkIds, FixedString64Bytes[] playerNames, bool[] readyStates, ClientRpcParams rpcParams = default)
+    {
+        // Re-hydrate client UI state
+        if (playerNetworkIds == null || playerNames == null || readyStates == null) return;
+
+        for (int i = 0; i < playerNetworkIds.Length; i++)
+        {
+            OnPlayerJoined?.Invoke(new PlayerSession
+            {
+                playerNetworkId = playerNetworkIds[i],
+                playerName = playerNames[i].ToString(),
+                isConnected = true,
+                isReady = readyStates[i]
+            });
+        }
+
+        for (int i = 0; i < playerNetworkIds.Length; i++)
+        {
+            OnPlayerReadyChanged?.Invoke(playerNetworkIds[i], readyStates[i]);
+        }
     }
 
     private void OnClientDisconnected(ulong clientId)
@@ -60,6 +143,7 @@ public class LobbyManager : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     private void SetPlayerNameServerRpc(ulong playerNetworkId, string playerName, ServerRpcParams rpcParams = default)
     {
+        Debug.Log($"Server received name update for {playerNetworkId}: {playerName}");
         var session = sessionManager.GetPlayerSession(playerNetworkId);
         if (session != null)
         {
