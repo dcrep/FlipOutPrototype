@@ -65,6 +65,8 @@ public class GameManager : MonoBehaviour
 
     public MultiplayerMode currentMultiplayerMode = MultiplayerMode.Disconnected;    
 
+    [SerializeField] private UIManager uiManager = null;
+
     //[SerializeField] private PlayerX[] players = new PlayerX[5];
 
     GameObject playersParentGO = null;
@@ -156,7 +158,7 @@ public class GameManager : MonoBehaviour
             Debug.LogError("Failed to load audio clip from Resources folder.");
             return;
         }
-        AudioManager.Play(clip, 0.25f);
+        AudioManager.Play(clip, 0.10f);
         /*clickSound = Resources.Load<AudioClip>("Audio/OVS_Clicky");
         if (clickSound == null)
         {
@@ -425,7 +427,8 @@ public class GameManager : MonoBehaviour
     void OnCardClicked(CardObject card)
     {
         AudioManager.PlaySoundAt(AudioManager.audioSourcesSO.clickCard, 1f);
-        Debug.Log("GameManager->OnCardClicked - Card clicked: " + card.gameObject.name + " currentPlayerIndex: " + gameStateServer.GetActivePlayerNumber());
+        
+        /*Debug.Log("GameManager->OnCardClicked - Card clicked: " + card.gameObject.name + " currentPlayerIndex: " + gameStateServer.GetActivePlayerNumber());
 
         if (card.cardPOD.state == CardState.playerHolder)
         {
@@ -448,7 +451,7 @@ public class GameManager : MonoBehaviour
         else {
             Debug.Log("Max run player 0: " + GameStateClient.GetTotalAdjacentColorCount(GameStateClient.CurrentGameStateClient.GetPlayerByNumber(0)));
             Debug.Log("Max run player 1: " + GameStateClient.GetTotalAdjacentColorCount(GameStateClient.CurrentGameStateClient.GetPlayerByNumber(1)));
-        }
+        }*/
     }
 
    // Called by NetworkManager when online game is ready to start (?)
@@ -501,7 +504,14 @@ public class GameManager : MonoBehaviour
         Debug.Log("GameManager->StartHotseatGame()");
         Debug.Log("First name: " + playerNames[0]);
 
-        for (int i = 0; i < numPlayers; i++)
+        if (uiManager == null)
+        {
+            uiManager = GameObject.Find("UIManager").GetComponent<UIManager>();
+        }
+
+        uiManager.SetupPlayerUI(numPlayers, playerNames);
+
+        /*for (int i = 0; i < numPlayers; i++)
         {
             scoreKeeperGO[i] = new GameObject("Player" + i + " score");
             
@@ -514,7 +524,7 @@ public class GameManager : MonoBehaviour
             scoreText[i].fontSize = 3;
             scoreText[i].alignment = TextAlignmentOptions.Center;
             scoreText[i].color = Color.blue;
-        }
+        }*/
 
         // Player Ids are separate from player numbers but for hotseat they are basically the same
         int[] playerIds = new int[numPlayers];
@@ -722,6 +732,8 @@ public class GameManager : MonoBehaviour
         else
         {
             drawPileTop.SetCardPOD(topPOD);
+            // scale isn't changing but keeping commented-out line from Chris' changes
+            //drawPileTop.transform.localScale = new Vector3(0.5f, 0.5f, 1);
             drawPileTop.cardPOD.state = CardState.drawPile;
         }
         return;
@@ -1093,6 +1105,7 @@ public class GameManager : MonoBehaviour
 
     public void SwitchCardsClient(int cardID1, int cardID2)
     {
+        Debug.Log("Switch Cards Started");
         // Find the CardObjects with the given cardIDs
         CardObject card1 = null;
         CardObject card2 = null;

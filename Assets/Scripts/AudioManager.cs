@@ -1,5 +1,7 @@
 using UnityEngine;
 
+//! TODO: Audio Mixer? Look into this. Audio Listener - added 1 function, is there more?
+
 public class AudioManager : MonoBehaviour
 {
     //[SerializeField] private AudioClip[] soundClips;
@@ -35,6 +37,11 @@ public class AudioManager : MonoBehaviour
     {
         audioMuted = false;
         audioSource.mute = false;
+    }
+
+    public static void SetMainVolumeAL(float volume)
+    {
+        AudioListener.volume = volume;
     }
 
     // Using audioSource to play 1 (and only 1) sound at a time

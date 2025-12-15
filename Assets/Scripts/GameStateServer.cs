@@ -5,28 +5,6 @@ using NUnit.Framework;
 using System;
 using System.Linq;
 
-// FlipOut Game rules @ https://www.ultraboardgames.com/flipout/game-rules.php
-// Note: See FlipOutActions, duplicated enum values..
-// TurnActions - 2 per turn!
-// Flip - choose your own or opponent's card to flip
-// Switch - choose 2 cards to switch positions - can be your own or opponent's
-// Swap1 - swap one of your cards with another player's - no flipping
-// Swap2 requires 2 adjacent same color cards from each player
-// Score/Swipe require drawing more cards after action is complete
-[Flags]
-public enum TurnAction
-{
-    None  = 0x00,   // invalid
-    Flip   = 0x01,  // flip your own or opponent's card
-    Switch = 0x02,  // switch one card's position with another - your own or opponent's hand (within same hand)
-    Swap1  = 0x04,  // swap one of your cards with another player's - WITHOUT flipping either card
-    Swap2  = 0x08,  // swap 2 adjacent same-color cards of yours with another player's 2 adjacent same-color cards
-                    // (doesn't have to be the same colors as yours)
-    Score  = 0x10,  // score a set of 4 to 6 adjacent same-color cards from your hand, redraw up to 6
-    Swipe  = 0x20   // score a set of 4 to 6 adjacent same-color cards from another player's hand
-               // - you score total-1 (in scoring pile), they score 1 (in their scoring pile), both redraw up to 6
-}
-
 // "GameState" conflicts with enum GameState (probably should be AppState)
 [System.Serializable]
 public class GameStateServer

@@ -1,5 +1,11 @@
 using UnityEngine;
 
+public struct CardActionRequest
+{
+    public TurnAction actionType;
+    public CardObject sourceCard;
+}
+
 [RequireComponent(typeof(SpriteRenderer))]
 [RequireComponent(typeof(BoxCollider2D))]
 [System.Serializable]
