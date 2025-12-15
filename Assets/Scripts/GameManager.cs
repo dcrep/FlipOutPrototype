@@ -682,7 +682,7 @@ public class GameManager : MonoBehaviour
             PlayerXClient player = GameStateClient.CurrentGameStateClient.GetPlayerByNumber(playerId);
             uiText.text = "Player " + playerId + "'s " + (playerNum == 1 ? "^" : "v") + " (" + player.playerName + ") Turn";
         }
-        UpdateScoresDisplay();
+        uiManager.UpdateScoresDisplay();
 
         // This should be done at TurnEnd:
         //ClearObjectsInPlay();
@@ -856,7 +856,7 @@ public class GameManager : MonoBehaviour
                 Debug.LogError("GameManager->MoveCardsToScorePile(): No card found with cardID " + cardID);
             }
         }
-        UpdateScoresDisplay();
+        uiManager.UpdateScoresDisplay();
         //this is called along with Score/Swipe to create/queue deal action:
         // GameManager.Instance.serverDispatch.DealCardsToPlayerHandIndices(playerId, handIndices);
     }
@@ -951,19 +951,19 @@ public class GameManager : MonoBehaviour
             Debug.LogError("GameManager->SwipeCardsToScorePiles(): No card found with cardID " + finalCardID);
         }
 
-        UpdateScoresDisplay();
+        uiManager.UpdateScoresDisplay();
         //this is called along with Score/Swipe to create/queue deal action:
         // GameManager.Instance.serverDispatch.DealCardsToPlayerHandIndices(playerId, handIndices);
     }
 
-    void UpdateScoresDisplay()
+    /*void UpdateScoresDisplay()
     {
         for (int playerNum = 0; playerNum < GameStateClient.GetTotalPlayers(); playerNum++)
         {
             PlayerXClient player = GameStateClient.CurrentGameStateClient.GetPlayerByNumber(playerNum);
             scoreText[playerNum].text = "Score: " + player.scorePile.Count.ToString();
         }
-    }
+    }*/
 
     void BuildScorePile()
     {

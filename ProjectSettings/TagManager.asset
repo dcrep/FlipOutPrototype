@@ -5,6 +5,10 @@ TagManager:
   serializedVersion: 3
   tags:
   - Card
+  - Outline
+  - valid
+  - invalid
+  - selected
   layers:
   - Default
   - TransparentFX

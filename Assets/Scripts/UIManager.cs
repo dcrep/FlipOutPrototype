@@ -143,7 +143,18 @@ public class UIManager : MonoBehaviour
             scoreText[i].alignment = TextAlignmentOptions.Center;
             scoreText[i].color = Color.white;
         }
+        //UpdateScoresDisplay();
     }
+
+    public void UpdateScoresDisplay()
+    {
+        for (int playerNum = 0; playerNum < GameStateClient.GetTotalPlayers(); playerNum++)
+        {
+            PlayerXClient player = GameStateClient.CurrentGameStateClient.GetPlayerByNumber(playerNum);
+            scoreText[playerNum].text = "Score: " + player.scorePile.Count.ToString();
+        }
+    }
+
 
     void OnCardClicked(CardObject card)
     {
@@ -208,8 +219,8 @@ public class UIManager : MonoBehaviour
                     CardColor newColor = FakeFlipColor(card.cardPOD.color);
 
                     //!!
-                    Debug.LogError("This shouldn't be done this way... check into..");
-                    GameManager.Instance.FlipCardClient(card.cardPOD.cardID, newColor);
+                    //Debug.LogWarning("This shouldn't be done this way... check into..");
+                    GameManager.Instance.serverDispatch.FlipCard(GameManager.Instance.gameStateClient.GetActivePlayer().playerId, card.cardPOD.cardID);
                     break;
                 }
 
@@ -222,11 +233,6 @@ public class UIManager : MonoBehaviour
         }
     
     }
-
-
-
-
-
 
 
     int GetRequiredHighlightCount(TurnAction action)
@@ -274,7 +280,7 @@ public class UIManager : MonoBehaviour
                 CardObject card = cardsHighlighted[0];
                 CardColor newColor = FakeFlipColor(card.cardPOD.color);
                 //!!
-                Debug.LogError("This shouldn't be done this way... check into..");
+                Debug.LogWarning("This shouldn't be done this way... check into..");
                 GameManager.Instance.FlipCardClient(card.cardPOD.cardID, newColor);
                 break;
             }
@@ -282,7 +288,7 @@ public class UIManager : MonoBehaviour
             case TurnAction.Switch:
             {
                 //!!
-                Debug.LogError("This shouldn't be done this way... check into..");
+                Debug.LogWarning("This shouldn't be done this way... check into..");
                 GameManager.Instance.SwitchCardsClient(cardsHighlighted[0].cardPOD.cardID, cardsHighlighted[1].cardPOD.cardID);
                 break;
             }
