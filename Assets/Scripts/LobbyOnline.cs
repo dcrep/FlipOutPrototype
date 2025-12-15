@@ -38,6 +38,7 @@ public class LobbyOnlineUI : MonoBehaviour
     public string debugPlayerName = "PlayerX";
     public bool debugAddPlayer = false;
 
+    const string LOCAL_HOST_IP = "127.0.0.1";
     private string localIPAddress = "127.0.0.1";
     [SerializeField] private string publicIPAddress = "0.0.0.0";
     private const ushort defaultPort = 7777;

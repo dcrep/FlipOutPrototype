@@ -268,8 +268,7 @@ public class LobbyManager : NetworkBehaviour
     private void AllPlayersReadyClientRpc()
     {
         OnAllPlayersReady?.Invoke();
-        //SceneManager.LoadScene("Game");
-        GameManager.Instance.LoadScene(Scenes.MainMenu);
+        // handle scene loading in event subscriber
     }
 
     public void HostInitiatedShutdown(bool bLoadMainMenu = true)
