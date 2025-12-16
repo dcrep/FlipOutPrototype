@@ -129,15 +129,18 @@ public class UIManager : MonoBehaviour
     {
         for (int i = 0; i < numPlayers; i++)
         {
-            scoreKeeperGO[i] = new GameObject($"Player{i}_Score", typeof(RectTransform));
+            scoreKeeperGO[i] = new GameObject($"Player{i}_Score");   //, typeof(RectTransform));
             // IMPORTANT: false keeps local UI coordinates correct
-            scoreKeeperGO[i].transform.SetParent(UICanvas.transform, false);
-            RectTransform rt = scoreKeeperGO[i].GetComponent<RectTransform>();
+            //scoreKeeperGO[i].transform.SetParent(UICanvas.transform, false);
+            //RectTransform rt = scoreKeeperGO[i].GetComponent<RectTransform>();
             // Use anchoredPosition for UI placement
-            rt.anchoredPosition = playerScorePilePositions[i];
-            rt.localScale = Vector3.one;
+            //rt.anchoredPosition = playerScorePilePositions[i];
+            //rt.localScale = Vector3.one;
+            scoreKeeperGO[i].transform.localPosition = playerScorePilePositions[i];
             scoreKeeperGO[i].layer = LayerMask.NameToLayer("UI");
             scoreText[i] = scoreKeeperGO[i].AddComponent<TextMeshPro>();
+            scoreText[i].GetComponent<Renderer>().sortingLayerName = "UI";
+            scoreText[i].GetComponent<Renderer>().sortingOrder = 100; // Optional: set render order
             scoreText[i].text = "Score: 0";
             scoreText[i].fontSize = 3;
             scoreText[i].alignment = TextAlignmentOptions.Center;
@@ -158,6 +161,8 @@ public class UIManager : MonoBehaviour
 
     void OnCardClicked(CardObject card)
     {
+        if (card.cardPOD.state != CardState.playerHolder)
+            return;
         // If we're resolving an action, route to highlight logic
         if (IsInHighlightMode)
         {
@@ -205,18 +210,20 @@ public class UIManager : MonoBehaviour
         actionSourceCard = request.sourceCard;
 
         HideActionMenu();
-        if (pendingAction != TurnAction.Flip)
+        // 2+ cards required?
+        if (pendingAction == TurnAction.Switch || pendingAction == TurnAction.Swap1 || pendingAction == TurnAction.Swap2)
         {
             EnterHighlightMode();          
         }
         else
         {
+            RestoreScale();
+            CardObject card = request.sourceCard;
             switch (request.actionType)
-            {
+            {                
                 case TurnAction.Flip:
-                {
-                    CardObject card = request.sourceCard;
-                    CardColor newColor = FakeFlipColor(card.cardPOD.color);
+                {                    
+                    //CardColor newColor = FakeFlipColor(card.cardPOD.color);
 
                     //!!
                     //Debug.LogWarning("This shouldn't be done this way... check into..");
@@ -226,7 +233,39 @@ public class UIManager : MonoBehaviour
 
                 case TurnAction.Score:
                 {
+                    int[] adjacentCardIndices = GameStateClient.GetAdjacentColorsIndicesBasedOnCardId(card.cardPOD.cardID);
+                    if (adjacentCardIndices.Length < 4)
+                    {
+                        Debug.Log("Need to highlight a card that has at least 4 adjacent same-color cards to score!");
+                        //return;
+                    }
+                    else
+                    {
+                        // This will fail if current player doesn't own the highlighted card
+                        GameManager.Instance.serverDispatch.ScoreCards(GameStateClient.GetCurrentPlayerId(),
+                            card.cardPOD.cardID);
+                        GameManager.Instance.ClearHighlightedCards();
+                    }
                     // Optional if Score is 1-card
+                    break;
+                }
+                case TurnAction.Swipe:
+                {
+                    //TurnAction.Swipe  // score a set of 4 to 6 adjacent same-color cards from another player's hand
+                    int[] adjacentCardIndices = GameStateClient.GetAdjacentColorsIndicesBasedOnCardId(card.cardPOD.cardID);
+                    if (adjacentCardIndices.Length < 4)
+                    {
+                        Debug.Log("Need to highlight a card that has at least 4 adjacent same-color cards to score!");
+                        //return;
+                    }
+                    else
+                    {
+                        // This will fail if current player owns the highlighted card
+                        GameManager.Instance.serverDispatch.SwipeCards(GameStateClient.GetCurrentPlayerId(),
+                            card.cardPOD.cardID);
+                        GameManager.Instance.ClearHighlightedCards();
+
+                    }
                     break;
                 }
             }
@@ -244,7 +283,7 @@ public class UIManager : MonoBehaviour
             case TurnAction.Swap1:  return 2;
             case TurnAction.Swap2:  return 4;
             case TurnAction.Score:  return 1;
-            case TurnAction.Swipe:  return 2;
+            case TurnAction.Swipe:  return 1;
             default: return 0;
         }
     }
@@ -273,15 +312,15 @@ public class UIManager : MonoBehaviour
 
     void ExecutePendingAction()
     {
+        Debug.Log($"Executing action: {pendingAction} on {cardsHighlighted.Count} highlighted cards.");
         switch (pendingAction)
         {
             case TurnAction.Flip:
             {
                 CardObject card = cardsHighlighted[0];
-                CardColor newColor = FakeFlipColor(card.cardPOD.color);
-                //!!
-                Debug.LogWarning("This shouldn't be done this way... check into..");
-                GameManager.Instance.FlipCardClient(card.cardPOD.cardID, newColor);
+                //CardColor newColor = FakeFlipColor(card.cardPOD.color);
+                //!! 2nd flip?
+                GameManager.Instance.serverDispatch.FlipCard(GameManager.Instance.gameStateClient.GetActivePlayer().playerId, card.cardPOD.cardID);
                 break;
             }
 
@@ -289,27 +328,103 @@ public class UIManager : MonoBehaviour
             {
                 //!!
                 Debug.LogWarning("This shouldn't be done this way... check into..");
-                GameManager.Instance.SwitchCardsClient(cardsHighlighted[0].cardPOD.cardID, cardsHighlighted[1].cardPOD.cardID);
+                Debug.Log("Cards highlighted at Switch: " + cardsHighlighted.Count);
+                //TurnAction.Switch // switch 1 card with another of yours, or 1 of opponents with another of opponent's
+                //if (cardsHighlighted.Count != 2)
+                if (cardsHighlighted.Count != 2)
+                {
+                    Debug.Log("Need to highlight exactly 2 cards to switch (2 of yours or 2 of another player's)!");
+                    //return;
+                }
+                GameManager.Instance.serverDispatch.SwitchCards(
+                    GameManager.Instance.gameStateClient.GetActivePlayer().playerId,
+                    cardsHighlighted[0].cardPOD.cardID,
+                    cardsHighlighted[1].cardPOD.cardID);
+                GameManager.Instance.ClearHighlightedCards();
                 break;
             }
             
             case TurnAction.Swap1:
             {
+                //TurnAction.Swap1 // swap 1 of your cards with another player's
+                if (cardsHighlighted.Count != 2)
+                {
+                    Debug.Log("Need to highlight exactly 2 cards to swap (1 of yours and 1 of another player's)!");
+                    //return;
+                }
+                GameManager.Instance.serverDispatch.SwapCards1(
+                    GameManager.Instance.gameStateClient.GetActivePlayer().playerId,
+                    cardsHighlighted[0].cardPOD.cardID,
+                    cardsHighlighted[1].cardPOD.cardID);
+
+                GameManager.Instance.ClearHighlightedCards();
                 break;
             }
 
             case TurnAction.Swap2:
             {
+                //TurnAction.Swap2 // swap 2 adjacent same-color cards of yours with another player's 2 adjacent same-color cards
+                if (cardsHighlighted.Count != 4)
+                {
+                    Debug.Log("Need to highlight exactly 4 cards to swap (2 of yours and 2 of another player's)!");
+                    //return;
+                }
+                GameManager.Instance.serverDispatch.SwapCards2(
+                    GameManager.Instance.gameStateClient.GetActivePlayer().playerId,
+                    cardsHighlighted[0].cardPOD.cardID,
+                    cardsHighlighted[1].cardPOD.cardID,
+                    cardsHighlighted[2].cardPOD.cardID,
+                    cardsHighlighted[3].cardPOD.cardID);
+                GameManager.Instance.ClearHighlightedCards();
                 break;
             }
 
             case TurnAction.Score:
             {
+                //TurnAction.Score // score a set of 4 to 6 adjacent same-color cards from your hand, redraw up to 6
+                if (cardsHighlighted.Count != 1)
+                {
+                    Debug.Log("Need to highlight 1 card to score!");
+                    //return;
+                }
+                int[] adjacentCardIndices = GameStateClient.GetAdjacentColorsIndicesBasedOnCardId(cardsHighlighted[0].cardPOD.cardID);
+                if (adjacentCardIndices.Length < 4)
+                {
+                    Debug.Log("Need to highlight a card that has at least 4 adjacent same-color cards to score!");
+                    //return;
+                }
+                else
+                {
+                    // This will fail if current player doesn't own the highlighted card
+                    GameManager.Instance.serverDispatch.ScoreCards(GameStateClient.GetCurrentPlayerId(),
+                        cardsHighlighted[0].cardPOD.cardID);
+                    GameManager.Instance.ClearHighlightedCards();
+                }
                 break;
             }
 
             case TurnAction.Swipe:
             {
+                //TurnAction.Swipe  // score a set of 4 to 6 adjacent same-color cards from another player's hand
+                if (cardsHighlighted.Count != 1)
+                {
+                    Debug.Log("Need to highlight 1 card to swipe score!");
+                    //return;
+                }
+                int[] adjacentCardIndices = GameStateClient.GetAdjacentColorsIndicesBasedOnCardId(cardsHighlighted[0].cardPOD.cardID);
+                if (adjacentCardIndices.Length < 4)
+                {
+                    Debug.Log("Need to highlight a card that has at least 4 adjacent same-color cards to score!");
+                    //return;
+                }
+                else
+                {
+                    // This will fail if current player owns the highlighted card
+                    GameManager.Instance.serverDispatch.SwipeCards(GameStateClient.GetCurrentPlayerId(),
+                        cardsHighlighted[0].cardPOD.cardID);
+                    GameManager.Instance.ClearHighlightedCards();
+
+                }
                 break;
             }
         }
@@ -356,6 +471,7 @@ public class UIManager : MonoBehaviour
     {
         if (card == null) return;
         if (selectedCard != null) return;
+        if (card.cardPOD.state != CardState.playerHolder) return;
         if (card.gameObject.tag == "invalid") return;
 
         SpriteRenderer originalSR = card.GetComponent<SpriteRenderer>();
@@ -410,6 +526,7 @@ public class UIManager : MonoBehaviour
             RestoreAllAndClear();
             return;
         }
+        if (card.cardPOD.state != CardState.playerHolder) return;
 
         if (originalSortingOrders.TryGetValue(card, out int originalOrder) && (card.gameObject.tag != "selected"))
         {
@@ -692,7 +809,7 @@ public class UIManager : MonoBehaviour
         StartCoroutine(AnimateCardMovement(card, targetPos));
     }
 
-    private IEnumerator AnimateCardMovement(CardObject card, Vector3 targetPos)
+    public IEnumerator AnimateCardMovement(CardObject card, Vector3 targetPos)
     {
         if (card == null)
             yield break;
@@ -713,6 +830,50 @@ public class UIManager : MonoBehaviour
         }
 
         t.position = targetPos; // ensure final exact position
+    }
+
+    public IEnumerator AnimateFlip(CardObject card, CardColor dest)
+    {
+        if (card == null)
+            yield break;
+
+        float halfDuration = moveDuration / 2f;
+        float time = 0f;
+
+        Vector3 originalScale = card.transform.localScale;
+        Vector3 squishedScale = new Vector3(0f, originalScale.y, originalScale.z);
+
+        // First half: scale X to 0
+        while (time < halfDuration)
+        {
+            float p = time / halfDuration;
+            float curve = moveCurve.Evaluate(p);
+
+            card.transform.localScale = Vector3.Lerp(originalScale, squishedScale, curve);
+
+            time += Time.deltaTime;
+            yield return null;
+        }
+
+        card.transform.localScale = squishedScale;
+
+        // Change card color at midpoint
+        card.UpdateColor(dest);
+
+        // Second half: scale X back to original
+        time = 0f;
+        while (time < halfDuration)
+        {
+            float p = time / halfDuration;
+            float curve = moveCurve.Evaluate(p);
+
+            card.transform.localScale = Vector3.Lerp(squishedScale, originalScale, curve);
+
+            time += Time.deltaTime;
+            yield return null;
+        }
+
+        card.transform.localScale = originalScale; // ensure final exact scale
     }
 
     public Transform[] GenerateHandSlots(Transform parent, Vector3 localOffset, int numSlots = 6)

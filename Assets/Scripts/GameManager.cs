@@ -428,7 +428,7 @@ public class GameManager : MonoBehaviour
     {
         AudioManager.PlaySoundAt(AudioManager.audioSourcesSO.clickCard, 1f);
         
-        /*Debug.Log("GameManager->OnCardClicked - Card clicked: " + card.gameObject.name + " currentPlayerIndex: " + gameStateServer.GetActivePlayerNumber());
+        Debug.Log("GameManager->OnCardClicked - Card clicked: " + card.gameObject.name + " currentPlayerIndex: " + gameStateServer.GetActivePlayerNumber());
 
         if (card.cardPOD.state == CardState.playerHolder)
         {
@@ -451,7 +451,7 @@ public class GameManager : MonoBehaviour
         else {
             Debug.Log("Max run player 0: " + GameStateClient.GetTotalAdjacentColorCount(GameStateClient.CurrentGameStateClient.GetPlayerByNumber(0)));
             Debug.Log("Max run player 1: " + GameStateClient.GetTotalAdjacentColorCount(GameStateClient.CurrentGameStateClient.GetPlayerByNumber(1)));
-        }*/
+        }
     }
 
    // Called by NetworkManager when online game is ready to start (?)
@@ -728,6 +728,8 @@ public class GameManager : MonoBehaviour
         if (drawPileTop == null)
         {
             drawPileTop = InstantiateCardObjectFromPOD(topPOD, drawPileDefaultPosition, CardState.drawPile, -1);
+            drawPileTop.SetLocalScale(new Vector3(0.75f, 0.75f, 1) );
+            drawPileTop.transform.SetPositionAndRotation(drawPileDefaultPosition, Quaternion.Euler(0, 0, 90));
         }
         else
         {
@@ -1095,7 +1097,8 @@ public class GameManager : MonoBehaviour
         {
             Debug.Log("GameManager->FlipCard(): Flipping card with cardID " + cardID + " to color " + newColor.ToString());
             //cardToFlip.FlipCard();
-            cardToFlip.UpdateColor(newColor);
+            //cardToFlip.UpdateColor(newColor);
+            StartCoroutine(uiManager.AnimateFlip(cardToFlip, newColor));
         }
         else
         {
@@ -1126,10 +1129,11 @@ public class GameManager : MonoBehaviour
         if (card1 != null && card2 != null)
         {
             // Swap positions
-            Vector3 tempPosition = card1.transform.position;
-            card1.transform.position = card2.transform.position;
-            card2.transform.position = tempPosition;
-
+            //Vector3 tempPosition = card1.transform.position;
+            //card1.transform.position = card2.transform.position;
+            //card2.transform.position = tempPosition;
+            StartCoroutine(uiManager.AnimateCardMovement(card1, card2.transform.position));
+            StartCoroutine(uiManager.AnimateCardMovement(card2, card1.transform.position));
             // Index of card in player's hand:
             int cardsOwnerId = card1.cardPOD.ownerPlayerID;
             //GameStateClient.CurrentGameStateClient.GetPlayerByID(cardsOwnerId).GetIndexOfCardByID(cardID1);
@@ -1178,9 +1182,11 @@ public class GameManager : MonoBehaviour
             }
             
             // Swap positions
-            Vector3 tempPosition = cardSwapping1.transform.position;
-            cardSwapping1.transform.position = cardSwapWith1.transform.position;
-            cardSwapWith1.transform.position = tempPosition;
+            //Vector3 tempPosition = cardSwapping1.transform.position;
+            //cardSwapping1.transform.position = cardSwapWith1.transform.position;
+            //cardSwapWith1.transform.position = tempPosition;
+            StartCoroutine(uiManager.AnimateCardMovement(cardSwapping1, cardSwapWith1.transform.position));
+            StartCoroutine(uiManager.AnimateCardMovement(cardSwapWith1, cardSwapping1.transform.position));
 
             // Update GameStateClient hands
             GameStateClient.CurrentGameStateClient.Swap1CardBetweenPlayers(playerSwappingId, playerSwapWithId, cardSwappingID1, cardSwapWithID1);
@@ -1244,14 +1250,18 @@ public class GameManager : MonoBehaviour
                 cardSwapWith2.UpdateColor(swapWith2NewColor);                
             }
             // Swap positions of first pair
-            Vector3 tempPosition = cardSwapping1.transform.position;
-            cardSwapping1.transform.position = cardSwapWith1.transform.position;
-            cardSwapWith1.transform.position = tempPosition;
+            //Vector3 tempPosition = cardSwapping1.transform.position;
+            //cardSwapping1.transform.position = cardSwapWith1.transform.position;
+            //cardSwapWith1.transform.position = tempPosition;
+            StartCoroutine(uiManager.AnimateCardMovement(cardSwapping1, cardSwapWith1.transform.position));
+            StartCoroutine(uiManager.AnimateCardMovement(cardSwapWith1, cardSwapping1.transform.position));
 
             // Swap positions of second pair
-            tempPosition = cardSwapping2.transform.position;
-            cardSwapping2.transform.position = cardSwapWith2.transform.position;
-            cardSwapWith2.transform.position = tempPosition;
+            //tempPosition = cardSwapping2.transform.position;
+            //cardSwapping2.transform.position = cardSwapWith2.transform.position;
+            //cardSwapWith2.transform.position = tempPosition;
+            StartCoroutine(uiManager.AnimateCardMovement(cardSwapping2, cardSwapWith2.transform.position));
+            StartCoroutine(uiManager.AnimateCardMovement(cardSwapWith2, cardSwapping2.transform.position));
             // Update GameStateClient hands (note we pass ids that haven't had consecutive hand-order enforced)
             GameStateClient.CurrentGameStateClient.Swap2CardsBetweenPlayers(playerSwappingId, playerSwapWithId, cardId1, cardId2, cardSwapWithID1, cardSwapWithID2);
         }

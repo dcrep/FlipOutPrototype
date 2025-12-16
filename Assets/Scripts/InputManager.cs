@@ -226,7 +226,7 @@ public class InputManager : MonoBehaviour
                 //TurnAction.Switch // switch 1 card with another of yours, or 1 of opponents with another of opponent's
                 if (GameManager.Instance.cardsHighlighted.Count != 2)
                 {
-                    Debug.Log("Need to highlight exactly 2 cards to swap (1 of yours and 1 of another player's)!");
+                    Debug.Log("Need to highlight exactly 2 cards to switch (2 of yours or 2 of another player's)!");
                     return;
                 }
                 GameManager.Instance.serverDispatch.SwitchCards(
