@@ -188,6 +188,7 @@ public class UIManager : MonoBehaviour
             return true; // click was consumed
 
         cardsHighlighted.Add(card);
+        Debug.Log("Card highlighted: " + card.cardPOD.cardID);
         card.HighlightCardToggle();
 
         int required = GetRequiredHighlightCount(pendingAction);
@@ -296,6 +297,7 @@ public class UIManager : MonoBehaviour
 
         // Always highlight the source card
         cardsHighlighted.Add(actionSourceCard);
+        actionSourceCard.HighlightCardToggle();
     }
 
     CardColor FakeFlipColor(CardColor current)

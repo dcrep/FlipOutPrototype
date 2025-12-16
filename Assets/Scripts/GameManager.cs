@@ -443,7 +443,7 @@ public class GameManager : MonoBehaviour
         if (card.cardPOD.state == CardState.playerHolder)
         {
             Debug.Log("Actions available: " + string.Join(", ", GameStateClient.CurrentGameStateClient.GetAvailableActionsForCard(card.cardPOD)));
-            if (cardsHighlighted.Contains(card))
+            /*if (cardsHighlighted.Contains(card))
             {
                 card.HighlightCardToggle();
                 cardsHighlighted.Remove(card);
@@ -452,7 +452,7 @@ public class GameManager : MonoBehaviour
             else {
                 card.HighlightCardToggle();
                 cardsHighlighted.Add(card);
-            }
+            }*/
         }
         else if (card.cardPOD.state == CardState.scorePile)
         {
@@ -939,7 +939,7 @@ public class GameManager : MonoBehaviour
 
                 //cardObject.SetLocalPosition(targetPosition);
                 //cardObject.SetLocalScale(Vector3.one * 0.5f); // Slightly smaller
-                //cardObject.SetSortingOrder((player.scorePile.Count -1) * 2); // On top of score pile
+                cardObject.SetSortingOrder((player.scorePile.Count -1) * 2); // On top of score pile
                 StartCoroutine(uiManager.AnimateCardMovementAndScale(cardObject, targetPosition, Vector3.one * 0.5f));
             }
             else
