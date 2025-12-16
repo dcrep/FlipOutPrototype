@@ -6,6 +6,7 @@ using TMPro;
 public class UIManager : MonoBehaviour
 {
 
+    public int animationsInProgress = 0;
     //public static UIManager Instance;
 
     private CardObject selectedCard = null;
@@ -814,6 +815,8 @@ public class UIManager : MonoBehaviour
         if (card == null)
             yield break;
 
+        animationsInProgress++;
+
         Transform t = card.transform;
         Vector3 start = t.position;
         float time = 0f;
@@ -830,12 +833,43 @@ public class UIManager : MonoBehaviour
         }
 
         t.position = targetPos; // ensure final exact position
+        animationsInProgress--;
+    }
+
+    public IEnumerator AnimateCardMovementAndScale(CardObject card, Vector3 targetPos, Vector3 targetScale)
+    {
+        if (card == null)
+            yield break;
+
+        animationsInProgress++;
+        Transform t = card.transform;
+        Vector3 startPos = t.position;
+        Vector3 startScale = t.localScale;
+        float time = 0f;
+
+        while (time < moveDuration)
+        {
+            float p = time / moveDuration;
+            float curve = moveCurve.Evaluate(p);
+
+            t.position = Vector3.Lerp(startPos, targetPos, curve);
+            t.localScale = Vector3.Lerp(startScale, targetScale, curve);
+
+            time += Time.deltaTime;
+            yield return null; // correct Unity coroutine yield
+        }
+
+        t.position = targetPos; // ensure final exact position
+        t.localScale = targetScale; // ensure final exact scale
+        animationsInProgress--;
     }
 
     public IEnumerator AnimateFlip(CardObject card, CardColor dest)
     {
         if (card == null)
             yield break;
+
+        animationsInProgress++;
 
         float halfDuration = moveDuration / 2f;
         float time = 0f;
@@ -874,6 +908,8 @@ public class UIManager : MonoBehaviour
         }
 
         card.transform.localScale = originalScale; // ensure final exact scale
+
+        animationsInProgress--;
     }
 
     public Transform[] GenerateHandSlots(Transform parent, Vector3 localOffset, int numSlots = 6)

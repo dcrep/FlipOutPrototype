@@ -283,6 +283,11 @@ public class FlipOutActions
         }
 
         GameStateClient.CurrentGameStateClient.ClearActionsSinceLastTurn();
+        if (GameStateClient.CurrentGameStateClient.GetCurrentPlayerActionsTaken() >= 2)
+        {
+            Debug.Log("ActOnFlipOutActionsForCurrentPlayer: Current player has taken 2 actions, ending turn.");
+            GameManager.Instance.serverDispatch.EndTurn();
+        }
     }
 
 }

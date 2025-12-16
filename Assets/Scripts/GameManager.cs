@@ -130,7 +130,9 @@ public class GameManager : MonoBehaviour
 
     public List<string> hotseatPlayerNames = new List<string>() { "PlayerUNO", "Player2" };
 
-    public TextMeshProUGUI uiText; 
+    public TextMeshProUGUI uiText;
+
+    private bool bDelayingEndTurn = false;
 
     // Awake - Called before first Scene, not destroyed or recreated on Scene load
     void Awake()
@@ -416,6 +418,12 @@ public class GameManager : MonoBehaviour
             //DrawPileDisplayTopCard();
             cardsShowing = true;
         }
+        if (bDelayingEndTurn && uiManager.animationsInProgress == 0)
+        {
+            Debug.Log("Delaying EndTurn completed, proceeding with EndTurn.");
+            bDelayingEndTurn = false;
+            EndTurnClient();
+        }
     }
 
     public void SetLocalPlayerName(string name)
@@ -601,10 +609,18 @@ public class GameManager : MonoBehaviour
         
         if (currentMultiplayerMode == MultiplayerMode.LocalHotseat)
         {
+            if (uiManager.animationsInProgress > 0)
+            {
+                Debug.Log("EndTurnClient: Animations still in progress, delaying EndTurn.");
+                bDelayingEndTurn = true;
+                return;
+            }
             // Clear board
             // (draw pile top card?)
             // Clear cards in play
             ClearObjectsInPlay();
+
+            serverDispatch.AdvanceToNextPlayer();
         }
     }
     /*public void EndPlayerTurnClient()
@@ -669,19 +685,26 @@ public class GameManager : MonoBehaviour
         GameStateClient.CleanupClients();
         currentMultiplayerMode = MultiplayerMode.Disconnected;
     }
-    public void StartPlayerTurnClient(int playerNum, int playerId, TurnAction availableActions)
-    {
-        Debug.Log("GameManager->StartPlayerTurnClient(): Player " + playerId + "'s turn started.");
 
+    public void UpdatePlayerInfoText(string info)
+    {
         if (uiText == null)
         {
             uiText = GameObject.Find("PlayerInfo").GetComponent<TextMeshProUGUI>();
         }
         if (uiText != null)
         {
-            PlayerXClient player = GameStateClient.CurrentGameStateClient.GetPlayerByNumber(playerId);
-            uiText.text = "Player " + playerId + "'s " + (playerNum == 1 ? "^" : "v") + " (" + player.playerName + ") Turn";
+            uiText.text = info;
         }
+    }
+
+    public void StartPlayerTurnClient(int playerNum, int playerId, TurnAction availableActions)
+    {
+        Debug.Log("GameManager->StartPlayerTurnClient(): Player " + playerId + "'s turn started.");
+
+        PlayerXClient player = GameStateClient.CurrentGameStateClient.GetPlayerByNumber(playerId);
+        UpdatePlayerInfoText("Player " + playerId + "'s " + (playerNum == 1 ? "^" : "v") + " (" + player.playerName + ") Turn");
+
         uiManager.UpdateScoresDisplay();
 
         // This should be done at TurnEnd:
@@ -849,9 +872,10 @@ public class GameManager : MonoBehaviour
                 // Move card to score pile position
                 Vector3 targetPosition = scorePilePosition;
                 
-                cardObject.SetLocalPosition(targetPosition);
-                cardObject.SetLocalScale(Vector3.one * 0.5f); // Slightly smaller
+                //cardObject.SetLocalPosition(targetPosition);
+                //cardObject.SetLocalScale(Vector3.one * 0.5f); // Slightly smaller
                 cardObject.SetSortingOrder((player.scorePile.Count -1) * 2); // On top of score pile
+                StartCoroutine(uiManager.AnimateCardMovementAndScale(cardObject, targetPosition, Vector3.one * 0.5f));
             }
             else
             {
@@ -910,10 +934,11 @@ public class GameManager : MonoBehaviour
 
                 // Move card to score pile position
                 Vector3 targetPosition = scorePilePosition;
-                
-                cardObject.SetLocalPosition(targetPosition);
-                cardObject.SetLocalScale(Vector3.one * 0.5f); // Slightly smaller
-                cardObject.SetSortingOrder((player.scorePile.Count -1) * 2); // On top of score pile
+
+                //cardObject.SetLocalPosition(targetPosition);
+                //cardObject.SetLocalScale(Vector3.one * 0.5f); // Slightly smaller
+                //cardObject.SetSortingOrder((player.scorePile.Count -1) * 2); // On top of score pile
+                StartCoroutine(uiManager.AnimateCardMovementAndScale(cardObject, targetPosition, Vector3.one * 0.5f));
             }
             else
             {
@@ -944,9 +969,10 @@ public class GameManager : MonoBehaviour
             // Move card to score pile position
             Vector3 targetPosition = targetScorePilePosition;
             
-            finalCardObject.SetLocalPosition(targetPosition);
-            finalCardObject.SetLocalScale(Vector3.one * 0.5f); // Slightly smaller
+            //finalCardObject.SetLocalPosition(targetPosition);
+            //finalCardObject.SetLocalScale(Vector3.one * 0.5f); // Slightly smaller
             finalCardObject.SetSortingOrder((targetPlayer.scorePile.Count -1) * 2); // On top of score pile
+            StartCoroutine(uiManager.AnimateCardMovementAndScale(finalCardObject, targetPosition, Vector3.one * 0.5f));
         }
         else
         {

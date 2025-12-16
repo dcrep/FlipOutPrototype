@@ -320,14 +320,17 @@ public class ServerDispatch
         {
             GameManager.Instance.EndTurnClient();
         }
-        //! online - any messages to clients?
-       
+        //! online - any messages to clients?      
+    }
+
+    public void AdvanceToNextPlayer()
+    {
         int nextPlayerNum = gameStateServer.AdvanceToNextPlayer();
         if (isHotseatGame)
         {
             GameStateClient.CurrentGameStateClient.AdvanceToNextPlayer();
         }
-        StartTurn();
+        StartTurn();  
     }
 
     // call directly or roundabout through network message:
@@ -959,7 +962,7 @@ public class ServerDispatch
         if (isHotseatGame)
         {
             FlipOutActions.ActOnFlipOutActionsForCurrentPlayer();
-        } 
+        }
     }
 
     public void SwipeCards(int playerId, int cardId)
