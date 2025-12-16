@@ -154,13 +154,15 @@ public class GameManager : MonoBehaviour
     {
         Debug.Log("GameManager->Start()");
 
-        AudioClip clip = Resources.Load<AudioClip>("Audio/OVS_CorporateVol2BeyontheBlueprintCut30");
+        /*AudioClip clip = Resources.Load<AudioClip>("Audio/OVS_CorporateVol2BeyontheBlueprintCut30");
         if (clip == null)
         {
             Debug.LogError("Failed to load audio clip from Resources folder.");
             return;
         }
-        AudioManager.Play(clip, 0.10f);
+        AudioManager.Play(clip, 0.10f);*/
+        AudioManager.Play(AudioManager.audioSourcesSO.musicClips[0], 1f);
+        AudioManager.Loop();
         /*clickSound = Resources.Load<AudioClip>("Audio/OVS_Clicky");
         if (clickSound == null)
         {
@@ -169,7 +171,7 @@ public class GameManager : MonoBehaviour
         }*/
         
         //AudioManager.Loop();
-        Debug.Log("Playing music: " + clip.name);
+        //Debug.Log("Playing music: " + clip.name);
 #if UNITY_EDITOR
         // Keep current editor level if in Editor
         //LevelCurrentInternalInit();
