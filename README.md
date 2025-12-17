@@ -1,2 +1,3 @@
-# 2025-09-267Final
-Flipout in Unity 2d BIRP
+# FlipOut Prototype
+(base: 2025-09-267Final, code contributors in commit history)
+FlipOut digital card game in Unity 2d
