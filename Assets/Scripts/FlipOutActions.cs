@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -184,7 +185,15 @@ public class FlipOutActions
     {
         Debug.Log("ActOnFlipOutActionForCurrentPlayer: Acting on action " + action.actionTaken.ToString() + " for current player (#" + GameStateClient.GetCurrentPlayerNumber() + ").");
 
-           switch (action.actionTaken)
+            /*if (GameManager.Instance.uiManager.animationManager.IsRunningAnimations())
+            {
+                GameManager.Instance.uiManager.animationManager.SetActionCompleteCallback(() =>
+                {
+                    ActOnFlipOutActionForCurrentPlayer(action);
+                }, true);
+                return;
+            }*/
+            switch (action.actionTaken)
             {
                 case FlipOutAction.Flip:
                     // Flip action is defined opposite(src)->(dest)facing-player side,
@@ -200,6 +209,10 @@ public class FlipOutActions
                     break;
                 case FlipOutAction.Swap1:
                     // Colors only necessary for non-participating players which will see flip+move effect
+                    Debug.Log("ActOnFlipOutActionForCurrentPlayer: Processing Swap1 action between player " + action.playerTakingActionId +
+                              " and player " + action.playerTargetId +
+                              " swapping card " + action.cardSourceInfos[0].cardID +
+                              " with card " + action.cardDestInfos[0].cardID);
                     GameManager.Instance.SwapCards1Client(
                         action.playerTakingActionId,
                         action.playerTargetId,
@@ -254,10 +267,17 @@ public class FlipOutActions
                         dealtCards,
                         action.positions);
                     
-                    GameManager.Instance.DealFullHandClientFromState(action.playerTargetId);
+                    //GameManager.Instance.DealFullHandClientFromState(action.playerTargetId);
+                    GameManager.Instance.DealNewCardsToClient(action.playerTargetId, dealtCards, action.positions, action.cardDestInfos[0].cardColor);
                     break;
                 case FlipOutAction.TurnEnd:
-                    // Safely ignore - action was previous player
+                    // act on if current player
+                    if (GameStateClient.GetCurrentPlayerId() == action.playerTakingActionId)
+                    {
+                        Debug.Log("ActOnFlipOutActionsForCurrentPlayer: Ending current player's turn as per action.");
+                        GameStateClient.CurrentGameStateClient.ClearCurrentPlayerActionsTaken();
+                        GameManager.Instance.uiManager.animationManager.SetActionCompleteCallback(() => GameManager.Instance.EndTurnClient(), true);
+                    }
                     break;
                 case FlipOutAction.EndGame:
                     // ignore - game is already ended by previous player (i think)
@@ -268,18 +288,21 @@ public class FlipOutActions
                     Debug.LogWarning("ActOnFlipOutActionsForCurrentPlayer: Unknown action encountered.");
                     break;
             }
+            GameManager.Instance.uiManager.animationManager.Run();
     }
-
 
     static public void ActOnFlipOutActionsForCurrentPlayer()
     {
-        List<FlipOutActions> listofActions = GameStateClient.CurrentGameStateClient.GetListOfActionsSinceLastTurn();
+        FlipOutActionsAndAnimationsHelper.ActOnFlipOutActionsForCurrentPlayerCo();
+        
+        /*List<FlipOutActions> listofActions = GameStateClient.CurrentGameStateClient.GetListOfActionsSinceLastTurn();
         Debug.Log("ActOnFlipOutActionsForCurrentPlayer: Acting on " + listofActions.Count + " actions for current player.");
 
         for (int i = 0; i < listofActions.Count; i++)
         {
             Debug.Log("ActOnFlipOutActionsForCurrentPlayer: Action " + i + " is " + listofActions[i].actionTaken.ToString());
-            ActOnFlipOutActionForCurrentPlayer(listofActions[i]); 
+            
+            ActOnFlipOutActionForCurrentPlayer(listofActions[i]);
         }
 
         GameStateClient.CurrentGameStateClient.ClearActionsSinceLastTurn();
@@ -287,7 +310,62 @@ public class FlipOutActions
         {
             Debug.Log("ActOnFlipOutActionsForCurrentPlayer: Current player has taken 2 actions, ending turn.");
             GameManager.Instance.serverDispatch.EndTurn();
+        }*/
+    }
+}
+
+[Serializable]
+public class FlipOutActionsAndAnimationsHelper : MonoBehaviour
+{
+    public static FlipOutActionsAndAnimationsHelper Instance;
+
+    void CreateThisInstance()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else if (Instance != this)
+        {
+            Destroy(this);
         }
     }
 
+    static public void ActOnFlipOutActionsForCurrentPlayerCo()
+    {
+        if (Instance == null)
+        {
+            GameObject helperObj = new GameObject("FlipOutActionsAndAnimationsHelper");
+            Instance = helperObj.AddComponent<FlipOutActionsAndAnimationsHelper>();
+            DontDestroyOnLoad(helperObj);
+        }
+        Instance.StartCoroutine(Instance.ActOnFlipOutActionsForCurrentPlayerCoroutine());
+    }
+
+    private IEnumerator ActOnFlipOutActionsForCurrentPlayerCoroutine()
+    {
+        List<FlipOutActions> listofActions = GameStateClient.CurrentGameStateClient.GetListOfActionsSinceLastTurn();
+        Debug.Log("ActOnFlipOutActionsForCurrentPlayerCoroutine: Acting on " + listofActions.Count + " actions for current player.");
+
+        for (int i = 0; i < listofActions.Count; i++)
+        {
+            Debug.Log("ActOnFlipOutActionsForCurrentPlayerCoroutine: Action " + i + " is " + listofActions[i].actionTaken.ToString());
+
+            FlipOutActions.ActOnFlipOutActionForCurrentPlayer(listofActions[i]);
+
+            // Wait until all animations complete before proceeding to next action
+            while (GameManager.Instance.uiManager.animationManager.IsRunningAnimations())
+            {
+                yield return null;
+            }
+            GameManager.Instance.uiManager.UpdateScoresDisplay();
+        }
+
+        GameStateClient.CurrentGameStateClient.ClearActionsSinceLastTurn();
+        if (GameStateClient.CurrentGameStateClient.GetCurrentPlayerActionsTaken() >= 2)
+        {
+            Debug.Log("ActOnFlipOutActionsForCurrentPlayerCoroutine: Current player has taken 2 actions, ending turn.");
+            GameManager.Instance.serverDispatch.EndTurn();
+        }
+    }
 }

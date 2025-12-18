@@ -255,11 +255,17 @@ public class GameStateClient
         return currentPlayerActionsTaken;
     }
 
-    public void AssignCardsToPlayerHand(int playerNum, List<CardPODClient> cards, int[] positions)
+    public void ClearCurrentPlayerActionsTaken()
     {
-        if (playerNum < 0 || playerNum >= totalPlayers)
+        currentPlayerActionsTaken = 0;
+    }
+
+    public void AssignCardsToPlayerHand(int playerId, List<CardPODClient> cards, int[] positions)
+    {
+        int playerNum = GetPlayerNumberByID(playerId);
+        if (playerNum == -1)
         {
-            Debug.LogError("AssignCardsToPlayerHand: invalid playerNum " + playerNum);
+            Debug.LogError("AssignCardsToPlayerHand: could not find playerId " + playerId);
             return;
         }
         if (cards == null || positions == null || cards.Count != positions.Length)
@@ -273,6 +279,7 @@ public class GameStateClient
             //! cardsInPlayClient.Add(cards[i]);
         }
     }
+
 /*
     //! ? Use? - also, do we update cardsInPlayClient here?
     public void SetHandForPlayer(int playerNum, CardPODClient[] handCards)

@@ -39,10 +39,9 @@ public class PlayerPreferences : MonoBehaviour
 
     void OnApplicationFocus(bool focus)
     {
-        if (!focus)
-        {
-            SavePreferences();
-        }
+        // This is annoying and causes too many writes
+        //if (!focus)
+        //    SavePreferences();
     }
 
     void OnApplicationQuit()

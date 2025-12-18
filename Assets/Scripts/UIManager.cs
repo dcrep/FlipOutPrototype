@@ -60,14 +60,13 @@ public class UIManager : MonoBehaviour
     public bool IsInHighlightMode = false;
 
     private GameObject[] scoreKeeperGO = new GameObject[5];
-    [SerializeField] private TextMeshPro[] scoreText = new TextMeshPro[5];
+    [SerializeField] private TextMeshProUGUI[] scoreText = new TextMeshProUGUI[5];
     //GameObject playersParentGO = null;
 
     [SerializeField] public List<CardObject> cardsHighlighted = new List<CardObject>();
 
     [SerializeField] private Vector3[] playerPositions = new Vector3[5]
     {
-    
         new(-6, -3, 0),    // Player 1 - Bottom center
         new(-6, 3, 0),     // Player 2 - Top center
         new(-7, 0, 0),    // Player 3 - Left center        
@@ -76,12 +75,19 @@ public class UIManager : MonoBehaviour
     };
     [SerializeField] private Vector3[] playerScorePilePositions = new Vector3[5]
     {
-    
         new(-8, -3, 0),    // Player 1 - Bottom left
         new(-8, 3, 0),     // Player 2 - Top left
         new(-9, 0, 0),    // Player 3 - Left center back        
         new(9, 0, 0),     // Player 4 - Right center back
         new(0, 4, 0)      // Player 5 - Center top (?!!)
+    };
+    private Vector3[] playerScoreTextPositions = new Vector3[5]
+    {
+        new(-864, -320, 0),    // Player 1 - Bottom left
+        new(-864, 320, 0),     // Player 2 - Top left
+        new(-9, -1, 0),    // Player 3 - Left center back        
+        new(9, -1, 0),     // Player 4 - Right center back
+        new(0, 5, 0)      // Player 5 - Center top (?!!)
     };
 #endregion
     private TurnAction pendingAction;
@@ -90,15 +96,18 @@ public class UIManager : MonoBehaviour
     public AnimationManager animationManager;
 
 
-    //void Awake() {}
-
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+   void Awake()
     {
         if (animationManager == null)
         {
             animationManager = gameObject.GetComponent<AnimationManager>();
         }
+    }
+
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    void Start()
+    {
+
     }
 
     private void OnEnable()
@@ -135,20 +144,27 @@ public class UIManager : MonoBehaviour
     {
         for (int i = 0; i < numPlayers; i++)
         {
-            scoreKeeperGO[i] = new GameObject($"Player{i}_Score");   //, typeof(RectTransform));
+            scoreKeeperGO[i] = new GameObject($"Player{i}_Score", typeof(RectTransform));   //, typeof(RectTransform));
             // IMPORTANT: false keeps local UI coordinates correct
-            //scoreKeeperGO[i].transform.SetParent(UICanvas.transform, false);
-            //RectTransform rt = scoreKeeperGO[i].GetComponent<RectTransform>();
+            scoreKeeperGO[i].transform.SetParent(UICanvas.transform, false); //, false);
+            RectTransform rt = scoreKeeperGO[i].GetComponent<RectTransform>();
             // Use anchoredPosition for UI placement
             //rt.anchoredPosition = playerScorePilePositions[i];
+            Debug.Log("Player Score Text Position: " + playerScoreTextPositions[i]);
+            rt.anchoredPosition = playerScoreTextPositions[i];
+            rt.sizeDelta = new Vector2(200, 50);
             //rt.localScale = Vector3.one;
-            scoreKeeperGO[i].transform.localPosition = playerScorePilePositions[i];
+            //Vector3 pos = playerScorePilePositions[i];
+            Vector3 pos = playerScoreTextPositions[i];
+            //pos.z = -0.5f;
+            //scoreKeeperGO[i].transform.localPosition = pos;
+            //scoreKeeperGO[i].transform.localScale = Vector3.one;
             scoreKeeperGO[i].layer = LayerMask.NameToLayer("UI");
-            scoreText[i] = scoreKeeperGO[i].AddComponent<TextMeshPro>();
-            scoreText[i].GetComponent<Renderer>().sortingLayerName = "UI";
-            scoreText[i].GetComponent<Renderer>().sortingOrder = 100; // Optional: set render order
+            scoreText[i] = scoreKeeperGO[i].AddComponent<TextMeshProUGUI>();
+            //scoreText[i].GetComponent<Renderer>().sortingLayerName = "UI";
+            //scoreText[i].GetComponent<Renderer>().sortingOrder = 150; // Optional: set render order
             scoreText[i].text = "Score: 0";
-            scoreText[i].fontSize = 3;
+            scoreText[i].fontSize = 32;
             scoreText[i].alignment = TextAlignmentOptions.Center;
             scoreText[i].color = Color.white;
         }
@@ -168,6 +184,9 @@ public class UIManager : MonoBehaviour
     void OnCardClicked(CardObject card)
     {
         if (card.cardPOD.state != CardState.playerHolder)
+            return;
+
+        if (animationManager.IsRunningAnimations())
             return;
         // If we're resolving an action, route to highlight logic
         if (IsInHighlightMode)
@@ -481,6 +500,7 @@ public class UIManager : MonoBehaviour
         if (selectedCard != null) return;
         if (card.cardPOD.state != CardState.playerHolder) return;
         if (card.gameObject.tag == "invalid") return;
+        if (animationManager.IsRunningAnimations()) return;
 
         SpriteRenderer originalSR = card.GetComponent<SpriteRenderer>();
         if (originalSR == null)
@@ -824,6 +844,8 @@ public class UIManager : MonoBehaviour
 
         animationsInProgress++;
 
+        Debug.Log($"Animating movement of card {card.cardPOD.cardID} to {targetPos}");
+
         Transform t = card.transform;
         Vector3 start = t.position;
         float time = 0f;
@@ -841,6 +863,7 @@ public class UIManager : MonoBehaviour
 
         t.position = targetPos; // ensure final exact position
         animationsInProgress--;
+        Debug.Log($"Animation of card {card.cardPOD.cardID} completed, final position: {targetPos}");
     }
 
     public IEnumerator AnimateCardMovementAndScale(CardObject card, Vector3 targetPos, Vector3 targetScale)
@@ -849,6 +872,7 @@ public class UIManager : MonoBehaviour
             yield break;
 
         animationsInProgress++;
+        Debug.Log($"Animating movement and scale of card {card.cardPOD.cardID} to {targetPos} with scale {targetScale}");
         Transform t = card.transform;
         Vector3 startPos = t.position;
         Vector3 startScale = t.localScale;
@@ -869,6 +893,40 @@ public class UIManager : MonoBehaviour
         t.position = targetPos; // ensure final exact position
         t.localScale = targetScale; // ensure final exact scale
         animationsInProgress--;
+        Debug.Log($"Animation of card {card.cardPOD.cardID} completed, final position: {targetPos}, scale: {targetScale}");
+    }
+
+    public IEnumerator AnimateCardMovementScaleAndRotation(CardObject card, Vector3 targetPos, Vector3 targetScale, Quaternion targetRot)
+    {
+        if (card == null)
+            yield break;
+
+        animationsInProgress++;
+        Debug.Log($"Animating movement, scale, and rotation of card {card.cardPOD.cardID} to {targetPos} with scale {targetScale} and rotation {targetRot.eulerAngles}");
+        Transform t = card.transform;
+        Vector3 startPos = t.position;
+        Vector3 startScale = t.localScale;
+        Quaternion startRot = t.rotation;
+        float time = 0f;
+
+        while (time < moveDuration)
+        {
+            float p = time / moveDuration;
+            float curve = moveCurve.Evaluate(p);
+
+            t.position = Vector3.Lerp(startPos, targetPos, curve);
+            t.localScale = Vector3.Lerp(startScale, targetScale, curve);
+            t.rotation = Quaternion.Slerp(startRot, targetRot, curve);
+
+            time += Time.deltaTime;
+            yield return null; // correct Unity coroutine yield
+        }
+
+        t.position = targetPos; // ensure final exact position
+        t.localScale = targetScale; // ensure final exact scale
+        t.rotation = targetRot; // ensure final exact rotation
+        animationsInProgress--;
+        Debug.Log($"Animation of card {card.cardPOD.cardID} completed, final position: {targetPos}, scale: {targetScale}, rotation: {targetRot.eulerAngles}");
     }
 
     public IEnumerator AnimateFlip(CardObject card, CardColor dest)
@@ -877,7 +935,7 @@ public class UIManager : MonoBehaviour
             yield break;
 
         animationsInProgress++;
-
+        Debug.Log($"Animating flip of card {card.cardPOD.cardID} to color {dest}");
         float halfDuration = moveDuration / 2f;
         float time = 0f;
 
@@ -917,6 +975,7 @@ public class UIManager : MonoBehaviour
         card.transform.localScale = originalScale; // ensure final exact scale
 
         animationsInProgress--;
+        Debug.Log($"Flip animation of card {card.cardPOD.cardID} completed, final color: {dest}");
     }
 
     public Transform[] GenerateHandSlots(Transform parent, Vector3 localOffset, int numSlots = 6)

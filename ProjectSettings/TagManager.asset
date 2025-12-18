@@ -46,5 +46,8 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
+  - name: Cards
+    uniqueID: 1633960643
+    locked: 0
   m_RenderingLayers:
   - Default

@@ -14,6 +14,8 @@ public class AnimationManager : MonoBehaviour
     private Queue<List<AnimationTask>> queue = new Queue<List<AnimationTask>>();
     private bool isRunning = false;
 
+    System.Action onCompleteCallback = null;
+
     public void AddParallel(params AnimationTask[] tasks)
     {
         queue.Enqueue(new List<AnimationTask>(tasks));
@@ -29,20 +31,30 @@ public class AnimationManager : MonoBehaviour
         queue.Enqueue(new List<AnimationTask> { task });
     }
 
-    public void Run(System.Action onComplete = null)
-    {
-        if (!isRunning)
-        {
-            StartCoroutine(RunQueue(onComplete));
-        }
-    }
-
     public bool IsRunningAnimations()
     {
         return isRunning;
     }
 
-    private IEnumerator RunQueue(System.Action onComplete)
+    public void SetActionCompleteCallback(System.Action callback, bool ifNotRunningExecuteImmediately = false)
+    {
+        if (IsRunningAnimations())
+            onCompleteCallback = callback;
+        else if (ifNotRunningExecuteImmediately)
+            callback?.Invoke();
+    }
+
+    public void Run(System.Action onComplete = null)
+    {
+        if (!isRunning)
+        {
+            if (onComplete != null)
+                onCompleteCallback = onComplete;
+            StartCoroutine(RunQueue());
+        }
+    }
+
+    private IEnumerator RunQueue()
     {
         isRunning = true;
         while (queue.Count > 0)
@@ -61,7 +73,8 @@ public class AnimationManager : MonoBehaviour
             }
         }
         isRunning = false;
-        onComplete?.Invoke();
+        onCompleteCallback?.Invoke();
+        onCompleteCallback = null;
 }
 
     private IEnumerator WrapWithDelay(AnimationTask task)

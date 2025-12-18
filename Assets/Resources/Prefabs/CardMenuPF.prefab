@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 3629851628560131945}
   - component: {fileID: 7552797267082766368}
   - component: {fileID: 4446636264707251126}
-  m_Layer: 5
+  m_Layer: 10
   m_Name: Swap2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -148,7 +148,7 @@ GameObject:
   - component: {fileID: 7004873591062326074}
   - component: {fileID: 5405006818727492545}
   - component: {fileID: 3232315766158216612}
-  m_Layer: 5
+  m_Layer: 10
   m_Name: CardMenuPF
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -201,8 +201,8 @@ Canvas:
   m_VertexColorAlwaysGammaSpace: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
-  m_SortingLayerID: 0
-  m_SortingOrder: 4
+  m_SortingLayerID: 1633960643
+  m_SortingOrder: 150
   m_TargetDisplay: 0
 --- !u!114 &7004873591062326074
 MonoBehaviour:
@@ -226,7 +226,7 @@ MonoBehaviour:
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
   m_DynamicPixelsPerUnit: 1
-  m_PresetInfoIsWorld: 0
+  m_PresetInfoIsWorld: 1
 --- !u!114 &5405006818727492545
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -267,7 +267,7 @@ GameObject:
   - component: {fileID: 8287613249892351189}
   - component: {fileID: 3482080625399083652}
   - component: {fileID: 3161711015407200023}
-  m_Layer: 5
+  m_Layer: 10
   m_Name: Text (TMP)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -405,7 +405,7 @@ GameObject:
   - component: {fileID: 9023445573787977921}
   - component: {fileID: 6807781693458959714}
   - component: {fileID: 56339189685181325}
-  m_Layer: 5
+  m_Layer: 10
   m_Name: Score
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -538,7 +538,7 @@ GameObject:
   - component: {fileID: 9130966894850513130}
   - component: {fileID: 8899547204255635357}
   - component: {fileID: 594166598542594938}
-  m_Layer: 5
+  m_Layer: 10
   m_Name: Text (TMP)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -676,7 +676,7 @@ GameObject:
   - component: {fileID: 418713003188860274}
   - component: {fileID: 4675974660243450410}
   - component: {fileID: 2573021830524323737}
-  m_Layer: 5
+  m_Layer: 10
   m_Name: Text (TMP)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -816,7 +816,7 @@ GameObject:
   - component: {fileID: 3418362038224484749}
   - component: {fileID: 9172518713655878144}
   - component: {fileID: 9105633525277276930}
-  m_Layer: 5
+  m_Layer: 10
   m_Name: Flip
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -949,7 +949,7 @@ GameObject:
   - component: {fileID: 2038805305918248489}
   - component: {fileID: 7637683204616060638}
   - component: {fileID: 5242966429290468383}
-  m_Layer: 5
+  m_Layer: 10
   m_Name: Text (TMP)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1087,7 +1087,7 @@ GameObject:
   - component: {fileID: 103638578260572740}
   - component: {fileID: 1566230478483026320}
   - component: {fileID: 7654935973986263532}
-  m_Layer: 5
+  m_Layer: 10
   m_Name: Text (TMP)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1225,7 +1225,7 @@ GameObject:
   - component: {fileID: 2615044785677778593}
   - component: {fileID: 4946857676592223646}
   - component: {fileID: 1657405518989559678}
-  m_Layer: 5
+  m_Layer: 10
   m_Name: Text (TMP)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1364,7 +1364,7 @@ GameObject:
   - component: {fileID: 577381859065282770}
   - component: {fileID: 4878570226044029776}
   - component: {fileID: 7343755729583980336}
-  m_Layer: 5
+  m_Layer: 10
   m_Name: Image
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1487,7 +1487,7 @@ GameObject:
   - component: {fileID: 2383827792377981600}
   - component: {fileID: 3548265411912351622}
   - component: {fileID: 6682127203174792195}
-  m_Layer: 5
+  m_Layer: 10
   m_Name: Swipe
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1622,7 +1622,7 @@ GameObject:
   - component: {fileID: 200556426147756017}
   - component: {fileID: 2019264821258088766}
   - component: {fileID: 7410388195342496222}
-  m_Layer: 5
+  m_Layer: 10
   m_Name: Switch
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1757,7 +1757,7 @@ GameObject:
   - component: {fileID: 6597811302291060858}
   - component: {fileID: 3059522502503789618}
   - component: {fileID: 3190489644170217932}
-  m_Layer: 5
+  m_Layer: 10
   m_Name: Swap1
   m_TagString: Untagged
   m_Icon: {fileID: 0}

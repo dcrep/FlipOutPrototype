@@ -65,7 +65,7 @@ public class GameManager : MonoBehaviour
 
     public MultiplayerMode currentMultiplayerMode = MultiplayerMode.Disconnected;    
 
-    [SerializeField] private UIManager uiManager = null;
+    [SerializeField] public UIManager uiManager = null;
 
     //[SerializeField] private PlayerX[] players = new PlayerX[5];
 
@@ -335,6 +335,19 @@ public class GameManager : MonoBehaviour
         Debug.Log("GameManager->SceneAwake() for scene: " + SceneManager.GetActiveScene().name + " currentScene: " + currentScene.ToString());
         if (currentScene == Scenes.Game)
         {
+            if (uiManager == null)
+            {
+                uiManager = GameObject.Find("UIManager").GetComponent<UIManager>();
+            }
+        }
+    }
+
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    public void SceneStart()
+    {
+        Debug.Log("GameManager->SceneStart() for scene: " + SceneManager.GetActiveScene().name);
+        if (currentScene == Scenes.Game)
+        {
             if (currentMultiplayerMode == MultiplayerMode.Disconnected)
             {
                 if (!forceHotseat)
@@ -364,16 +377,6 @@ public class GameManager : MonoBehaviour
 
             // Hotseat
             StartHotseatGame(hotseatPlayerNames.Count, hotseatPlayerNames.ToArray());
-        }
-    }
-
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    public void SceneStart()
-    {
-        Debug.Log("GameManager->SceneStart() for scene: " + SceneManager.GetActiveScene().name);
-        if (currentScene == Scenes.Game)
-        {
-            // Initialize game components
         }
     }
 
@@ -618,13 +621,19 @@ public class GameManager : MonoBehaviour
                 bDelayingEndTurn = true;
                 return;
             }
-            // Clear board
-            // (draw pile top card?)
-            // Clear cards in play
-            ClearObjectsInPlay();
 
-            serverDispatch.AdvanceToNextPlayer();
+            Invoke(nameof(AdvanceToNextPlayerClient), 0.5f);
         }
+    }
+
+    private void AdvanceToNextPlayerClient()
+    {
+        Debug.Log("GameManager->AdvanceToNextPlayerClient()");
+        // Clear board
+        // (draw pile top card?)
+        // Clear cards in play
+        ClearObjectsInPlay();
+        serverDispatch.AdvanceToNextPlayer();
     }
     /*public void EndPlayerTurnClient()
     {
@@ -756,6 +765,7 @@ public class GameManager : MonoBehaviour
             drawPileTop = InstantiateCardObjectFromPOD(topPOD, drawPileDefaultPosition, CardState.drawPile, -1);
             drawPileTop.SetLocalScale(new Vector3(0.75f, 0.75f, 1) );
             drawPileTop.transform.SetPositionAndRotation(drawPileDefaultPosition, Quaternion.Euler(0, 0, 90));
+            drawPileTop.SetSortingOrder(0);
         }
         else
         {
@@ -806,6 +816,108 @@ public class GameManager : MonoBehaviour
             cardObjects[i].cardPOD.state = CardState.playerHolder;
         }
         SetDrawPileTopCard(GameStateClient.GetDeckTopCardColor());
+    }
+/*
+   static public FlipOutActions CreateDealAction(int playerTargetId, CardActionInfo[] cardInfos, int[] positions, CardColor deckTopColor)
+    {
+        if (cardInfos.Length != positions.Length)
+        {
+            Debug.LogError("FlipOutActions->CreateDealAction(): cardInfos length does not match positions length!");
+            return null;
+        }
+        FlipOutActions action = new FlipOutActions();
+        action.actionTaken = FlipOutAction.Deal;
+        action.playerTargetId = playerTargetId;
+        action.cardSourceInfos = cardInfos;
+        action.cardDestInfos = new CardActionInfo[] { new() { cardID = -1, cardColor = deckTopColor } }; // deck top info
+        action.positions = positions;
+        return action;
+    }
+                  List<CardPODClient> dealtCards = new List<CardPODClient>();
+                    for (int j = 0; j < action.cardSourceInfos.Length; j++)
+                    {
+                        CardPODClient cardPOD = new CardPODClient
+                        {
+                            cardID = action.cardSourceInfos[j].cardID,
+                            color = action.cardSourceInfos[j].cardColor,
+                            state = CardState.playerHolder,
+                            ownerPlayerID = action.playerTargetId
+                        };
+                        dealtCards.Add(cardPOD);
+                    }
+                    GameStateClient.CurrentGameStateClient.AssignCardsToPlayerHand(
+                        action.playerTargetId,
+                        dealtCards,
+                        action.positions);
+                        */
+
+    int nextSortOrder = 1;
+    public void DealNewCardsToClient(int targetPlayerId, List<CardPODClient> dealtCards, int[] positions, CardColor deckTopColor)
+    {
+        CardObject[] cardObjects = new CardObject[dealtCards.Count];
+        int playerNum = GameStateClient.CurrentGameStateClient.GetPlayerNumberByID(targetPlayerId);
+        if (playerNum == -1)
+        {
+            Debug.LogError("GameManager->DealNewCardsToClient(): Could not find player number for playerId " + targetPlayerId);
+            return;
+        }
+
+        nextSortOrder += 10;
+        if (nextSortOrder > 30)
+        {
+            nextSortOrder = 1;
+        }
+        int sortOrder = dealtCards.Count * nextSortOrder;
+        for (int i = 0; i < dealtCards.Count; i++)
+        {
+            int cardIndex = positions[i];
+
+            CardObject cardObject = CardObjectFromPODClient(targetPlayerId, dealtCards[i]);
+            // Set card position to player position
+            cardObject.SetLocalPosition(drawPileDefaultPosition);
+            cardObject.SetLocalScale(new Vector3(0.75f, 0.75f, 1) );
+            cardObject.transform.SetPositionAndRotation(drawPileDefaultPosition, Quaternion.Euler(0, 0, 90));
+            // Set card state to playerHolder
+            cardObject.cardPOD.state = CardState.playerHolder;
+            // Slight offset for visibility while animating (shows over all other cards)
+            cardObject.SetSortingOrder(sortOrder);
+            sortOrder--;
+            //cardObject.SetLocalPosition(playerPositions[playerNum] + cardHolderOffset * cardIndex);
+
+            //Debug.Log("Some object reference is failing here. CardObject: " + (cardObject != null ? cardObject.gameObject.name : "null") +
+            //          " uiManager: " + (uiManager != null ? uiManager.gameObject.name : "null") +
+            //          " animationManager: " + (uiManager.animationManager != null ? uiManager.animationManager.gameObject.name : "null"));
+            
+            uiManager.animationManager.AddSequential( 
+                new AnimationTask { Routine = uiManager.AnimateCardMovementScaleAndRotation(cardObject,
+                                              playerPositions[playerNum] + cardHolderOffset * cardIndex,
+                                              Vector3.one, Quaternion.identity), DelayAfter = 0.0f } 
+            );
+        }
+        // Run and reset sorting order afterwards (to keep dealing cards on top during animation)
+        //uiManager.animationManager.Run(ResetCardSortingOrdersAfterDeal);
+
+        // Called in FlipOutActions (should I do it here instead?):
+        //GameStateClient.CurrentGameStateClient.AssignCardsToPlayerHand(targetPlayerId, dealtCards, positions);
+
+        SetDrawPileTopCard(deckTopColor);
+    }
+
+    private void ResetCardSortingOrdersAfterDeal()
+    {
+        int totalPlayers = GameStateClient.GetTotalPlayers();
+        for (int p = 0; p < totalPlayers; p++)
+        {
+            var hand = GameStateClient.CurrentGameStateClient.GetPlayerByNumber(p).hand;
+            for (int i = 0; i < hand.Length; i++)
+            {
+                var cardPOD = hand[i];
+                if (cardPOD != null && cardPOD.cardObject != null)
+                {
+                    cardPOD.cardObject.SetSortingOrder(1);
+                }
+            }
+        }
     }
 
     public void DealNewCardsToClient(int targetPlayerId, List<CardPODClient> dealtCards, int[] dealtCardIndices)
@@ -881,7 +993,7 @@ public class GameManager : MonoBehaviour
                 
                 //cardObject.SetLocalPosition(targetPosition);
                 //cardObject.SetLocalScale(Vector3.one * 0.5f); // Slightly smaller
-                cardObject.SetSortingOrder((player.scorePile.Count) * 2); // On top of score pile
+                cardObject.SetSortingOrder((player.scorePile.Count + 1) * 2); // On top of score pile
                 //StartCoroutine(uiManager.AnimateCardMovementAndScale(cardObject, targetPosition, Vector3.one * 0.5f));
                 animationTasks.Add( new AnimationTask { Routine = uiManager.AnimateCardMovementAndScale(cardObject, targetPosition, Vector3.one * 0.5f), DelayAfter = 1f } );
                 //uiManager.animationManager.AddSequential( 
@@ -894,7 +1006,7 @@ public class GameManager : MonoBehaviour
             }
         }
         uiManager.animationManager.AddParallel(animationTasks);
-        uiManager.animationManager.Run();
+        //uiManager.animationManager.Run();
         uiManager.UpdateScoresDisplay();
         //this is called along with Score/Swipe to create/queue deal action:
         // GameManager.Instance.serverDispatch.DealCardsToPlayerHandIndices(playerId, handIndices);
@@ -954,7 +1066,7 @@ public class GameManager : MonoBehaviour
 
                 //cardObject.SetLocalPosition(targetPosition);
                 //cardObject.SetLocalScale(Vector3.one * 0.5f); // Slightly smaller
-                cardObject.SetSortingOrder((player.scorePile.Count) * 2); // On top of score pile
+                cardObject.SetSortingOrder((player.scorePile.Count + 1) * 2); // On top of score pile
                 animationTasks.Add( new AnimationTask { Routine = uiManager.AnimateCardMovementAndScale(cardObject, targetPosition, Vector3.one * 0.5f), DelayAfter = 0.10f } );
                 //StartCoroutine(uiManager.AnimateCardMovementAndScale(cardObject, targetPosition, Vector3.one * 0.5f));
             }
@@ -963,7 +1075,7 @@ public class GameManager : MonoBehaviour
                 Debug.LogError("GameManager->SwipeCardsToScorePiles(): No card found with cardID " + cardID);
             }
         }
-        uiManager.animationManager.AddParallel(animationTasks);
+        
         
         // Final card goes into target player's score pile
         int finalHandIndex = handIndices[handIndices.Length - 1];
@@ -993,18 +1105,20 @@ public class GameManager : MonoBehaviour
             
             //finalCardObject.SetLocalPosition(targetPosition);
             //finalCardObject.SetLocalScale(Vector3.one * 0.5f); // Slightly smaller
-            finalCardObject.SetSortingOrder((targetPlayer.scorePile.Count) * 2); // On top of score pile
-            uiManager.animationManager.AddSequential( 
-                new AnimationTask { Routine = uiManager.AnimateCardMovementAndScale(finalCardObject, targetPosition, Vector3.one * 0.5f), DelayAfter = 1f } 
-                );
+            finalCardObject.SetSortingOrder((targetPlayer.scorePile.Count + 1) * 2); // On top of score pile
+            //uiManager.animationManager.AddSequential( 
+            //    new AnimationTask { Routine = uiManager.AnimateCardMovementAndScale(finalCardObject, targetPosition, Vector3.one * 0.5f), DelayAfter = 1f } 
+            //    );
+            animationTasks.Add( new AnimationTask { Routine = uiManager.AnimateCardMovementAndScale(finalCardObject, targetPosition, Vector3.one * 0.5f), DelayAfter = 0.10f } );
             //animationTasks.Add( new AnimationTask { Routine = uiManager.AnimateCardMovementAndScale(finalCardObject, targetPosition, Vector3.one * 0.5f), DelayAfter = 1f } );
             //StartCoroutine(uiManager.AnimateCardMovementAndScale(finalCardObject, targetPosition, Vector3.one * 0.5f));
+            uiManager.animationManager.AddParallel(animationTasks);
         }
         else
         {
             Debug.LogError("GameManager->SwipeCardsToScorePiles(): No card found with cardID " + finalCardID);
         }
-        uiManager.animationManager.Run();
+        //uiManager.animationManager.Run();
         uiManager.UpdateScoresDisplay();
         //this is called along with Score/Swipe to create/queue deal action:
         // GameManager.Instance.serverDispatch.DealCardsToPlayerHandIndices(playerId, handIndices);
@@ -1036,7 +1150,7 @@ public class GameManager : MonoBehaviour
 
                 cardObject.SetLocalPosition(targetPosition);
                 cardObject.SetLocalScale(Vector3.one * 0.5f); // Slightly smaller
-                cardObject.SetSortingOrder((i+1) * 2); // On top of score pile
+                cardObject.SetSortingOrder((i+2) * 2); // On top of score pile
                 // Set card state to scorePile
                 cardObject.cardPOD.state = CardState.scorePile;
             }
@@ -1102,7 +1216,8 @@ public class GameManager : MonoBehaviour
         }
 
         GameObject cardGO = GameObject.Instantiate(cardPrefab, position, Quaternion.identity, cardsParentGO.transform);
-        cardGO.layer = LayerMask.NameToLayer("Cards");
+        //cardGO.layer = LayerMask.NameToLayer("Cards");
+        cardGO.GetComponent<Renderer>().sortingLayerName = "Cards";
         CardObject cardObject = cardGO.GetComponent<CardObject>();
 
         // Attach Card POD to CardObject
@@ -1152,7 +1267,7 @@ public class GameManager : MonoBehaviour
             //cardToFlip.UpdateColor(newColor);
             //StartCoroutine(uiManager.AnimateFlip(cardToFlip, newColor));
             uiManager.animationManager.AddSequential( new AnimationTask { Routine = uiManager.AnimateFlip(cardToFlip, newColor), DelayAfter = 0.1f } );
-            uiManager.animationManager.Run();
+            //uiManager.animationManager.Run();
         }
         else
         {
@@ -1192,7 +1307,7 @@ public class GameManager : MonoBehaviour
                 new AnimationTask { Routine = uiManager.AnimateCardMovement(card1, card2.transform.position), DelayAfter = 0.1f },
                 new AnimationTask { Routine = uiManager.AnimateCardMovement(card2, card1.transform.position), DelayAfter = 0.1f }
             } );
-            uiManager.animationManager.Run();
+            //uiManager.animationManager.Run();
             // Index of card in player's hand:
             int cardsOwnerId = card1.cardPOD.ownerPlayerID;
             //GameStateClient.CurrentGameStateClient.GetPlayerByID(cardsOwnerId).GetIndexOfCardByID(cardID1);
@@ -1239,6 +1354,10 @@ public class GameManager : MonoBehaviour
                 cardSwapping1.UpdateColor(swappingNewColor);
                 cardSwapWith1.UpdateColor(swapWithNewColor);                
             }
+
+            Debug.Log("GameManager->SwapCards1Client(): Swapping card " + cardSwappingID1 + " of player " + playerSwappingId +
+                      " with card " + cardSwapWithID1 + " of player " + playerSwapWithId + ", current player # is " + GameStateClient.GetCurrentPlayerNumber() +
+                      " cardswapping1 transform pos: " + cardSwapping1.transform.position + " cardswapwith1 transform pos: " + cardSwapWith1.transform.position);
             
             // Swap positions
             //Vector3 tempPosition = cardSwapping1.transform.position;
@@ -1250,7 +1369,7 @@ public class GameManager : MonoBehaviour
                 new AnimationTask { Routine = uiManager.AnimateCardMovement(cardSwapping1, cardSwapWith1.transform.position), DelayAfter = 0.1f },
                 new AnimationTask { Routine = uiManager.AnimateCardMovement(cardSwapWith1, cardSwapping1.transform.position), DelayAfter = 0.1f }
             } );
-            uiManager.animationManager.Run();
+            //uiManager.animationManager.Run();
 
             // Update GameStateClient hands
             GameStateClient.CurrentGameStateClient.Swap1CardBetweenPlayers(playerSwappingId, playerSwapWithId, cardSwappingID1, cardSwapWithID1);
@@ -1333,7 +1452,7 @@ public class GameManager : MonoBehaviour
                 new AnimationTask { Routine = uiManager.AnimateCardMovement(cardSwapping2, cardSwapWith2.transform.position), DelayAfter = 0.1f },
                 new AnimationTask { Routine = uiManager.AnimateCardMovement(cardSwapWith2, cardSwapping2.transform.position), DelayAfter = 0.1f }
             } );
-            uiManager.animationManager.Run();
+            //uiManager.animationManager.Run();
             // Update GameStateClient hands (note we pass ids that haven't had consecutive hand-order enforced)
             GameStateClient.CurrentGameStateClient.Swap2CardsBetweenPlayers(playerSwappingId, playerSwapWithId, cardId1, cardId2, cardSwapWithID1, cardSwapWithID2);
         }

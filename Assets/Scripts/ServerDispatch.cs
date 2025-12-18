@@ -111,7 +111,7 @@ public class ServerDispatch
 
         if (cards == null)
         {
-            Debug.LogError("ServerDispatch->DealCardsToPlayerHandIndices(): end game - not enough draw cards for player " + playerId + "!");
+            Debug.LogWarning("ServerDispatch->DealCardsToPlayerHandIndices(): end game - not enough draw cards for player " + playerId + "!");
             //EndGame();
             return false;
         }
@@ -318,7 +318,8 @@ public class ServerDispatch
 
         if (isHotseatGame)
         {
-            GameManager.Instance.EndTurnClient();
+            FlipOutActions.ActOnFlipOutActionsForCurrentPlayer();
+            //GameManager.Instance.EndTurnClient();
         }
         //! online - any messages to clients?      
     }
@@ -570,12 +571,12 @@ public class ServerDispatch
         }        
         if (playerSwapping.playerId != playerId && playerSwapWith.playerId != playerId)
         {
-            Debug.LogError("ServerDispatch->SwapCards1(): Player " + playerId + " does not own either card " + cardId1 + " or card " + cardSwapWith1 + "!");
+            Debug.LogWarning("ServerDispatch->SwapCards1(): Player " + playerId + " does not own either card " + cardId1 + " or card " + cardSwapWith1 + "!");
             return;
         }
         if (playerSwapping == playerSwapWith)
         {
-            Debug.LogError("ServerDispatch->SwapCards1(): both cards belong to same player (only Switch can be used for that)!");
+            Debug.LogWarning("ServerDispatch->SwapCards1(): both cards belong to same player (only Switch can be used for that)!");
             return;
         }
         // Establish playerSwapping as owner of cardId1, playerSwapWith as owner of cardSwapWith1
@@ -954,7 +955,7 @@ public class ServerDispatch
         // 2nd action:
         if (!DealCardsToPlayerHandIndices(playerId, adjacentCardIndices))
         {
-            Debug.LogError("ServerDispatch->ScoreCards(): end game reached");
+            Debug.LogWarning("ServerDispatch->ScoreCards(): end game reached");
             EndGame();
             //return;
         }

@@ -189,11 +189,12 @@ public class GameStateServer
         return currentPlayerActionsTaken;
     }
 
-    public void AssignCardsToPlayerHand(int playerNum, List<CardPODServer> cards, int[] positions)
+    public void AssignCardsToPlayerHand(int playerId, List<CardPODServer> cards, int[] positions)
     {
-        if (playerNum < 0 || playerNum >= totalPlayers)
+        int playerNum = GetPlayerNumberByID(playerId);
+        if (playerNum == -1)
         {
-            Debug.LogError("AssignCardsToPlayerHand: invalid playerNum " + playerNum);
+            Debug.LogError("AssignCardsToPlayerHand: could not find playerId " + playerId);
             return;
         }
         if (cards == null || positions == null || cards.Count != positions.Length)
