@@ -287,7 +287,7 @@ public class ServerDispatch
 
         if (isHotseatGame)
         {
-            GameManager.Instance.StartPlayerTurnClient(
+            GameManager.Instance.flipOutGame.StartPlayerTurnClient(
                 gameStateServer.GetActivePlayerNumber(),
                 gameStateServer.GetActivePlayer().playerId,
                 gameStateServer.GetAvailableActionsForPlayer(gameStateServer.GetActivePlayer())

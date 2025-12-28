@@ -57,6 +57,7 @@ public class CardActionInfo
 [System.Serializable]
 public class FlipOutActions
 {
+    static public FlipOutGame flipOutGame;
     public FlipOutAction actionTaken = FlipOutAction.None;
 
     public int playerTakingActionId = -1;
@@ -200,12 +201,12 @@ public class FlipOutActions
                     // Only the owning player will switch this around to facing->opposite (which means using Source color as destination color)
                     CardColor destColor = (GameStateClient.GetCurrentPlayerId() == action.playerTargetId) ? 
                         action.cardSourceInfos[0].cardColor : action.cardDestInfos[0].cardColor;
-                    GameManager.Instance.FlipCardClient(action.cardDestInfos[0].cardID, destColor);
-                    GameManager.Instance.ClearHighlightedCards();
+                    flipOutGame.FlipCardClient(action.cardDestInfos[0].cardID, destColor);
+                    flipOutGame.ClearHighlightedCards();
                     break;
                 case FlipOutAction.Switch:
-                    GameManager.Instance.SwitchCardsClient(action.cardSourceInfos[0].cardID, action.cardDestInfos[0].cardID);
-                    GameManager.Instance.ClearHighlightedCards();
+                    flipOutGame.SwitchCardsClient(action.cardSourceInfos[0].cardID, action.cardDestInfos[0].cardID);
+                    flipOutGame.ClearHighlightedCards();
                     break;
                 case FlipOutAction.Swap1:
                     // Colors only necessary for non-participating players which will see flip+move effect
@@ -213,18 +214,18 @@ public class FlipOutActions
                               " and player " + action.playerTargetId +
                               " swapping card " + action.cardSourceInfos[0].cardID +
                               " with card " + action.cardDestInfos[0].cardID);
-                    GameManager.Instance.SwapCards1Client(
+                    flipOutGame.SwapCards1Client(
                         action.playerTakingActionId,
                         action.playerTargetId,
                         action.cardSourceInfos[0].cardID,
                         action.cardDestInfos[0].cardID,
                         action.cardSourceInfos[0].cardColor,
                         action.cardDestInfos[0].cardColor);
-                    GameManager.Instance.ClearHighlightedCards();
+                    flipOutGame.ClearHighlightedCards();
                     break;
                 case FlipOutAction.Swap2:
                     // Colors only necessary for non-participating players which will see flip+move effect
-                    GameManager.Instance.SwapCards2Client(
+                    flipOutGame.SwapCards2Client(
                         action.playerTakingActionId,
                         action.playerTargetId,
                         action.cardSourceInfos[0].cardID,
@@ -235,13 +236,13 @@ public class FlipOutActions
                         action.cardSourceInfos[1].cardColor,
                         action.cardDestInfos[0].cardColor,
                         action.cardDestInfos[1].cardColor);
-                    GameManager.Instance.ClearHighlightedCards();
+                    flipOutGame.ClearHighlightedCards();
                     break;
                 case FlipOutAction.Score:
-                    GameManager.Instance.MoveCardsToScorePile(action.playerTakingActionId, action.positions, action.cardSourceInfos[0].cardColor);
+                    flipOutGame.MoveCardsToScorePile(action.playerTakingActionId, action.positions, action.cardSourceInfos[0].cardColor);
                     break;
                 case FlipOutAction.Swipe:
-                    GameManager.Instance.SwipeCardsToScorePiles(
+                    flipOutGame.SwipeCardsToScorePiles(
                         action.playerTakingActionId,
                         action.playerTargetId,
                         action.positions,
@@ -268,7 +269,7 @@ public class FlipOutActions
                         action.positions);
                     
                     //GameManager.Instance.DealFullHandClientFromState(action.playerTargetId);
-                    GameManager.Instance.DealNewCardsToClient(action.playerTargetId, dealtCards, action.positions, action.cardDestInfos[0].cardColor);
+                    flipOutGame.DealNewCardsToClient(action.playerTargetId, dealtCards, action.positions, action.cardDestInfos[0].cardColor);
                     break;
                 case FlipOutAction.TurnEnd:
                     // act on if current player

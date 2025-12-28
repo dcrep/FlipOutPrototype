@@ -101,6 +101,10 @@ public class UIManager : MonoBehaviour
         if (animationManager == null)
         {
             animationManager = gameObject.GetComponent<AnimationManager>();
+            if (animationManager == null)
+            {
+                animationManager = gameObject.AddComponent<AnimationManager>();
+            }
         }
     }
 
@@ -253,7 +257,7 @@ public class UIManager : MonoBehaviour
 
                     //!!
                     //Debug.LogWarning("This shouldn't be done this way... check into..");
-                    GameManager.Instance.serverDispatch.FlipCard(GameManager.Instance.gameStateClient.GetActivePlayer().playerId, card.cardPOD.cardID);
+                    GameManager.Instance.serverDispatch.FlipCard(GameStateClient.CurrentGameStateClient.GetActivePlayer().playerId, card.cardPOD.cardID);
                     break;
                 }
 
@@ -270,7 +274,7 @@ public class UIManager : MonoBehaviour
                         // This will fail if current player doesn't own the highlighted card
                         GameManager.Instance.serverDispatch.ScoreCards(GameStateClient.GetCurrentPlayerId(),
                             card.cardPOD.cardID);
-                        GameManager.Instance.ClearHighlightedCards();
+                        GameManager.Instance.flipOutGame.ClearHighlightedCards();
                     }
                     // Optional if Score is 1-card
                     break;
@@ -289,7 +293,7 @@ public class UIManager : MonoBehaviour
                         // This will fail if current player owns the highlighted card
                         GameManager.Instance.serverDispatch.SwipeCards(GameStateClient.GetCurrentPlayerId(),
                             card.cardPOD.cardID);
-                        GameManager.Instance.ClearHighlightedCards();
+                        GameManager.Instance.flipOutGame.ClearHighlightedCards();
 
                     }
                     break;
@@ -347,27 +351,27 @@ public class UIManager : MonoBehaviour
                 CardObject card = cardsHighlighted[0];
                 //CardColor newColor = FakeFlipColor(card.cardPOD.color);
                 //!! 2nd flip?
-                GameManager.Instance.serverDispatch.FlipCard(GameManager.Instance.gameStateClient.GetActivePlayer().playerId, card.cardPOD.cardID);
+                GameManager.Instance.serverDispatch.FlipCard(GameStateClient.CurrentGameStateClient.GetActivePlayer().playerId, card.cardPOD.cardID);
                 break;
             }
 
             case TurnAction.Switch:
             {
                 //!!
-                Debug.LogWarning("This shouldn't be done this way... check into..");
+                //Debug.LogWarning("This shouldn't be done this way... check into..");
                 Debug.Log("Cards highlighted at Switch: " + cardsHighlighted.Count);
                 //TurnAction.Switch // switch 1 card with another of yours, or 1 of opponents with another of opponent's
                 //if (cardsHighlighted.Count != 2)
                 if (cardsHighlighted.Count != 2)
                 {
                     Debug.Log("Need to highlight exactly 2 cards to switch (2 of yours or 2 of another player's)!");
-                    //return;
+                    break;
                 }
                 GameManager.Instance.serverDispatch.SwitchCards(
-                    GameManager.Instance.gameStateClient.GetActivePlayer().playerId,
+                    GameStateClient.CurrentGameStateClient.GetActivePlayer().playerId,
                     cardsHighlighted[0].cardPOD.cardID,
                     cardsHighlighted[1].cardPOD.cardID);
-                GameManager.Instance.ClearHighlightedCards();
+                GameManager.Instance.flipOutGame.ClearHighlightedCards();
                 break;
             }
             
@@ -377,14 +381,14 @@ public class UIManager : MonoBehaviour
                 if (cardsHighlighted.Count != 2)
                 {
                     Debug.Log("Need to highlight exactly 2 cards to swap (1 of yours and 1 of another player's)!");
-                    //return;
+                    break;
                 }
                 GameManager.Instance.serverDispatch.SwapCards1(
-                    GameManager.Instance.gameStateClient.GetActivePlayer().playerId,
+                    GameStateClient.CurrentGameStateClient.GetActivePlayer().playerId,
                     cardsHighlighted[0].cardPOD.cardID,
                     cardsHighlighted[1].cardPOD.cardID);
 
-                GameManager.Instance.ClearHighlightedCards();
+                GameManager.Instance.flipOutGame.ClearHighlightedCards();
                 break;
             }
 
@@ -394,15 +398,15 @@ public class UIManager : MonoBehaviour
                 if (cardsHighlighted.Count != 4)
                 {
                     Debug.Log("Need to highlight exactly 4 cards to swap (2 of yours and 2 of another player's)!");
-                    //return;
+                    break;
                 }
                 GameManager.Instance.serverDispatch.SwapCards2(
-                    GameManager.Instance.gameStateClient.GetActivePlayer().playerId,
+                    GameStateClient.CurrentGameStateClient.GetActivePlayer().playerId,
                     cardsHighlighted[0].cardPOD.cardID,
                     cardsHighlighted[1].cardPOD.cardID,
                     cardsHighlighted[2].cardPOD.cardID,
                     cardsHighlighted[3].cardPOD.cardID);
-                GameManager.Instance.ClearHighlightedCards();
+                GameManager.Instance.flipOutGame.ClearHighlightedCards();
                 break;
             }
 
@@ -412,20 +416,20 @@ public class UIManager : MonoBehaviour
                 if (cardsHighlighted.Count != 1)
                 {
                     Debug.Log("Need to highlight 1 card to score!");
-                    //return;
+                    break;
                 }
                 int[] adjacentCardIndices = GameStateClient.GetAdjacentColorsIndicesBasedOnCardId(cardsHighlighted[0].cardPOD.cardID);
                 if (adjacentCardIndices.Length < 4)
                 {
                     Debug.Log("Need to highlight a card that has at least 4 adjacent same-color cards to score!");
-                    //return;
+                    break;
                 }
                 else
                 {
                     // This will fail if current player doesn't own the highlighted card
                     GameManager.Instance.serverDispatch.ScoreCards(GameStateClient.GetCurrentPlayerId(),
                         cardsHighlighted[0].cardPOD.cardID);
-                    GameManager.Instance.ClearHighlightedCards();
+                    GameManager.Instance.flipOutGame.ClearHighlightedCards();
                 }
                 break;
             }
@@ -436,20 +440,20 @@ public class UIManager : MonoBehaviour
                 if (cardsHighlighted.Count != 1)
                 {
                     Debug.Log("Need to highlight 1 card to swipe score!");
-                    //return;
+                    break;
                 }
                 int[] adjacentCardIndices = GameStateClient.GetAdjacentColorsIndicesBasedOnCardId(cardsHighlighted[0].cardPOD.cardID);
                 if (adjacentCardIndices.Length < 4)
                 {
                     Debug.Log("Need to highlight a card that has at least 4 adjacent same-color cards to score!");
-                    //return;
+                    break;
                 }
                 else
                 {
                     // This will fail if current player owns the highlighted card
                     GameManager.Instance.serverDispatch.SwipeCards(GameStateClient.GetCurrentPlayerId(),
                         cardsHighlighted[0].cardPOD.cardID);
-                    GameManager.Instance.ClearHighlightedCards();
+                    GameManager.Instance.flipOutGame.ClearHighlightedCards();
 
                 }
                 break;
@@ -756,7 +760,7 @@ public class UIManager : MonoBehaviour
         
     if (GameManager.Instance != null)
         {
-            GameManager.Instance.ClearHighlightedCards();
+            GameManager.Instance.flipOutGame.ClearHighlightedCards();
             Debug.Log("Cleared Highlighted Cards");
         }
     }

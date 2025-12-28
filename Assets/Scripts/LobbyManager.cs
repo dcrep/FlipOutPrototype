@@ -118,7 +118,8 @@ public class LobbyManager : NetworkBehaviour
                 playerNetworkId = playerNetworkIds[i],
                 playerName = playerNames[i].ToString(),
                 isConnected = true,
-                isReady = readyStates[i]
+                isReady = readyStates[i],
+                playerServerId = -1
             });
         }
 
@@ -235,7 +236,8 @@ public class LobbyManager : NetworkBehaviour
             playerNetworkId = playerNetworkId, 
             playerName = playerName, 
             isConnected = true,
-            isReady = false
+            isReady = false,
+            playerServerId = -1
         });
     }
 

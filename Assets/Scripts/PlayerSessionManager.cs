@@ -10,13 +10,12 @@ public class PlayerSession
     public string ipAddress;   // server-only
     public bool isConnected;
     public bool isReady;
+    public int playerServerId; // server-only
 }
 
 [System.Serializable]
 public class PlayerSessionManager
 {
-
-    const ulong PLAYER_ID_LOCAL = 1000;
     public Dictionary<ulong, PlayerSession> sessions = new Dictionary<ulong, PlayerSession>();
 
     public void AddSession(ulong playerId, string playerName, string ipAddress)
@@ -26,13 +25,33 @@ public class PlayerSessionManager
             playerNetworkId = playerId,
             playerName = playerName,
             ipAddress = ipAddress,
-            isConnected = true
+            isConnected = true,
+            playerServerId = -1,
+            isReady = false
+        };
+    }
+
+    public void AddLocalSession(string playerName, uint playerId, bool isReady = false)
+    {
+        sessions[(ulong)playerId] = new PlayerSession
+        {
+            playerNetworkId = (ulong)playerId,
+            playerName = playerName,
+            ipAddress = "localhost",
+            isConnected = true,
+            playerServerId = (int)playerId,
+            isReady = isReady
         };
     }
 
     public PlayerSession GetPlayerSession(ulong playerId)
     {
         return sessions.TryGetValue(playerId, out var session) ? session : null;
+    }
+
+    public List<PlayerSession> GetAllSessions()
+    {
+        return new List<PlayerSession>(sessions.Values);
     }
 
     public void RemovePlayerSession(ulong playerId)
