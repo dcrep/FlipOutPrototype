@@ -9,10 +9,10 @@ using UnityEngine;
 
 public class ServerDispatch
 {
+
+    FlipOutGame flipOutGame = null;
     public bool isServer = false; // Placeholder for server check
     private bool isHotseatGame = false;
-
-    PlayerSessionManager sessionManager = new PlayerSessionManager();
 
     GameStateServer gameStateServer = null;
     
@@ -24,6 +24,7 @@ public class ServerDispatch
 
         isServer = true;
         isHotseatGame = true;
+        flipOutGame = GameManager.Instance.flipOutGame;
 
         gameStateServer = GameManager.Instance.gameStateServer;
 
@@ -53,6 +54,8 @@ public class ServerDispatch
         GameManager.Instance.gameStateServer.InitGameStateServer(playerIds, playerNames);*/
 
         isServer = true;
+        isHotseatGame = false;
+        flipOutGame = GameManager.Instance.flipOutGame;
 
         //StartGameServer();
     }
@@ -318,7 +321,7 @@ public class ServerDispatch
 
         if (isHotseatGame)
         {
-            FlipOutActions.ActOnFlipOutActionsForCurrentPlayer();
+            flipOutGame.ActOnFlipOutActionsForCurrentPlayer();
             //GameManager.Instance.EndTurnClient();
         }
         //! online - any messages to clients?      
@@ -409,9 +412,9 @@ public class ServerDispatch
             //GameStateClient.AddPlayerActionTakenForOpponentViews(playerId, flipActionForOpponents, false);
 
             //GameManager.Instance.FlipCardClient(cardId, oppositeSideInfo.cardColor);
-            //FlipOutActions.ActOnFlipOutActionForCurrentPlayer(flipAction);
+            //flipOutGame.ActOnFlipOutActionForCurrentPlayer(flipAction);
             //GameStateClient.CurrentGameStateClient.ClearActionsSinceLastTurn();
-            FlipOutActions.ActOnFlipOutActionsForCurrentPlayer();
+            flipOutGame.ActOnFlipOutActionsForCurrentPlayer();
         }
         else
         {
@@ -520,9 +523,9 @@ public class ServerDispatch
             );
 
             //GameManager.Instance.SwitchCardsClient(cardId1, cardId2);
-            //FlipOutActions.ActOnFlipOutActionForCurrentPlayer(switchAction);
+            //flipOutGame.ActOnFlipOutActionForCurrentPlayer(switchAction);
             //GameStateClient.CurrentGameStateClient.ClearActionsSinceLastTurn();
-            FlipOutActions.ActOnFlipOutActionsForCurrentPlayer();
+            flipOutGame.ActOnFlipOutActionsForCurrentPlayer();
         }
         else
         {
@@ -644,9 +647,9 @@ public class ServerDispatch
             //GameStateClient.AddPlayerActionTakenForOpponentViews(playerId, swap1ActionForOpponents, false);
 
             //GameManager.Instance.SwitchCardsClient(cardId1, cardId2);
-            //FlipOutActions.ActOnFlipOutActionForCurrentPlayer(swapAction);
+            //flipOutGame.ActOnFlipOutActionForCurrentPlayer(swapAction);
             //GameStateClient.CurrentGameStateClient.ClearActionsSinceLastTurn();
-            FlipOutActions.ActOnFlipOutActionsForCurrentPlayer();
+            flipOutGame.ActOnFlipOutActionsForCurrentPlayer();
         }
         else
         {
@@ -882,9 +885,9 @@ public class ServerDispatch
             //GameStateClient.AddPlayerActionTakenForOpponentViews(playerId, swap2ActionForOpponents, false);
 
             //GameManager.Instance.SwitchCardsClient(cardId1, cardId2);
-            //FlipOutActions.ActOnFlipOutActionForCurrentPlayer(swapAction);
+            //flipOutGame.ActOnFlipOutActionForCurrentPlayer(swapAction);
             //GameStateClient.CurrentGameStateClient.ClearActionsSinceLastTurn();
-            FlipOutActions.ActOnFlipOutActionsForCurrentPlayer();
+            flipOutGame.ActOnFlipOutActionsForCurrentPlayer();
         }
         else
         {
@@ -962,7 +965,7 @@ public class ServerDispatch
 
         if (isHotseatGame)
         {
-            FlipOutActions.ActOnFlipOutActionsForCurrentPlayer();
+            flipOutGame.ActOnFlipOutActionsForCurrentPlayer();
         }
     }
 
@@ -1039,7 +1042,7 @@ public class ServerDispatch
 
         if (isHotseatGame)
         {
-            FlipOutActions.ActOnFlipOutActionsForCurrentPlayer();
+            flipOutGame.ActOnFlipOutActionsForCurrentPlayer();
         } 
     }
 

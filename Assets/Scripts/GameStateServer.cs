@@ -593,12 +593,12 @@ public class GameStateServer
     {
         if (!isServer)
         {
-            Debug.LogError("PeekTopDrawCardColor: not server!");
+            Debug.LogWarning("PeekTopDrawCardColor: not server!");
             return CardColor.invalid;
         }
         if (serverDrawPile.Count == 0)
         {
-            Debug.LogError("PeekTopDrawCardColor: draw pile empty!");
+            Debug.LogWarning("PeekTopDrawCardColor: draw pile empty!");
             return CardColor.invalid;
         }
         // Change from original facingcolor return because the player will get that card, so it appears to flip to them

@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using TMPro;
+using System.Collections;
 
 public class FlipOutGame : MonoBehaviour
 {
@@ -76,6 +77,8 @@ public class FlipOutGame : MonoBehaviour
         }
     }
 
+    //void FixedUpdate() { }
+
 
     public void StartHotseatGame()
     {
@@ -99,7 +102,7 @@ public class FlipOutGame : MonoBehaviour
             playerSessions[i].playerServerId = i;
         }
 
-        FlipOutActions.flipOutGame = this;
+        //FlipOutActions.flipOutGame = this;
 
         uiManager.SetupPlayerUI(numPlayers, playerNames);
 
@@ -188,6 +191,40 @@ public class FlipOutGame : MonoBehaviour
         serverDispatch.AdvanceToNextPlayer();
     }
 
+    public void StartPlayerTurnClient(int playerNum, int playerId, TurnAction availableActions)
+    {
+        Debug.Log("FlipOut->StartPlayerTurnClient(): Player " + playerId + "'s turn started.");
+
+        PlayerXClient player = GameStateClient.CurrentGameStateClient.GetPlayerByNumber(playerId);
+        UpdatePlayerInfoText("Player " + playerId + "'s " + (playerNum == 1 ? "^" : "v") + " (" + player.playerName + ") Turn");
+
+        uiManager.UpdateScoresDisplay();
+
+        // This should be done at TurnEnd:
+        //ClearObjectsInPlay();
+
+        if (GameManager.Instance.currentMultiplayerMode == MultiplayerMode.LocalHotseat)
+        {
+            if (GameStateClient.CurrentGameStateClient.handsDealt)
+            {
+                DealAllHandsClientFromState();
+                BuildScorePile();
+                ActOnFlipOutActionsForCurrentPlayer();
+            }
+            else
+            {
+                ActOnFlipOutActionsForCurrentPlayer();
+                // Dealing is done through calls to DealFullHandClientFromState in FlipOutActions
+                //DealAllHandsClientFromState();
+                BuildScorePile();
+                GameStateClient.CurrentGameStateClient.handsDealt = true;
+            }
+            
+        }
+        //StartTurnClient(playerId, availableActions);
+    }
+
+#region Cleanup
 
     public void ClearObjectsInPlay()
     {
@@ -207,22 +244,6 @@ public class FlipOutGame : MonoBehaviour
         cardsParentGO = null;
         drawPileTop = null;
     }
-
-    public void ClearHighlightedCards()
-    {
-        if (cardsHighlighted != null)
-        {
-            foreach (CardObject card in cardsHighlighted)
-            {
-                if (card != null)
-                {
-                    card.HighlightCardToggle();
-                }
-            }
-            cardsHighlighted.Clear();
-        }
-    }
-
 
     public void EndGameCleanup()
     {
@@ -247,6 +268,61 @@ public class FlipOutGame : MonoBehaviour
         GameManager.Instance.currentMultiplayerMode = MultiplayerMode.Disconnected;
     }
 
+#endregion
+
+
+#region CardObject Creation
+   private CardObject InstantiateCardObjectFromPOD(CardPODClient cardPOD, Vector3 position, CardState newState = CardState.playerHolder, int playerID = -1)
+    {
+        if (cardsParentGO == null)
+        {
+            cardsParentGO = new GameObject("_Cards");            
+        }
+        if (cardPrefab == null)
+        {
+            cardPrefab = Resources.Load<GameObject>("Prefabs/CardPF");
+        }
+
+        GameObject cardGO = GameObject.Instantiate(cardPrefab, position, Quaternion.identity, cardsParentGO.transform);
+        //cardGO.layer = LayerMask.NameToLayer("Cards");
+        cardGO.GetComponent<Renderer>().sortingLayerName = "Cards";
+        CardObject cardObject = cardGO.GetComponent<CardObject>();
+
+        // Attach Card POD to CardObject
+        cardPOD.state = newState;
+        cardPOD.ownerPlayerID = playerID;
+        cardObject.SetCardPOD(cardPOD);
+
+        cardsInPlay.Add(cardObject);
+
+        return cardObject;
+    }
+
+
+    public CardObject CardObjectFromPODClient(int playerID, CardPODClient cardPOD)
+    {
+        return InstantiateCardObjectFromPOD(cardPOD, deckOffscreenPosition, CardState.playerHolder, playerID);
+    }
+
+#endregion
+
+#region UI Updates
+
+    public void ClearHighlightedCards()
+    {
+        if (cardsHighlighted != null)
+        {
+            foreach (CardObject card in cardsHighlighted)
+            {
+                if (card != null)
+                {
+                    card.HighlightCardToggle();
+                }
+            }
+            cardsHighlighted.Clear();
+        }
+    }
+
     public void UpdatePlayerInfoText(string info)
     {
         if (uiText == null)
@@ -258,38 +334,40 @@ public class FlipOutGame : MonoBehaviour
             uiText.text = info;
         }
     }
-
-    public void StartPlayerTurnClient(int playerNum, int playerId, TurnAction availableActions)
+    /*void UpdateScoresDisplay()
     {
-        Debug.Log("FlipOut->StartPlayerTurnClient(): Player " + playerId + "'s turn started.");
-
-        PlayerXClient player = GameStateClient.CurrentGameStateClient.GetPlayerByNumber(playerId);
-        UpdatePlayerInfoText("Player " + playerId + "'s " + (playerNum == 1 ? "^" : "v") + " (" + player.playerName + ") Turn");
-
-        uiManager.UpdateScoresDisplay();
-
-        // This should be done at TurnEnd:
-        //ClearObjectsInPlay();
-
-        if (GameManager.Instance.currentMultiplayerMode == MultiplayerMode.LocalHotseat)
+        for (int playerNum = 0; playerNum < GameStateClient.GetTotalPlayers(); playerNum++)
         {
-            if (GameStateClient.CurrentGameStateClient.handsDealt)
-            {
-                DealAllHandsClientFromState();
-                BuildScorePile();
-                FlipOutActions.ActOnFlipOutActionsForCurrentPlayer();
-            }
-            else
-            {
-                FlipOutActions.ActOnFlipOutActionsForCurrentPlayer();
-                // Dealing is done through calls to DealFullHandClientFromState in FlipOutActions
-                //DealAllHandsClientFromState();
-                BuildScorePile();
-                GameStateClient.CurrentGameStateClient.handsDealt = true;
-            }
-            
+            PlayerXClient player = GameStateClient.CurrentGameStateClient.GetPlayerByNumber(playerNum);
+            scoreText[playerNum].text = "Score: " + player.scorePile.Count.ToString();
         }
-        //StartTurnClient(playerId, availableActions);
+    }*/
+#endregion
+
+#region Draw and Score Piles
+
+    void BuildScorePile()
+    {
+        for (int playerNum = 0; playerNum < GameStateClient.GetTotalPlayers(); playerNum++)
+        {
+            PlayerXClient player = GameStateClient.CurrentGameStateClient.GetPlayerByNumber(playerNum);
+            Vector3 scorePilePosition = playerScorePilePositions[playerNum];
+
+            for (int i = 0; i < player.scorePile.Count; i++)
+            {
+                CardPODClient cardPOD = player.scorePile[i];
+                CardObject cardObject = CardObjectFromPODClient(player.playerId, cardPOD);
+                cardPOD.cardObject = cardObject;
+
+                Vector3 targetPosition = scorePilePosition;
+
+                cardObject.SetLocalPosition(targetPosition);
+                cardObject.SetLocalScale(Vector3.one * 0.5f); // Slightly smaller
+                cardObject.SetSortingOrder((i+2) * 2); // On top of score pile
+                // Set card state to scorePile
+                cardObject.cardPOD.state = CardState.scorePile;
+            }
+        }
     }
 
     void SetDrawPileTopCard(CardColor color)
@@ -325,12 +403,9 @@ public class FlipOutGame : MonoBehaviour
         }
         return;
     }
+#endregion
 
-    //[Rpc(SendTo.Server)]
-    //[Rpc(SendTo.NotServer)]
-    //[Rpc(SendTo.ClientsAndHost)]
-
-    //[ClientRpc]
+#region Deal-or-Show Hands
 
     public void ShowOpponentFullHandClient(int playerNum, CardPODClient[] hand)
     {
@@ -367,40 +442,6 @@ public class FlipOutGame : MonoBehaviour
         }
         SetDrawPileTopCard(GameStateClient.GetDeckTopCardColor());
     }
-/*
-   static public FlipOutActions CreateDealAction(int playerTargetId, CardActionInfo[] cardInfos, int[] positions, CardColor deckTopColor)
-    {
-        if (cardInfos.Length != positions.Length)
-        {
-            Debug.LogError("FlipOutActions->CreateDealAction(): cardInfos length does not match positions length!");
-            return null;
-        }
-        FlipOutActions action = new FlipOutActions();
-        action.actionTaken = FlipOutAction.Deal;
-        action.playerTargetId = playerTargetId;
-        action.cardSourceInfos = cardInfos;
-        action.cardDestInfos = new CardActionInfo[] { new() { cardID = -1, cardColor = deckTopColor } }; // deck top info
-        action.positions = positions;
-        return action;
-    }
-                  List<CardPODClient> dealtCards = new List<CardPODClient>();
-                    for (int j = 0; j < action.cardSourceInfos.Length; j++)
-                    {
-                        CardPODClient cardPOD = new CardPODClient
-                        {
-                            cardID = action.cardSourceInfos[j].cardID,
-                            color = action.cardSourceInfos[j].cardColor,
-                            state = CardState.playerHolder,
-                            ownerPlayerID = action.playerTargetId
-                        };
-                        dealtCards.Add(cardPOD);
-                    }
-                    GameStateClient.CurrentGameStateClient.AssignCardsToPlayerHand(
-                        action.playerTargetId,
-                        dealtCards,
-                        action.positions);
-                        */
-
 
     public void DealNewCardsToClient(int targetPlayerId, List<CardPODClient> dealtCards, int[] positions, CardColor deckTopColor)
     {
@@ -453,6 +494,8 @@ public class FlipOutGame : MonoBehaviour
         SetDrawPileTopCard(deckTopColor);
     }
 
+/*
+    // Was to be a callback on animation end, but the playback and callback system changed:
     private void ResetCardSortingOrdersAfterDeal()
     {
         int totalPlayers = GameStateClient.GetTotalPlayers();
@@ -469,6 +512,7 @@ public class FlipOutGame : MonoBehaviour
             }
         }
     }
+*/
 
     public void DealNewCardsToClient(int targetPlayerId, List<CardPODClient> dealtCards, int[] dealtCardIndices)
     {
@@ -495,217 +539,6 @@ public class FlipOutGame : MonoBehaviour
         SetDrawPileTopCard(GameStateClient.GetDeckTopCardColor());
     }
 
-    public void MoveCardsToScorePile(int playerId, int[] handIndices, CardColor cardColor)
-    {
-        PlayerXClient player = GameStateClient.CurrentGameStateClient.GetPlayerByID(playerId);
-        if (player == null)
-        {
-            Debug.LogError("FlipOut->MoveCardsToScorePile(): Could not find player number for playerId " + playerId);
-            return;
-        }
-        if (handIndices.Length == 0 || handIndices[0] == -1)
-        {
-            Debug.LogWarning("FlipOut->MoveCardsToScorePile(): handIndices is empty for playerId " + playerId);
-            return;
-        }
-
-        int playerNum = player.playerNumber;
-        Vector3 scorePilePosition = playerScorePilePositions[playerNum];
-
-        List<AnimationTask> animationTasks = new List<AnimationTask>();
-        for (int i = 0; i < handIndices.Length; i++)
-        {
-            int handIndex = handIndices[i];
-            int cardID = player.hand[handIndex].cardID;
-
-            CardPODClient cardPOD = player.hand[handIndex];
-            
-            if (cardPOD != null)
-            {
-                CardObject cardObject = cardPOD.cardObject;
-                player.hand[handIndex] = new CardPODClient(); // Clear from player's hand
-
-                // Set card state to scorePile
-                cardObject.cardPOD.state = CardState.scorePile;
-                player.scorePile.Add(cardPOD); // Add to player's score pile
-
-                if (playerNum != GameStateClient.GetActivePlayerNumber())
-                {
-                    // for opponents, we need to 'flip' the card to the correct color
-                    //cardObject.UpdateColor(cardColor);
-                    uiManager.animationManager.AddSequential( 
-                        new AnimationTask { Routine = uiManager.AnimateFlip(cardObject, cardColor), DelayAfter = 0.03f } 
-                        );
-                }
-
-                // Move card to score pile position
-                Vector3 targetPosition = scorePilePosition;
-                
-                //cardObject.SetLocalPosition(targetPosition);
-                //cardObject.SetLocalScale(Vector3.one * 0.5f); // Slightly smaller
-                cardObject.SetSortingOrder((player.scorePile.Count + 1) * 2); // On top of score pile
-                //StartCoroutine(uiManager.AnimateCardMovementAndScale(cardObject, targetPosition, Vector3.one * 0.5f));
-                animationTasks.Add( new AnimationTask { Routine = uiManager.AnimateCardMovementAndScale(cardObject, targetPosition, Vector3.one * 0.5f), DelayAfter = 1f } );
-                //uiManager.animationManager.AddSequential( 
-                //    new AnimationTask { Routine = uiManager.AnimateCardMovementAndScale(cardObject, targetPosition, Vector3.one * 0.5f), DelayAfter = 0f } 
-                //    );                
-            }
-            else
-            {
-                Debug.LogError("FlipOut->MoveCardsToScorePile(): No card found with cardID " + cardID);
-            }
-        }
-        uiManager.animationManager.AddParallel(animationTasks);
-        //uiManager.animationManager.Run();
-        uiManager.UpdateScoresDisplay();
-        //this is called along with Score/Swipe to create/queue deal action:
-        // GameManager.Instance.serverDispatch.DealCardsToPlayerHandIndices(playerId, handIndices);
-    }
-
-    public void SwipeCardsToScorePiles(int playerId, int targetPlayerId, int[] handIndices, CardColor cardColor)
-    {
-        // Similar to MoveCardsToScorePile but moving all but 1 to player's pile, and final to target player's pile
-        PlayerXClient player = GameStateClient.CurrentGameStateClient.GetPlayerByID(playerId);
-        PlayerXClient targetPlayer = GameStateClient.CurrentGameStateClient.GetPlayerByID(targetPlayerId);
-        if (player == null || targetPlayer == null)
-        {
-            Debug.LogError("FlipOut->SwipeCardsToScorePiles(): Could not find player for one of the playerIds " + playerId + " or " + targetPlayerId);
-            return;
-        }
-        if (handIndices.Length == 0 || handIndices[0] == -1)
-        {
-            Debug.LogWarning("FlipOut->SwipeCardsToScorePiles(): handIndices is empty for targetPlayerId " + targetPlayerId);
-            return;
-        }
-
-        int playerNum = player.playerNumber;
-        int playerTargetNum = targetPlayer.playerNumber;
-        Vector3 scorePilePosition = playerScorePilePositions[playerNum];
-        Vector3 targetScorePilePosition = playerScorePilePositions[playerTargetNum];
-        List<AnimationTask> animationTasks = new List<AnimationTask>();
-
-        // Final card goes to target player's score pile
-        for (int i = 0; i < handIndices.Length - 1; i++)
-        {
-            int handIndex = handIndices[i];
-            int cardID = targetPlayer.hand[handIndex].cardID;
-
-            CardPODClient cardPOD = targetPlayer.hand[handIndex];
-            
-            if (cardPOD != null)
-            {
-                CardObject cardObject = cardPOD.cardObject;
-                targetPlayer.hand[handIndex] = new CardPODClient(); // Clear from player's hand
-
-                // update id, state
-                cardPOD.ownerPlayerID = playerId;
-                cardPOD.state = CardState.scorePile;
-                player.scorePile.Add(cardPOD); // Add to player's score pile
-
-                if (playerTargetNum == GameStateClient.GetActivePlayerNumber())
-                {
-                    // for owner, we need to 'flip' the card (to show opposite side) to the correct color
-                    //cardObject.UpdateColor(cardColor);
-                    uiManager.animationManager.AddSequential( 
-                        new AnimationTask { Routine = uiManager.AnimateFlip(cardObject, cardColor), DelayAfter = 0.03f } 
-                        );
-                }
-
-                // Move card to score pile position
-                Vector3 targetPosition = scorePilePosition;
-
-                //cardObject.SetLocalPosition(targetPosition);
-                //cardObject.SetLocalScale(Vector3.one * 0.5f); // Slightly smaller
-                cardObject.SetSortingOrder((player.scorePile.Count + 1) * 2); // On top of score pile
-                animationTasks.Add( new AnimationTask { Routine = uiManager.AnimateCardMovementAndScale(cardObject, targetPosition, Vector3.one * 0.5f), DelayAfter = 0.10f } );
-                //StartCoroutine(uiManager.AnimateCardMovementAndScale(cardObject, targetPosition, Vector3.one * 0.5f));
-            }
-            else
-            {
-                Debug.LogError("FlipOut->SwipeCardsToScorePiles(): No card found with cardID " + cardID);
-            }
-        }
-        
-        
-        // Final card goes into target player's score pile
-        int finalHandIndex = handIndices[handIndices.Length - 1];
-        int finalCardID = targetPlayer.hand[finalHandIndex].cardID;
-        CardPODClient finalCardPOD = targetPlayer.hand[finalHandIndex];
-        if (finalCardPOD != null)
-        {
-            CardObject finalCardObject = finalCardPOD.cardObject;
-            targetPlayer.hand[finalHandIndex] = new CardPODClient(); // Clear from player's hand
-
-            // update id, state
-            //finalCardPOD.ownerPlayerID = targetPlayerId;  // stays the same
-            finalCardPOD.state = CardState.scorePile;
-            targetPlayer.scorePile.Add(finalCardPOD); // Add to target player's score pile
-
-            if (playerTargetNum == GameStateClient.GetActivePlayerNumber())
-            {
-                // for owner, we need to 'flip' the card (to show opposite side) to the correct color
-                //finalCardObject.UpdateColor(cardColor);
-                uiManager.animationManager.AddSequential( 
-                    new AnimationTask { Routine = uiManager.AnimateFlip(finalCardObject, cardColor), DelayAfter = 0.03f } 
-                    );
-            }
-
-            // Move card to score pile position
-            Vector3 targetPosition = targetScorePilePosition;
-            
-            //finalCardObject.SetLocalPosition(targetPosition);
-            //finalCardObject.SetLocalScale(Vector3.one * 0.5f); // Slightly smaller
-            finalCardObject.SetSortingOrder((targetPlayer.scorePile.Count + 1) * 2); // On top of score pile
-            //uiManager.animationManager.AddSequential( 
-            //    new AnimationTask { Routine = uiManager.AnimateCardMovementAndScale(finalCardObject, targetPosition, Vector3.one * 0.5f), DelayAfter = 1f } 
-            //    );
-            animationTasks.Add( new AnimationTask { Routine = uiManager.AnimateCardMovementAndScale(finalCardObject, targetPosition, Vector3.one * 0.5f), DelayAfter = 0.10f } );
-            //animationTasks.Add( new AnimationTask { Routine = uiManager.AnimateCardMovementAndScale(finalCardObject, targetPosition, Vector3.one * 0.5f), DelayAfter = 1f } );
-            //StartCoroutine(uiManager.AnimateCardMovementAndScale(finalCardObject, targetPosition, Vector3.one * 0.5f));
-            uiManager.animationManager.AddParallel(animationTasks);
-        }
-        else
-        {
-            Debug.LogError("FlipOut->SwipeCardsToScorePiles(): No card found with cardID " + finalCardID);
-        }
-        //uiManager.animationManager.Run();
-        uiManager.UpdateScoresDisplay();
-        //this is called along with Score/Swipe to create/queue deal action:
-        // GameManager.Instance.serverDispatch.DealCardsToPlayerHandIndices(playerId, handIndices);
-    }
-
-    /*void UpdateScoresDisplay()
-    {
-        for (int playerNum = 0; playerNum < GameStateClient.GetTotalPlayers(); playerNum++)
-        {
-            PlayerXClient player = GameStateClient.CurrentGameStateClient.GetPlayerByNumber(playerNum);
-            scoreText[playerNum].text = "Score: " + player.scorePile.Count.ToString();
-        }
-    }*/
-
-    void BuildScorePile()
-    {
-        for (int playerNum = 0; playerNum < GameStateClient.GetTotalPlayers(); playerNum++)
-        {
-            PlayerXClient player = GameStateClient.CurrentGameStateClient.GetPlayerByNumber(playerNum);
-            Vector3 scorePilePosition = playerScorePilePositions[playerNum];
-
-            for (int i = 0; i < player.scorePile.Count; i++)
-            {
-                CardPODClient cardPOD = player.scorePile[i];
-                CardObject cardObject = CardObjectFromPODClient(player.playerId, cardPOD);
-                cardPOD.cardObject = cardObject;
-
-                Vector3 targetPosition = scorePilePosition;
-
-                cardObject.SetLocalPosition(targetPosition);
-                cardObject.SetLocalScale(Vector3.one * 0.5f); // Slightly smaller
-                cardObject.SetSortingOrder((i+2) * 2); // On top of score pile
-                // Set card state to scorePile
-                cardObject.cardPOD.state = CardState.scorePile;
-            }
-        }
-    }
 
     // Client-side
     public void DealFullHandClient(int playerNum, CardPODClient[] hand, bool bOpponent = false)
@@ -754,39 +587,9 @@ public class FlipOutGame : MonoBehaviour
     }
 
 
-    private CardObject InstantiateCardObjectFromPOD(CardPODClient cardPOD, Vector3 position, CardState newState = CardState.playerHolder, int playerID = -1)
-    {
-        if (cardsParentGO == null)
-        {
-            cardsParentGO = new GameObject("_Cards");            
-        }
-        if (cardPrefab == null)
-        {
-            cardPrefab = Resources.Load<GameObject>("Prefabs/CardPF");
-        }
+ #endregion
 
-        GameObject cardGO = GameObject.Instantiate(cardPrefab, position, Quaternion.identity, cardsParentGO.transform);
-        //cardGO.layer = LayerMask.NameToLayer("Cards");
-        cardGO.GetComponent<Renderer>().sortingLayerName = "Cards";
-        CardObject cardObject = cardGO.GetComponent<CardObject>();
-
-        // Attach Card POD to CardObject
-        cardPOD.state = newState;
-        cardPOD.ownerPlayerID = playerID;
-        cardObject.SetCardPOD(cardPOD);
-
-        cardsInPlay.Add(cardObject);
-
-        return cardObject;
-    }
-
-
-    public CardObject CardObjectFromPODClient(int playerID, CardPODClient cardPOD)
-    {
-        return InstantiateCardObjectFromPOD(cardPOD, deckOffscreenPosition, CardState.playerHolder, playerID);
-    }
-
-
+#region FllpOut Actions
     public void FlipCardClient(int cardID, CardColor newColor)
     {
         // Find the CardObject with the given cardID
@@ -1011,6 +814,325 @@ public class FlipOutGame : MonoBehaviour
             Debug.LogError("FlipOut->SwapCards2Client(): Could not find all four cards for swapping.");
         }
     }
+
+    public void MoveCardsToScorePile(int playerId, int[] handIndices, CardColor cardColor)
+    {
+        PlayerXClient player = GameStateClient.CurrentGameStateClient.GetPlayerByID(playerId);
+        if (player == null)
+        {
+            Debug.LogError("FlipOut->MoveCardsToScorePile(): Could not find player number for playerId " + playerId);
+            return;
+        }
+        if (handIndices.Length == 0 || handIndices[0] == -1)
+        {
+            Debug.LogWarning("FlipOut->MoveCardsToScorePile(): handIndices is empty for playerId " + playerId);
+            return;
+        }
+
+        int playerNum = player.playerNumber;
+        Vector3 scorePilePosition = playerScorePilePositions[playerNum];
+
+        List<AnimationTask> animationTasks = new List<AnimationTask>();
+        for (int i = 0; i < handIndices.Length; i++)
+        {
+            int handIndex = handIndices[i];
+            int cardID = player.hand[handIndex].cardID;
+
+            CardPODClient cardPOD = player.hand[handIndex];
+            
+            if (cardPOD != null)
+            {
+                CardObject cardObject = cardPOD.cardObject;
+                player.hand[handIndex] = new CardPODClient(); // Clear from player's hand
+
+                // Set card state to scorePile
+                cardObject.cardPOD.state = CardState.scorePile;
+                player.scorePile.Add(cardPOD); // Add to player's score pile
+
+                if (playerNum != GameStateClient.GetActivePlayerNumber())
+                {
+                    // for opponents, we need to 'flip' the card to the correct color
+                    //cardObject.UpdateColor(cardColor);
+                    uiManager.animationManager.AddSequential( 
+                        new AnimationTask { Routine = uiManager.AnimateFlip(cardObject, cardColor), DelayAfter = 0.03f } 
+                        );
+                }
+
+                // Move card to score pile position
+                Vector3 targetPosition = scorePilePosition;
+                
+                //cardObject.SetLocalPosition(targetPosition);
+                //cardObject.SetLocalScale(Vector3.one * 0.5f); // Slightly smaller
+                cardObject.SetSortingOrder((player.scorePile.Count + 1) * 2); // On top of score pile
+                //StartCoroutine(uiManager.AnimateCardMovementAndScale(cardObject, targetPosition, Vector3.one * 0.5f));
+                animationTasks.Add( new AnimationTask { Routine = uiManager.AnimateCardMovementAndScale(cardObject, targetPosition, Vector3.one * 0.5f), DelayAfter = 1f } );
+                //uiManager.animationManager.AddSequential( 
+                //    new AnimationTask { Routine = uiManager.AnimateCardMovementAndScale(cardObject, targetPosition, Vector3.one * 0.5f), DelayAfter = 0f } 
+                //    );                
+            }
+            else
+            {
+                Debug.LogError("FlipOut->MoveCardsToScorePile(): No card found with cardID " + cardID);
+            }
+        }
+        uiManager.animationManager.AddParallel(animationTasks);
+        //uiManager.animationManager.Run();
+        uiManager.UpdateScoresDisplay();
+        //this is called along with Score/Swipe to create/queue deal action:
+        // GameManager.Instance.serverDispatch.DealCardsToPlayerHandIndices(playerId, handIndices);
+    }
+
+    public void SwipeCardsToScorePiles(int playerId, int targetPlayerId, int[] handIndices, CardColor cardColor)
+    {
+        // Similar to MoveCardsToScorePile but moving all but 1 to player's pile, and final to target player's pile
+        PlayerXClient player = GameStateClient.CurrentGameStateClient.GetPlayerByID(playerId);
+        PlayerXClient targetPlayer = GameStateClient.CurrentGameStateClient.GetPlayerByID(targetPlayerId);
+        if (player == null || targetPlayer == null)
+        {
+            Debug.LogError("FlipOut->SwipeCardsToScorePiles(): Could not find player for one of the playerIds " + playerId + " or " + targetPlayerId);
+            return;
+        }
+        if (handIndices.Length == 0 || handIndices[0] == -1)
+        {
+            Debug.LogWarning("FlipOut->SwipeCardsToScorePiles(): handIndices is empty for targetPlayerId " + targetPlayerId);
+            return;
+        }
+
+        int playerNum = player.playerNumber;
+        int playerTargetNum = targetPlayer.playerNumber;
+        Vector3 scorePilePosition = playerScorePilePositions[playerNum];
+        Vector3 targetScorePilePosition = playerScorePilePositions[playerTargetNum];
+        List<AnimationTask> animationTasks = new List<AnimationTask>();
+
+        // Final card goes to target player's score pile
+        for (int i = 0; i < handIndices.Length - 1; i++)
+        {
+            int handIndex = handIndices[i];
+            int cardID = targetPlayer.hand[handIndex].cardID;
+
+            CardPODClient cardPOD = targetPlayer.hand[handIndex];
+            
+            if (cardPOD != null)
+            {
+                CardObject cardObject = cardPOD.cardObject;
+                targetPlayer.hand[handIndex] = new CardPODClient(); // Clear from player's hand
+
+                // update id, state
+                cardPOD.ownerPlayerID = playerId;
+                cardPOD.state = CardState.scorePile;
+                player.scorePile.Add(cardPOD); // Add to player's score pile
+
+                if (playerTargetNum == GameStateClient.GetActivePlayerNumber())
+                {
+                    // for owner, we need to 'flip' the card (to show opposite side) to the correct color
+                    //cardObject.UpdateColor(cardColor);
+                    uiManager.animationManager.AddSequential( 
+                        new AnimationTask { Routine = uiManager.AnimateFlip(cardObject, cardColor), DelayAfter = 0.03f } 
+                        );
+                }
+
+                // Move card to score pile position
+                Vector3 targetPosition = scorePilePosition;
+
+                //cardObject.SetLocalPosition(targetPosition);
+                //cardObject.SetLocalScale(Vector3.one * 0.5f); // Slightly smaller
+                cardObject.SetSortingOrder((player.scorePile.Count + 1) * 2); // On top of score pile
+                animationTasks.Add( new AnimationTask { Routine = uiManager.AnimateCardMovementAndScale(cardObject, targetPosition, Vector3.one * 0.5f), DelayAfter = 0.10f } );
+                //StartCoroutine(uiManager.AnimateCardMovementAndScale(cardObject, targetPosition, Vector3.one * 0.5f));
+            }
+            else
+            {
+                Debug.LogError("FlipOut->SwipeCardsToScorePiles(): No card found with cardID " + cardID);
+            }
+        }
+        
+        
+        // Final card goes into target player's score pile
+        int finalHandIndex = handIndices[handIndices.Length - 1];
+        int finalCardID = targetPlayer.hand[finalHandIndex].cardID;
+        CardPODClient finalCardPOD = targetPlayer.hand[finalHandIndex];
+        if (finalCardPOD != null)
+        {
+            CardObject finalCardObject = finalCardPOD.cardObject;
+            targetPlayer.hand[finalHandIndex] = new CardPODClient(); // Clear from player's hand
+
+            // update id, state
+            //finalCardPOD.ownerPlayerID = targetPlayerId;  // stays the same
+            finalCardPOD.state = CardState.scorePile;
+            targetPlayer.scorePile.Add(finalCardPOD); // Add to target player's score pile
+
+            if (playerTargetNum == GameStateClient.GetActivePlayerNumber())
+            {
+                // for owner, we need to 'flip' the card (to show opposite side) to the correct color
+                //finalCardObject.UpdateColor(cardColor);
+                uiManager.animationManager.AddSequential( 
+                    new AnimationTask { Routine = uiManager.AnimateFlip(finalCardObject, cardColor), DelayAfter = 0.03f } 
+                    );
+            }
+
+            // Move card to score pile position
+            Vector3 targetPosition = targetScorePilePosition;
+            
+            //finalCardObject.SetLocalPosition(targetPosition);
+            //finalCardObject.SetLocalScale(Vector3.one * 0.5f); // Slightly smaller
+            finalCardObject.SetSortingOrder((targetPlayer.scorePile.Count + 1) * 2); // On top of score pile
+            //uiManager.animationManager.AddSequential( 
+            //    new AnimationTask { Routine = uiManager.AnimateCardMovementAndScale(finalCardObject, targetPosition, Vector3.one * 0.5f), DelayAfter = 1f } 
+            //    );
+            animationTasks.Add( new AnimationTask { Routine = uiManager.AnimateCardMovementAndScale(finalCardObject, targetPosition, Vector3.one * 0.5f), DelayAfter = 0.10f } );
+            //animationTasks.Add( new AnimationTask { Routine = uiManager.AnimateCardMovementAndScale(finalCardObject, targetPosition, Vector3.one * 0.5f), DelayAfter = 1f } );
+            //StartCoroutine(uiManager.AnimateCardMovementAndScale(finalCardObject, targetPosition, Vector3.one * 0.5f));
+            uiManager.animationManager.AddParallel(animationTasks);
+        }
+        else
+        {
+            Debug.LogError("FlipOut->SwipeCardsToScorePiles(): No card found with cardID " + finalCardID);
+        }
+        //uiManager.animationManager.Run();
+        uiManager.UpdateScoresDisplay();
+        //this is called along with Score/Swipe to create/queue deal action:
+        // GameManager.Instance.serverDispatch.DealCardsToPlayerHandIndices(playerId, handIndices);
+    }
+
+#endregion
+
+#region Playback
+
+    public void ActOnFlipOutActionForCurrentPlayer(FlipOutActions action)
+    {
+        Debug.Log("ActOnFlipOutActionForCurrentPlayer: Acting on action " + action.actionTaken.ToString() + " for current player (#" + GameStateClient.GetCurrentPlayerNumber() + ").");
+
+            switch (action.actionTaken)
+            {
+                case FlipOutAction.Flip:
+                    // Flip action is defined opposite(src)->(dest)facing-player side,
+                    // Only the owning player will switch this around to facing->opposite (which means using Source color as destination color)
+                    CardColor destColor = (GameStateClient.GetCurrentPlayerId() == action.playerTargetId) ? 
+                        action.cardSourceInfos[0].cardColor : action.cardDestInfos[0].cardColor;
+                    FlipCardClient(action.cardDestInfos[0].cardID, destColor);
+                    ClearHighlightedCards();
+                    break;
+                case FlipOutAction.Switch:
+                    SwitchCardsClient(action.cardSourceInfos[0].cardID, action.cardDestInfos[0].cardID);
+                    ClearHighlightedCards();
+                    break;
+                case FlipOutAction.Swap1:
+                    // Colors only necessary for non-participating players which will see flip+move effect
+                    Debug.Log("ActOnFlipOutActionForCurrentPlayer: Processing Swap1 action between player " + action.playerTakingActionId +
+                              " and player " + action.playerTargetId +
+                              " swapping card " + action.cardSourceInfos[0].cardID +
+                              " with card " + action.cardDestInfos[0].cardID);
+                    SwapCards1Client(
+                        action.playerTakingActionId,
+                        action.playerTargetId,
+                        action.cardSourceInfos[0].cardID,
+                        action.cardDestInfos[0].cardID,
+                        action.cardSourceInfos[0].cardColor,
+                        action.cardDestInfos[0].cardColor);
+                    ClearHighlightedCards();
+                    break;
+                case FlipOutAction.Swap2:
+                    // Colors only necessary for non-participating players which will see flip+move effect
+                    SwapCards2Client(
+                        action.playerTakingActionId,
+                        action.playerTargetId,
+                        action.cardSourceInfos[0].cardID,
+                        action.cardSourceInfos[1].cardID,
+                        action.cardDestInfos[0].cardID,
+                        action.cardDestInfos[1].cardID,
+                        action.cardSourceInfos[0].cardColor,
+                        action.cardSourceInfos[1].cardColor,
+                        action.cardDestInfos[0].cardColor,
+                        action.cardDestInfos[1].cardColor);
+                    ClearHighlightedCards();
+                    break;
+                case FlipOutAction.Score:
+                    MoveCardsToScorePile(action.playerTakingActionId, action.positions, action.cardSourceInfos[0].cardColor);
+                    break;
+                case FlipOutAction.Swipe:
+                    SwipeCardsToScorePiles(
+                        action.playerTakingActionId,
+                        action.playerTargetId,
+                        action.positions,
+                        action.cardSourceInfos[0].cardColor);
+                    break;
+                case FlipOutAction.Deal:
+                    //! Note: Dealing actually flips for the owner player, but we're showing the deck top
+                    // as the opposite color (facing away from the player) so it looks correct
+                    List<CardPODClient> dealtCards = new List<CardPODClient>();
+                    for (int j = 0; j < action.cardSourceInfos.Length; j++)
+                    {
+                        CardPODClient cardPOD = new CardPODClient
+                        {
+                            cardID = action.cardSourceInfos[j].cardID,
+                            color = action.cardSourceInfos[j].cardColor,
+                            state = CardState.playerHolder,
+                            ownerPlayerID = action.playerTargetId
+                        };
+                        dealtCards.Add(cardPOD);
+                    }
+                    GameStateClient.CurrentGameStateClient.AssignCardsToPlayerHand(
+                        action.playerTargetId,
+                        dealtCards,
+                        action.positions);
+                    
+                    //GameManager.Instance.DealFullHandClientFromState(action.playerTargetId);
+                    DealNewCardsToClient(action.playerTargetId, dealtCards, action.positions, action.cardDestInfos[0].cardColor);
+                    break;
+                case FlipOutAction.TurnEnd:
+                    // act on if current player
+                    if (GameStateClient.GetCurrentPlayerId() == action.playerTakingActionId)
+                    {
+                        Debug.Log("ActOnFlipOutActionsForCurrentPlayer: Ending current player's turn as per action.");
+                        GameStateClient.CurrentGameStateClient.ClearCurrentPlayerActionsTaken();
+                        GameManager.Instance.uiManager.animationManager.SetActionCompleteCallback(() => GameManager.Instance.EndTurnClient(), true);
+                    }
+                    break;
+                case FlipOutAction.EndGame:
+                    // ignore - game is already ended by previous player (i think)
+                    //! (or should I trigger end-game notification here?)
+                    GameManager.Instance.EndGameClient(action.playerTakingActionId);
+                    break;
+                default:
+                    Debug.LogWarning("ActOnFlipOutActionsForCurrentPlayer: Unknown action encountered.");
+                    break;
+            }
+        GameManager.Instance.uiManager.animationManager.Run();
+    }
+
+    public void ActOnFlipOutActionsForCurrentPlayer()
+    {
+        StartCoroutine(ActOnFlipOutActionsForCurrentPlayerCoroutine());
+    }
+
+    private IEnumerator ActOnFlipOutActionsForCurrentPlayerCoroutine()
+    {
+        List<FlipOutActions> listofActions = GameStateClient.CurrentGameStateClient.GetListOfActionsSinceLastTurn();
+        Debug.Log("ActOnFlipOutActionsForCurrentPlayerCoroutine: Acting on " + listofActions.Count + " actions for current player.");
+
+        for (int i = 0; i < listofActions.Count; i++)
+        {
+            Debug.Log("ActOnFlipOutActionsForCurrentPlayerCoroutine: Action " + i + " is " + listofActions[i].actionTaken.ToString());
+
+            ActOnFlipOutActionForCurrentPlayer(listofActions[i]);
+
+            // Wait until all animations complete before proceeding to next action
+            while (GameManager.Instance.uiManager.animationManager.IsRunningAnimations())
+            {
+                yield return null;
+            }
+            GameManager.Instance.uiManager.UpdateScoresDisplay();
+        }
+
+        GameStateClient.CurrentGameStateClient.ClearActionsSinceLastTurn();
+        if (GameStateClient.CurrentGameStateClient.GetCurrentPlayerActionsTaken() >= 2)
+        {
+            Debug.Log("ActOnFlipOutActionsForCurrentPlayerCoroutine: Current player has taken 2 actions, ending turn.");
+            GameManager.Instance.serverDispatch.EndTurn();
+        }
+    }
+
+#endregion
 
 
 }
