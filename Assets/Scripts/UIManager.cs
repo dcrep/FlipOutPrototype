@@ -3,9 +3,10 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 
+// Attribs: Original code from Chris, modified and added to by Daniel C
+
 public class UIManager : MonoBehaviour
 {
-
     public int animationsInProgress = 0;
     //public static UIManager Instance;
 

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using TMPro;
 using System.Collections;
 
+//!TODO: UI stuff should be moved to UIManager
+
 public class FlipOutGame : MonoBehaviour
 {
 
@@ -997,6 +999,8 @@ public class FlipOutGame : MonoBehaviour
 #endregion
 
 #region Playback
+
+    //!TODO: Refactor some of this as it was pulled from FlipOutActions
 
     public void ActOnFlipOutActionForCurrentPlayer(FlipOutActions action)
     {

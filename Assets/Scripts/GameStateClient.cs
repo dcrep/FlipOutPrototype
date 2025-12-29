@@ -5,6 +5,7 @@ using NUnit.Framework;
 using System;
 
 //!! GameStateClient is duplicated (except for static data) for each hotseat player
+//! TODO: Separate individual players into PlayerState and GameStateClient will hold multiple PlayerStates
 
 [Serializable]
 public class GameResults

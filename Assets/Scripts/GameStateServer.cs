@@ -6,6 +6,7 @@ using System;
 using System.Linq;
 
 // "GameState" conflicts with enum GameState (probably should be AppState)
+
 [System.Serializable]
 public class GameStateServer
 {

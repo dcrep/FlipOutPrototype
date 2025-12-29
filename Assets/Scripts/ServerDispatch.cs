@@ -2,10 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-//!TODO: Deal action w/flip? (misunderstood game draw mechanic - player flips card instead of keeping face up -> facing player
-// The underside is actually what faces the player (i.e. the card flips and the upward-facing color is now outward-facing)
-// For now since just the top card of deck is shown, I show the opposite-facing color and then when moved to the hand,
-// the player sees the facing-color
+//!TODO: Debug.LogErrors -> warnings? logic elsewhere? or return failures?
 
 public class ServerDispatch
 {
