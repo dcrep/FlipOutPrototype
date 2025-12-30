@@ -180,7 +180,7 @@ public class ServerDispatch
         }
         Debug.Log("ServerDispatch->DealCardsToPlayers(): Dealing cards to players...");
 
-        int clientPlayerNum = GameStateClient.CurrentGameStateClient.localPlayerNumber;
+        //int clientPlayerNum = GameStateClient.CurrentGameStateClient.localPlayerNumber;
 
         for (int playerNum = 0; playerNum < gameStateServer.GetTotalPlayers(); playerNum++)
         {

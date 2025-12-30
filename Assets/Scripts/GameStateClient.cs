@@ -22,41 +22,39 @@ public class GameResults
 public class GameStateClient
 {
 
-#region Client-Only-Data
-    //! No use for cardsInPlayClient now - cards are only looked for in players' hands
+    //! No use for cardsInPlayClient now - cards are only looked for in players' hands/score piles
     // similar to server cardsInPlay, but only cards generated/known to client (and specific to that client view)
     [SerializeField] public List<CardPODClient> cardsInPlayClient = new List<CardPODClient>();
 
-    // Hotseat-only:
-    [SerializeField] public int localPlayerNumber = 0;
+#region PlayerState
+    //[SerializeField] public int localPlayerNumber = 0;
 
     [SerializeField] public static string localPlayerName = "Player";
 
+    private int currentPlayerActionsTaken = 0;
+
+    TurnAction actionsAvailableThisTurn = TurnAction.None;
+
+    [SerializeField] public List<FlipOutActions> actionsTakenFull = new List<FlipOutActions>();
+
+    [SerializeField] public PlayerXClient[] playersClient = new PlayerXClient[5];
+
+    public bool handsDealt = false;
+
+#endregion
     [SerializeField] private static GameStateClient[] hotseatGameStates = new GameStateClient[5];
 
     // This reference is important and is setup on Init
     public static GameStateClient CurrentGameStateClient;   // = hotseatGameStates[0];
 
-    public bool handsDealt = false;
-
     public static GameResults gameResults = new GameResults();
 
     public static MultiplayerMode currentMultiplayerMode = MultiplayerMode.LocalHotseat;
-#endregion
-
-#region Client-Data-Altered-From-Server
-    [SerializeField] public PlayerXClient[] playersClient = new PlayerXClient[5];
-#endregion
 
 #region Server-Client-Propagated-Data
 
     [SerializeField] private static int currentPlayerIndex = 0;
     [SerializeField] private static int totalPlayers = 0;
-
-    private int currentPlayerActionsTaken = 0;
-    [SerializeField] public List<FlipOutActions> actionsTakenFull = new List<FlipOutActions>();
-
-    TurnAction actionsAvailableThisTurn = TurnAction.None;
 
     public static CardColor deckTopCardColor = CardColor.invalid;
 
@@ -74,7 +72,7 @@ public class GameStateClient
         for (int i = 0; i < playerIds.Length; i++)
         {
             hotseatGameStates[i] = new GameStateClient();
-            hotseatGameStates[i].localPlayerNumber = i;
+            //hotseatGameStates[i].localPlayerNumber = i;
             hotseatGameStates[i].AssignPlayersClient(playerIds, playerNames);
             hotseatGameStates[i].currentPlayerActionsTaken = 0;
         }
