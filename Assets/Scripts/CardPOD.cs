@@ -18,6 +18,8 @@ public class CardPODClient //: MonoBehaviour
     public int ownerPlayerID = -1;  // which player owns this card
 
 // !! These aren't *truly* needed but saves dictionary lookup (or component/object searches)
+// !! It's important these references are cleaned up when CardObject and GameObject are destroyed
+// (logic to do so is in CardObject.OnDestroy())
     [System.NonSerialized]
     public GameObject cardGO = null;    // link to GameObject that the CardObject script is attached to
     [System.NonSerialized]

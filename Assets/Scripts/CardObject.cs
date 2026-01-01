@@ -53,6 +53,18 @@ public class CardObject : MonoBehaviour
         }
     }
 
+    // Cleanup references on destroy
+    void OnDestroy()
+    {
+        //Debug.Log("CardObject: OnDestroy() - CardObject destroyed: " + gameObject.name);
+        if (cardPOD != null)
+        {
+            cardPOD.cardObject = null;
+            // GameObject is destroyed alongside the CardObject
+            cardPOD.cardGO = null;
+        }
+    }
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
