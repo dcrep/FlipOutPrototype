@@ -4,9 +4,12 @@ using Unity.Netcode;
 using UnityEngine.SceneManagement;
 using Unity.Collections;
 
+//!TODO: Disable name changing after connect. (also disable input field in UI)
+
 public class LobbyManager : NetworkBehaviour
 {
     private const int MIN_PLAYERS = 2;
+    private bool nameChangeDisabled = false;
     private PlayerSessionManager sessionManager = new PlayerSessionManager();
     
     // Events (UI subscribes to these)
@@ -42,7 +45,7 @@ public class LobbyManager : NetworkBehaviour
         ulong hostId = Unity.Netcode.NetworkManager.ServerClientId;
         if (sessionManager.GetPlayerSession(hostId) == null)
         {
-            sessionManager.AddSession(hostId, $"Player{hostId}", "127.0.0.1");
+            sessionManager.AddSession(hostId, $"Player{hostId}"); //, "127.0.0.1");
         }
 
     }
@@ -54,8 +57,8 @@ public class LobbyManager : NetworkBehaviour
         if (sessionManager.GetPlayerSession(clientId) == null)
         {
             string playerName = $"Player{clientId}";
-            string ipAddress = "127.0.0.1";
-            sessionManager.AddSession(clientId, playerName, ipAddress);
+            //string ipAddress = "127.0.0.1";
+            sessionManager.AddSession(clientId, playerName); //, ipAddress);
             NotifyPlayerJoinedClientRpc(clientId, playerName);
         }
         // Broadcast updated roster to ALL clients so everyone knows about the new player
@@ -144,7 +147,19 @@ public class LobbyManager : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     private void SetPlayerNameServerRpc(ulong playerNetworkId, string playerName, ServerRpcParams rpcParams = default)
     {
+        // Don't allow name changes after game starts
+        if (nameChangeDisabled)
+        {
+            Debug.LogWarning($"Cannot change player name after game has started");
+            return;
+        }
         Debug.Log($"Server received name update for {playerNetworkId}: {playerName}");
+        // Verify the sender is only updating their own name
+        if (rpcParams.Receive.SenderClientId != playerNetworkId)
+        {
+            Debug.LogWarning($"Client {rpcParams.Receive.SenderClientId} tried to change name for player {playerNetworkId}");
+            return;
+        }
         var session = sessionManager.GetPlayerSession(playerNetworkId);
         if (session != null)
         {
@@ -269,6 +284,7 @@ public class LobbyManager : NetworkBehaviour
     [ClientRpc]
     private void AllPlayersReadyClientRpc()
     {
+        nameChangeDisabled = true;
         OnAllPlayersReady?.Invoke();
         // handle scene loading in event subscriber
     }
