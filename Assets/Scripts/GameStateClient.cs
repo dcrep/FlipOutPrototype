@@ -5,7 +5,8 @@ using NUnit.Framework;
 using System;
 
 //!! GameStateClient is duplicated (except for static data) for each hotseat player
-//! TODO: Separate individual players into PlayerState and GameStateClient will hold multiple PlayerStates
+//!TODO: Separate individual players into PlayerState and GameStateClient will hold multiple PlayerState'Views'
+//!TODO: Available actions section - move to FlipOutGame or "FlipOutRules"
 
 [Serializable]
 public class GameResults
@@ -672,6 +673,8 @@ public class GameStateClient
     {
         //List<TurnAction> actions = new List<TurnAction>();
         TurnAction availableActions = TurnAction.None;
+
+        PlayerXClient currentPlayer = GetActivePlayer();
         PlayerXClient ownerPlayer = GetPlayerByID(cardPOD.ownerPlayerID);
         if (ownerPlayer == null)
         {
@@ -704,15 +707,21 @@ public class GameStateClient
             }
         }
         // Score requires 4-6 adjacent same color cards from current player's hand
-        if (IsThere4To6AdjacentCardsOfSameColorAsThis(ownerPlayer, cardPOD))
+        if (ownerPlayer == currentPlayer)
         {
-            //actions.Add(TurnAction.Score);
-            availableActions |= TurnAction.Score;
+            if (IsThere4To6AdjacentCardsOfSameColorAsThis(ownerPlayer, cardPOD))
+            {
+                //actions.Add(TurnAction.Score);
+                availableActions |= TurnAction.Score;
+            }
         }
-        if (IsSwipeAvailableForPlayer(ownerPlayer))
+        else
         {
-            //actions.Add(TurnAction.Swipe);
-            availableActions |= TurnAction.Swipe;
+            if (IsThere4To6AdjacentCardsOfSameColorAsThis(ownerPlayer, cardPOD))
+            {
+                //actions.Add(TurnAction.Swipe);
+                availableActions |= TurnAction.Swipe;
+            }
         }
 
         return availableActions;

@@ -768,6 +768,8 @@ public class GameStateServer
     {
         //List<TurnAction> actions = new List<TurnAction>();
         TurnAction availableActions = TurnAction.None;
+
+        PlayerXServer currentPlayer = GetActivePlayer();
         PlayerXServer ownerPlayer = GetPlayerByID(cardPOD.ownerPlayerID);
         if (ownerPlayer == null)
         {
@@ -800,15 +802,21 @@ public class GameStateServer
             }
         }
         // Score requires 4-6 adjacent same color cards from current player's hand
-        if (IsThere4To6AdjacentCardsOfSameColorAsThis(ownerPlayer, cardPOD))
+        if (ownerPlayer == currentPlayer)
         {
-            //actions.Add(TurnAction.Score);
-            availableActions |= TurnAction.Score;
+            if (IsThere4To6AdjacentCardsOfSameColorAsThis(ownerPlayer, cardPOD))
+            {
+                //actions.Add(TurnAction.Score);
+                availableActions |= TurnAction.Score;
+            }
         }
-        if (IsSwipeAvailableForPlayer(ownerPlayer))
+        else
         {
-            //actions.Add(TurnAction.Swipe);
-            availableActions |= TurnAction.Swipe;
+            if (IsThere4To6AdjacentCardsOfSameColorAsThis(ownerPlayer, cardPOD))
+            {
+                //actions.Add(TurnAction.Swipe);
+                availableActions |= TurnAction.Swipe;
+            }
         }
 
         return availableActions;
