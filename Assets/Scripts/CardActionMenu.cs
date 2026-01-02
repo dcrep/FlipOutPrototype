@@ -21,7 +21,7 @@ public class CardActionMenu : MonoBehaviour
     {
         OwnerCard = card;
 
-        var availableActions = GameStateClient.CurrentGameStateClient.GetAvailableActionsForCard(card.cardPOD);
+        var availableActions = FlipOutGame.GetAvailableActionsForCard(card.cardPOD);
         
         // Flip, Switch, Swap1 always allowed
         /*if (availableActions.HasFlag(TurnAction.Flip))

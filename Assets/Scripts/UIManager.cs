@@ -264,7 +264,7 @@ public class UIManager : MonoBehaviour
 
                 case TurnAction.Score:
                 {
-                    int[] adjacentCardIndices = GameStateClient.GetAdjacentColorsIndicesBasedOnCardId(card.cardPOD.cardID);
+                    int[] adjacentCardIndices = FlipOutGame.GetAdjacentColorsIndicesBasedOnCardId(card.cardPOD.cardID);
                     if (adjacentCardIndices.Length < 4)
                     {
                         Debug.Log("Need to highlight a card that has at least 4 adjacent same-color cards to score!");
@@ -283,7 +283,7 @@ public class UIManager : MonoBehaviour
                 case TurnAction.Swipe:
                 {
                     //TurnAction.Swipe  // score a set of 4 to 6 adjacent same-color cards from another player's hand
-                    int[] adjacentCardIndices = GameStateClient.GetAdjacentColorsIndicesBasedOnCardId(card.cardPOD.cardID);
+                    int[] adjacentCardIndices = FlipOutGame.GetAdjacentColorsIndicesBasedOnCardId(card.cardPOD.cardID);
                     if (adjacentCardIndices.Length < 4)
                     {
                         Debug.Log("Need to highlight a card that has at least 4 adjacent same-color cards to score!");
@@ -360,7 +360,7 @@ public class UIManager : MonoBehaviour
             {
                 //!!
                 //Debug.LogWarning("This shouldn't be done this way... check into..");
-                Debug.Log("Cards highlighted at Switch: " + cardsHighlighted.Count);
+                //Debug.Log("Cards highlighted at Switch: " + cardsHighlighted.Count);
                 //TurnAction.Switch // switch 1 card with another of yours, or 1 of opponents with another of opponent's
                 //if (cardsHighlighted.Count != 2)
                 if (cardsHighlighted.Count != 2)
@@ -419,7 +419,7 @@ public class UIManager : MonoBehaviour
                     Debug.Log("Need to highlight 1 card to score!");
                     break;
                 }
-                int[] adjacentCardIndices = GameStateClient.GetAdjacentColorsIndicesBasedOnCardId(cardsHighlighted[0].cardPOD.cardID);
+                int[] adjacentCardIndices = FlipOutGame.GetAdjacentColorsIndicesBasedOnCardId(cardsHighlighted[0].cardPOD.cardID);
                 if (adjacentCardIndices.Length < 4)
                 {
                     Debug.Log("Need to highlight a card that has at least 4 adjacent same-color cards to score!");
@@ -443,7 +443,7 @@ public class UIManager : MonoBehaviour
                     Debug.Log("Need to highlight 1 card to swipe score!");
                     break;
                 }
-                int[] adjacentCardIndices = GameStateClient.GetAdjacentColorsIndicesBasedOnCardId(cardsHighlighted[0].cardPOD.cardID);
+                int[] adjacentCardIndices = FlipOutGame.GetAdjacentColorsIndicesBasedOnCardId(cardsHighlighted[0].cardPOD.cardID);
                 if (adjacentCardIndices.Length < 4)
                 {
                     Debug.Log("Need to highlight a card that has at least 4 adjacent same-color cards to score!");
@@ -849,7 +849,7 @@ public class UIManager : MonoBehaviour
 
         animationsInProgress++;
 
-        Debug.Log($"Animating movement of card {card.cardPOD.cardID} to {targetPos}");
+        //Debug.Log($"Animating movement of card {card.cardPOD.cardID} to {targetPos}");
 
         Transform t = card.transform;
         Vector3 start = t.position;
@@ -868,7 +868,7 @@ public class UIManager : MonoBehaviour
 
         t.position = targetPos; // ensure final exact position
         animationsInProgress--;
-        Debug.Log($"Animation of card {card.cardPOD.cardID} completed, final position: {targetPos}");
+        //Debug.Log($"Animation of card {card.cardPOD.cardID} completed, final position: {targetPos}");
     }
 
     public IEnumerator AnimateCardMovementAndScale(CardObject card, Vector3 targetPos, Vector3 targetScale)
@@ -877,7 +877,7 @@ public class UIManager : MonoBehaviour
             yield break;
 
         animationsInProgress++;
-        Debug.Log($"Animating movement and scale of card {card.cardPOD.cardID} to {targetPos} with scale {targetScale}");
+        //Debug.Log($"Animating movement and scale of card {card.cardPOD.cardID} to {targetPos} with scale {targetScale}");
         Transform t = card.transform;
         Vector3 startPos = t.position;
         Vector3 startScale = t.localScale;
@@ -898,7 +898,7 @@ public class UIManager : MonoBehaviour
         t.position = targetPos; // ensure final exact position
         t.localScale = targetScale; // ensure final exact scale
         animationsInProgress--;
-        Debug.Log($"Animation of card {card.cardPOD.cardID} completed, final position: {targetPos}, scale: {targetScale}");
+        //Debug.Log($"Animation of card {card.cardPOD.cardID} completed, final position: {targetPos}, scale: {targetScale}");
     }
 
     public IEnumerator AnimateCardMovementScaleAndRotation(CardObject card, Vector3 targetPos, Vector3 targetScale, Quaternion targetRot)
@@ -907,7 +907,7 @@ public class UIManager : MonoBehaviour
             yield break;
 
         animationsInProgress++;
-        Debug.Log($"Animating movement, scale, and rotation of card {card.cardPOD.cardID} to {targetPos} with scale {targetScale} and rotation {targetRot.eulerAngles}");
+        //Debug.Log($"Animating movement, scale, and rotation of card {card.cardPOD.cardID} to {targetPos} with scale {targetScale} and rotation {targetRot.eulerAngles}");
         Transform t = card.transform;
         Vector3 startPos = t.position;
         Vector3 startScale = t.localScale;
@@ -931,7 +931,7 @@ public class UIManager : MonoBehaviour
         t.localScale = targetScale; // ensure final exact scale
         t.rotation = targetRot; // ensure final exact rotation
         animationsInProgress--;
-        Debug.Log($"Animation of card {card.cardPOD.cardID} completed, final position: {targetPos}, scale: {targetScale}, rotation: {targetRot.eulerAngles}");
+        //Debug.Log($"Animation of card {card.cardPOD.cardID} completed, final position: {targetPos}, scale: {targetScale}, rotation: {targetRot.eulerAngles}");
     }
 
     public IEnumerator AnimateFlip(CardObject card, CardColor dest)
@@ -940,7 +940,7 @@ public class UIManager : MonoBehaviour
             yield break;
 
         animationsInProgress++;
-        Debug.Log($"Animating flip of card {card.cardPOD.cardID} to color {dest}");
+        //Debug.Log($"Animating flip of card {card.cardPOD.cardID} to color {dest}");
         float halfDuration = moveDuration / 2f;
         float time = 0f;
 
@@ -980,7 +980,7 @@ public class UIManager : MonoBehaviour
         card.transform.localScale = originalScale; // ensure final exact scale
 
         animationsInProgress--;
-        Debug.Log($"Flip animation of card {card.cardPOD.cardID} completed, final color: {dest}");
+        //Debug.Log($"Flip animation of card {card.cardPOD.cardID} completed, final color: {dest}");
     }
 
     public Transform[] GenerateHandSlots(Transform parent, Vector3 localOffset, int numSlots = 6)

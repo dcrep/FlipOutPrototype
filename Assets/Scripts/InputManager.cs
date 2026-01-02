@@ -276,7 +276,7 @@ public class InputManager : MonoBehaviour
                     Debug.Log("Need to highlight 1 card to score!");
                     return;
                 }
-                int[] adjacentCardIndices = GameStateClient.GetAdjacentColorsIndicesBasedOnCardId(GameManager.Instance.flipOutGame.cardsHighlighted[0].cardPOD.cardID);
+                int[] adjacentCardIndices = FlipOutGame.GetAdjacentColorsIndicesBasedOnCardId(GameManager.Instance.flipOutGame.cardsHighlighted[0].cardPOD.cardID);
                 if (adjacentCardIndices.Length < 4)
                 {
                     Debug.Log("Need to highlight a card that has at least 4 adjacent same-color cards to score!");
@@ -299,7 +299,7 @@ public class InputManager : MonoBehaviour
                     Debug.Log("Need to highlight 1 card to swipe score!");
                     return;
                 }
-                int[] adjacentCardIndices = GameStateClient.GetAdjacentColorsIndicesBasedOnCardId(GameManager.Instance.flipOutGame.cardsHighlighted[0].cardPOD.cardID);
+                int[] adjacentCardIndices = FlipOutGame.GetAdjacentColorsIndicesBasedOnCardId(GameManager.Instance.flipOutGame.cardsHighlighted[0].cardPOD.cardID);
                 if (adjacentCardIndices.Length < 4)
                 {
                     Debug.Log("Need to highlight a card that has at least 4 adjacent same-color cards to score!");

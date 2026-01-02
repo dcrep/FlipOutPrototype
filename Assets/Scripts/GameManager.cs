@@ -562,7 +562,7 @@ public class GameManager : MonoBehaviour
 
         if (card.cardPOD.state == CardState.playerHolder)
         {
-            Debug.Log("Actions available: " + string.Join(", ", GameStateClient.CurrentGameStateClient.GetAvailableActionsForCard(card.cardPOD)));
+            Debug.Log("Actions available: " + string.Join(", ", FlipOutGame.GetAvailableActionsForCard(card.cardPOD)));
             /*if (cardsHighlighted.Contains(card))
             {
                 card.HighlightCardToggle();
@@ -579,8 +579,8 @@ public class GameManager : MonoBehaviour
             Debug.Log("Score pile count: " + GameStateClient.CurrentGameStateClient.GetPlayerByID(card.cardPOD.ownerPlayerID).scorePile.Count);
         }
         else {
-            Debug.Log("Max run player 0: " + GameStateClient.GetTotalAdjacentColorCount(GameStateClient.CurrentGameStateClient.GetPlayerByNumber(0)));
-            Debug.Log("Max run player 1: " + GameStateClient.GetTotalAdjacentColorCount(GameStateClient.CurrentGameStateClient.GetPlayerByNumber(1)));
+            Debug.Log("Max run player 0: " + FlipOutGame.GetTotalAdjacentColorCount(GameStateClient.CurrentGameStateClient.GetPlayerByNumber(0)));
+            Debug.Log("Max run player 1: " + FlipOutGame.GetTotalAdjacentColorCount(GameStateClient.CurrentGameStateClient.GetPlayerByNumber(1)));
         }
     }
 

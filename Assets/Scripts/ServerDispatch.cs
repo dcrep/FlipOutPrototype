@@ -282,7 +282,7 @@ public class ServerDispatch
         //FlipOutActions startTurnAction = FlipOutActions.CreateTurnStartAction();
 
         GameStateClient.CurrentGameStateClient.SetActionsAvailableThisTurn(
-            gameStateServer.GetAvailableActionsForPlayer(gameStateServer.GetActivePlayer())
+            FlipOutGame.GetAvailableActionsForPlayer(gameStateServer.GetActivePlayer())
         );
 
         if (isHotseatGame)
@@ -290,7 +290,7 @@ public class ServerDispatch
             GameManager.Instance.flipOutGame.StartPlayerTurnClient(
                 gameStateServer.GetActivePlayerNumber(),
                 gameStateServer.GetActivePlayer().playerId,
-                gameStateServer.GetAvailableActionsForPlayer(gameStateServer.GetActivePlayer())
+                FlipOutGame.GetAvailableActionsForPlayer(gameStateServer.GetActivePlayer())
             );
         }
         // Notify clients of turn start?
@@ -917,7 +917,7 @@ public class ServerDispatch
         }
     
         //! This action needs to change for swipe (looking at opposite side colors)
-        int[] adjacentCardIndices = GameStateClient.GetAdjacentColorsIndicesBasedOnCardId(cardId);
+        int[] adjacentCardIndices = FlipOutGame.GetAdjacentColorsIndicesBasedOnCardId(cardId);
         if (adjacentCardIndices.Length < 4)
         {
             Debug.Log("ServerDispatch->ScoreCards(): need at least 4 adjacent same-color cards to score!");
@@ -993,7 +993,7 @@ public class ServerDispatch
         //! This action ??needs to change?? in swipe (looking at opposite side colors)
         // Thinking this through - the player sees the opposite-side colors and its represented as such in the
         //  gamestateclient as opposite-side colors, soo it should be fine?
-        int[] adjacentCardIndices = GameStateClient.GetAdjacentColorsIndicesBasedOnCardId(cardId);
+        int[] adjacentCardIndices = FlipOutGame.GetAdjacentColorsIndicesBasedOnCardId(cardId);
         if (adjacentCardIndices.Length < 4)
         {
             Debug.Log("ServerDispatch->SwipeCards(): need at least 4 adjacent same-color cards to score!");
@@ -1032,7 +1032,7 @@ public class ServerDispatch
         // 2nd action:
         if (!DealCardsToPlayerHandIndices(targetPlayer.playerId, adjacentCardIndices))
         {
-            Debug.LogError("ServerDispatch->SwipeCards(): end game reached");
+            Debug.LogWarning("ServerDispatch->SwipeCards(): end game reached");
             EndGame();
             //return;
         }

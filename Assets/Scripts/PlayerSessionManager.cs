@@ -18,13 +18,12 @@ public class PlayerSessionManager
 {
     public Dictionary<ulong, PlayerSession> sessions = new Dictionary<ulong, PlayerSession>();
 
-    public void AddSession(ulong playerId, string playerName) //, string ipAddress)
+    public void AddSession(ulong playerId, string playerName)
     {
         sessions[playerId] = new PlayerSession
         {
             playerNetworkId = playerId,
             playerName = playerName,
-            //ipAddress = ipAddress,
             isConnected = true,
             playerServerId = -1,
             isReady = false
@@ -37,7 +36,6 @@ public class PlayerSessionManager
         {
             playerNetworkId = (ulong)playerId,
             playerName = playerName,
-            //ipAddress = "localhost",
             isConnected = true,
             playerServerId = (int)playerId,
             isReady = isReady
