@@ -1,11 +1,5 @@
 using UnityEngine;
 
-public struct CardActionRequest
-{
-    public TurnAction actionType;
-    public CardObject sourceCard;
-}
-
 [RequireComponent(typeof(SpriteRenderer))]
 [RequireComponent(typeof(BoxCollider2D))]
 [System.Serializable]
@@ -60,8 +54,6 @@ public class CardObject : MonoBehaviour
         if (cardPOD != null)
         {
             cardPOD.cardObject = null;
-            // GameObject is destroyed alongside the CardObject
-            cardPOD.cardGO = null;
         }
     }
 
@@ -83,7 +75,6 @@ public class CardObject : MonoBehaviour
         gameObject.name = "Card" + cardPOD.cardID.ToString("D2");
         // !! This info should be unneccesary but for ease-of-use/debugging purposes...
         cardPOD.cardObject = this;
-        cardPOD.cardGO = this.gameObject;
     }
     public void SetId(int newId)
     {

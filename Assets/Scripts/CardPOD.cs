@@ -17,11 +17,9 @@ public class CardPODClient //: MonoBehaviour
     //[SerializeField] private PlayerX playerOwner = null;
     public int ownerPlayerID = -1;  // which player owns this card
 
-// !! These aren't *truly* needed but saves dictionary lookup (or component/object searches)
-// !! It's important these references are cleaned up when CardObject and GameObject are destroyed
+// !! This isnn't *truly* needed but saves dictionary lookup (or component/object searches)
+// !! It's important these references are cleaned up when CardObject is destroyed:
 // (logic to do so is in CardObject.OnDestroy())
-    [System.NonSerialized]
-    public GameObject cardGO = null;    // link to GameObject that the CardObject script is attached to
     [System.NonSerialized]
     public CardObject cardObject = null;    // link to CardObject (owner) script object
 

@@ -3,10 +3,44 @@ using System.Collections.Generic;
 using TMPro;
 using System.Collections;
 
+public enum FlipOutGameEvents
+{
+    Idle,
+    CardSelected,
+    ActionSelected,
+    SelectingCards,
+    SubmittingAction,
+    ActionCompleted,
+    ProcessingActions,
+    UpdatingScores,
+    StartingTurn,
+    EndingTurn,
+    EndingGame
+}
+
 //!TODO: UI stuff should be moved to UIManager
 //!TODO: Make multi-file partial class to reduce code-per-file
 public class FlipOutGame : MonoBehaviour
 {
+
+    // Delegate and Event for FlipOut event changes
+    public delegate void OnFlipOutEvent(FlipOutGameEvents gameEvent);
+    public static event OnFlipOutEvent onFlipOutEvent;
+
+    // Don't touch this backing field directly (limitation of C# properties)
+    [SerializeField] private FlipOutGameEvents _currentGameEvent = FlipOutGameEvents.Idle;
+    public FlipOutGameEvents currentGameEvent 
+    { 
+        get => _currentGameEvent;
+        set 
+        {
+            if (_currentGameEvent != value)
+            {
+                _currentGameEvent = value;
+                onFlipOutEvent?.Invoke(value);
+            }
+        }
+    }
 
     //! TODO: Move this UI manipulation to UIManager
     TextMeshProUGUI uiText = null;
@@ -178,7 +212,7 @@ public class FlipOutGame : MonoBehaviour
                 bDelayingEndTurn = true;
                 return;
             }
-
+            currentGameEvent = FlipOutGameEvents.EndingTurn;
             Invoke(nameof(AdvanceToNextPlayerClient), 0.5f);
         }
     }
@@ -200,7 +234,9 @@ public class FlipOutGame : MonoBehaviour
         PlayerXClient player = GameStateClient.CurrentGameStateClient.GetPlayerByNumber(playerId);
         UpdatePlayerInfoText("Player " + playerId + "'s " + (playerNum == 1 ? "^" : "v") + " (" + player.playerName + ") Turn");
 
+        currentGameEvent = FlipOutGameEvents.UpdatingScores;
         uiManager.UpdateScoresDisplay();
+        currentGameEvent = FlipOutGameEvents.StartingTurn;
 
         // This should be done at TurnEnd:
         //ClearObjectsInPlay();
@@ -212,6 +248,7 @@ public class FlipOutGame : MonoBehaviour
                 DealAllHandsClientFromState();
                 BuildScorePile();
                 ActOnFlipOutActionsForCurrentPlayer();
+                //Debug.Log("StartPlayerTurn-> Current game event: " + currentGameEvent);
             }
             else
             {
@@ -220,6 +257,7 @@ public class FlipOutGame : MonoBehaviour
                 //DealAllHandsClientFromState();
                 BuildScorePile();
                 GameStateClient.CurrentGameStateClient.handsDealt = true;
+                //Debug.Log("StartPlayerTurn(else)-> Current game event: " + currentGameEvent);
             }
             
         }
@@ -592,6 +630,17 @@ public class FlipOutGame : MonoBehaviour
  #endregion
 
 #region FllpOut Actions
+
+    public void PlayerActionRejected(int playerId)
+    {
+        Debug.Log("FlipOut->PlayerActionRejected(): Player " + playerId + "'s action was rejected by server.");
+        if (GameStateClient.CurrentGameStateClient.GetActivePlayer().playerId == playerId)
+        {
+            //Rejected, then Idle?
+            currentGameEvent = FlipOutGameEvents.Idle;
+        }
+    }
+
     public void FlipCardClient(int cardID, CardColor newColor)
     {
         // Find the CardObject with the given cardID
@@ -878,8 +927,11 @@ public class FlipOutGame : MonoBehaviour
             }
         }
         uiManager.animationManager.AddParallel(animationTasks);
+        var prevEvent = currentGameEvent;;
+        currentGameEvent = FlipOutGameEvents.UpdatingScores;
         //uiManager.animationManager.Run();
         uiManager.UpdateScoresDisplay();
+        currentGameEvent = prevEvent;
         //this is called along with Score/Swipe to create/queue deal action:
         // GameManager.Instance.serverDispatch.DealCardsToPlayerHandIndices(playerId, handIndices);
     }
@@ -990,8 +1042,11 @@ public class FlipOutGame : MonoBehaviour
         {
             Debug.LogError("FlipOut->SwipeCardsToScorePiles(): No card found with cardID " + finalCardID);
         }
+        var prevEvent = currentGameEvent;;
+        currentGameEvent = FlipOutGameEvents.UpdatingScores;
         //uiManager.animationManager.Run();
         uiManager.UpdateScoresDisplay();
+        currentGameEvent = prevEvent;
         //this is called along with Score/Swipe to create/queue deal action:
         // GameManager.Instance.serverDispatch.DealCardsToPlayerHandIndices(playerId, handIndices);
     }
@@ -1002,7 +1057,7 @@ public class FlipOutGame : MonoBehaviour
 
     //!TODO: Refactor some of this as it was pulled from FlipOutActions
 
-    public void ActOnFlipOutActionForCurrentPlayer(FlipOutActions action)
+    private void ActOnFlipOutActionForCurrentPlayer(FlipOutActions action)
     {
         Debug.Log("ActOnFlipOutActionForCurrentPlayer: Acting on action " + action.actionTaken.ToString() + " for current player (#" + GameStateClient.GetCurrentPlayerNumber() + ").");
 
@@ -1106,6 +1161,7 @@ public class FlipOutGame : MonoBehaviour
 
     public void ActOnFlipOutActionsForCurrentPlayer()
     {
+        currentGameEvent = FlipOutGameEvents.ProcessingActions;
         StartCoroutine(ActOnFlipOutActionsForCurrentPlayerCoroutine());
     }
 
@@ -1118,6 +1174,7 @@ public class FlipOutGame : MonoBehaviour
         {
             Debug.Log("ActOnFlipOutActionsForCurrentPlayerCoroutine: Action " + i + " is " + listofActions[i].actionTaken.ToString());
 
+            currentGameEvent = FlipOutGameEvents.ProcessingActions;
             ActOnFlipOutActionForCurrentPlayer(listofActions[i]);
 
             // Wait until all animations complete before proceeding to next action
@@ -1125,15 +1182,19 @@ public class FlipOutGame : MonoBehaviour
             {
                 yield return null;
             }
-            GameManager.Instance.uiManager.UpdateScoresDisplay();
+            currentGameEvent = FlipOutGameEvents.ActionCompleted;
+            //GameManager.Instance.uiManager.UpdateScoresDisplay();
         }
 
         GameStateClient.CurrentGameStateClient.ClearActionsSinceLastTurn();
         if (GameStateClient.CurrentGameStateClient.GetCurrentPlayerActionsTaken() >= 2)
         {
             Debug.Log("ActOnFlipOutActionsForCurrentPlayerCoroutine: Current player has taken 2 actions, ending turn.");
+            currentGameEvent = FlipOutGameEvents.EndingTurn;
             GameManager.Instance.serverDispatch.EndTurn();
         }
+        else
+            currentGameEvent = FlipOutGameEvents.Idle;
     }
 
 #endregion

@@ -133,6 +133,7 @@ public class UIManager : MonoBehaviour
 
     void Update()
     {
+        // Only if there's a selected card AND an active action menu
         if (selectedCard == null || activeActionMenu == null)
             return;
 
@@ -140,7 +141,9 @@ public class UIManager : MonoBehaviour
         {
             if (!IsClickOnSelectedCardOrMenu())
             {
+                //Debug.Log("UI->Clicked outside selected card and menu, closing menu.");
                 ClearSelection();
+                GameManager.Instance.flipOutGame.currentGameEvent = FlipOutGameEvents.Idle;
             }
         }
     }
@@ -191,8 +194,16 @@ public class UIManager : MonoBehaviour
         if (card.cardPOD.state != CardState.playerHolder)
             return;
 
-        if (animationManager.IsRunningAnimations())
+        if (GameManager.Instance.flipOutGame.currentGameEvent != FlipOutGameEvents.Idle &&
+            GameManager.Instance.flipOutGame.currentGameEvent != FlipOutGameEvents.SelectingCards)
             return;
+
+        //Debug.Log("UI->OnCardClicked() - Card " + card.cardPOD.cardID + " clicked.");
+
+        //! This shouldn't be necessry now
+        //if (animationManager.IsRunningAnimations())
+        //    return;
+
         // If we're resolving an action, route to highlight logic
         if (IsInHighlightMode)
         {
@@ -241,14 +252,18 @@ public class UIManager : MonoBehaviour
         actionSourceCard = request.sourceCard;
 
         HideActionMenu();
+
+        GameManager.Instance.flipOutGame.currentGameEvent = FlipOutGameEvents.ActionSelected;
+
         // 2+ cards required?
         if (pendingAction == TurnAction.Switch || pendingAction == TurnAction.Swap1 || pendingAction == TurnAction.Swap2)
         {
-            EnterHighlightMode();          
+            EnterHighlightMode();
         }
         else
         {
             RestoreScale();
+            GameManager.Instance.flipOutGame.currentGameEvent = FlipOutGameEvents.SubmittingAction;
             CardObject card = request.sourceCard;
             switch (request.actionType)
             {                
@@ -322,6 +337,7 @@ public class UIManager : MonoBehaviour
     void EnterHighlightMode()
     {
         IsInHighlightMode = true;
+        GameManager.Instance.flipOutGame.currentGameEvent = FlipOutGameEvents.SelectingCards;
         cardsHighlighted.Clear();
 
         // Always highlight the source card
@@ -345,6 +361,7 @@ public class UIManager : MonoBehaviour
     void ExecutePendingAction()
     {
         Debug.Log($"Executing action: {pendingAction} on {cardsHighlighted.Count} highlighted cards.");
+        GameManager.Instance.flipOutGame.currentGameEvent = FlipOutGameEvents.SubmittingAction;
         switch (pendingAction)
         {
             case TurnAction.Flip:
@@ -614,12 +631,13 @@ public class UIManager : MonoBehaviour
         // Clicking the currently selected card unselects it
         if (selectedCard == card)
         {
+            Debug.Log("UI->ToggleSelection, ClearingSelection");
             ClearSelection();
             return;
         }
     
-    if(IsInHighlightMode != true)
-        SetselectedCard(card); // Selecting a new card
+        if(!IsInHighlightMode)
+            SetselectedCard(card); // Selecting a new card
     }
 
     public void ToggleSelectionExternal(CardObject card)
@@ -632,11 +650,13 @@ public class UIManager : MonoBehaviour
     private void SetselectedCard(CardObject card)
     {
         if (card.gameObject.tag == "invalid") return;
+
         selectedCard = card;
+        
         if (!originalScale.ContainsKey(card))
-            {
-                originalScale[card] = card.transform.localScale;
-            }    
+        {
+            originalScale[card] = card.transform.localScale;
+        }    
         //Scale selected card up
         SpriteRenderer sr = card.GetComponent<SpriteRenderer>();
         if (sr != null)
@@ -649,7 +669,7 @@ public class UIManager : MonoBehaviour
         }
 
         ShowActionMenu(card);
-
+        
         //Apply tagging rules
         ApplySelectionTags(card);
         //Darken every OTHER card
@@ -657,6 +677,8 @@ public class UIManager : MonoBehaviour
 
         //Remove hover copy (hovering makes no sense while selected)
         RestoreAllAndClear();
+
+        GameManager.Instance.flipOutGame.currentGameEvent = FlipOutGameEvents.CardSelected;
 
     }
 
@@ -759,7 +781,7 @@ public class UIManager : MonoBehaviour
         RestoreAllCardColors();
         ResetAllCardTags();
         
-    if (GameManager.Instance != null)
+        if (GameManager.Instance != null)
         {
             GameManager.Instance.flipOutGame.ClearHighlightedCards();
             Debug.Log("Cleared Highlighted Cards");
@@ -1018,59 +1040,59 @@ public class UIManager : MonoBehaviour
 
         if (slotIndex == 4 || slotIndex == 5)
         {
-        activeActionMenu = Instantiate(leftactionMenuPrefab);
-        activeActionMenu.name = "CardActionMenu";
+            activeActionMenu = Instantiate(leftactionMenuPrefab);
+            activeActionMenu.name = "CardActionMenu";
 
-        // Parent to card so it follows movement
-        activeActionMenu.transform.SetParent(card.transform, false);
+            // Parent to card so it follows movement
+            activeActionMenu.transform.SetParent(card.transform, false);
 
-        // Position it to the RIGHT of the card
-        activeActionMenu.transform.localPosition = leftactionMenuOffset;
+            // Position it to the RIGHT of the card
+            activeActionMenu.transform.localPosition = leftactionMenuOffset;
 
-        // Sorting: above outline, below card
-        SpriteRenderer[] renderers = activeActionMenu.GetComponentsInChildren<SpriteRenderer>();
-        foreach (var r in renderers)
-        {
-            r.sortingOrder = card.GetComponent<SpriteRenderer>().sortingOrder - 1;
-        }
-        CardActionMenu menu = activeActionMenu.GetComponent<CardActionMenu>();
-        menu.Initialize(card);
-        if (activeActionMenu == null)
-        {
-            Debug.LogWarning("DID NOT CREATE MENU");
-        }
-        else
-        {
-            Debug.Log("Menu Created!");
-        }
+            // Sorting: above outline, below card
+            SpriteRenderer[] renderers = activeActionMenu.GetComponentsInChildren<SpriteRenderer>();
+            foreach (var r in renderers)
+            {
+                r.sortingOrder = card.GetComponent<SpriteRenderer>().sortingOrder - 1;
+            }
+            CardActionMenu menu = activeActionMenu.GetComponent<CardActionMenu>();
+            menu.Initialize(card);
+            if (activeActionMenu == null)
+            {
+                Debug.LogWarning("DID NOT CREATE MENU");
+            }
+            else
+            {
+                Debug.Log("Menu Created!");
+            }
         }
         else
         {        
-        activeActionMenu = Instantiate(actionMenuPrefab);
-        activeActionMenu.name = "CardActionMenu";
+            activeActionMenu = Instantiate(actionMenuPrefab);
+            activeActionMenu.name = "CardActionMenu";
 
-        // Parent to card so it follows movement
-        activeActionMenu.transform.SetParent(card.transform, false);
+            // Parent to card so it follows movement
+            activeActionMenu.transform.SetParent(card.transform, false);
 
-        // Position it to the RIGHT of the card
-        activeActionMenu.transform.localPosition = actionMenuOffset;
+            // Position it to the RIGHT of the card
+            activeActionMenu.transform.localPosition = actionMenuOffset;
 
-        // Sorting: above outline, below card
-        SpriteRenderer[] renderers = activeActionMenu.GetComponentsInChildren<SpriteRenderer>();
-        foreach (var r in renderers)
-        {
-            r.sortingOrder = card.GetComponent<SpriteRenderer>().sortingOrder - 1;
-        }
-        CardActionMenu menu = activeActionMenu.GetComponent<CardActionMenu>();
-        menu.Initialize(card);
-        if (activeActionMenu == null)
-        {
-            Debug.LogWarning("DID NOT CREATE MENU");
-        }
-        else
-        {
-            Debug.Log("Menu Created!");
-        }
+            // Sorting: above outline, below card
+            SpriteRenderer[] renderers = activeActionMenu.GetComponentsInChildren<SpriteRenderer>();
+            foreach (var r in renderers)
+            {
+                r.sortingOrder = card.GetComponent<SpriteRenderer>().sortingOrder - 1;
+            }
+            CardActionMenu menu = activeActionMenu.GetComponent<CardActionMenu>();
+            menu.Initialize(card);
+            if (activeActionMenu == null)
+            {
+                Debug.LogWarning("DID NOT CREATE MENU");
+            }
+            else
+            {
+                Debug.Log("Menu Created!");
+            }
         }
     }
 

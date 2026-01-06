@@ -1,6 +1,12 @@
 using UnityEngine;
 using UnityEngine.UI;
 
+public struct CardActionRequest
+{
+    public TurnAction actionType;
+    public CardObject sourceCard;
+}
+
 [RequireComponent(typeof(Button))]
 public class ActionButton : MonoBehaviour
 {

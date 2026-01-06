@@ -5,6 +5,11 @@ using NUnit.Framework;
 using System;
 
 //!! GameStateClient is duplicated (except for static data) for each hotseat player
+// GameManager.gameStateClient should be set once in online and set for each turn in hotseat,
+// with a previousGameStateClient for hotseat (to have a 'up-to-date' game state before current one catches up)
+// In this way, the only static field would be the hotseatGameStates array
+// Server needs to 'broadcast' to both online and hotseat clients all the information
+// (total players, id's, names, play order, deck-top-color) (including player states)
 //!TODO: Separate individual players into PlayerState and GameStateClient will hold multiple PlayerState'Views'
 // PlayerX should also be combined into PlayerState
 //!TODO: Extract gameplay-gamestate modification logic elsewhere?

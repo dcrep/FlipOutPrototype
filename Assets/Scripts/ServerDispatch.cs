@@ -334,6 +334,11 @@ public class ServerDispatch
         StartTurn();  
     }
 
+    private void ActionRejected(int playerId)
+    {
+        GameManager.Instance.flipOutGame.PlayerActionRejected(playerId);
+    }
+
     // call directly or roundabout through network message:
     //! Note: FlipCard action on playback is unique - it will reverse flip action
     //!       if cardId is owned by the current player, otherwise we assume opposite-side as source for all others
@@ -347,13 +352,13 @@ public class ServerDispatch
         if (gameStateServer.GetActivePlayer().playerId != playerId)
         {
             Debug.LogError("ServerDispatch->FlipCard(): It's not player " + playerId + "'s turn!");
-            return;
+            ActionRejected(playerId); return;
         }
         
         if (gameStateServer.GetCurrentPlayerActionsTaken() == 2)
         {
             Debug.LogError("ServerDispatch->FlipCard(): Player " + playerId + " has already taken 2 actions this turn!");
-            return;
+            ActionRejected(playerId); return;
         }
         Debug.Log("ServerDispatch->FlipCard(): Player " + playerId + " flipping card " + cardId);
 
@@ -361,7 +366,7 @@ public class ServerDispatch
         /*if (!gameStateServer.GetAvailableActionsForPlayer(gameStateServer.GetPlayerByID(playerId)).HasFlag(TurnAction.Flip))
         {
             Debug.LogError("ServerDispatch->FlipCard(): Player " + playerId + " cannot flip card now!");
-            return;
+            ActionRejected(playerId); return;
         }*/
 
         PlayerXServer player = gameStateServer.GetPlayerByID(playerId);
@@ -369,7 +374,7 @@ public class ServerDispatch
         if (player == null || cardPOD == null)
         {
             Debug.LogError("ServerDispatch->FlipCard(): invalid player or card!");
-            return;
+            ActionRejected(playerId); return;
         }
 
         int owningPlayerId = cardPOD.ownerPlayerID;        
@@ -430,13 +435,13 @@ public class ServerDispatch
         if (gameStateServer.GetActivePlayer().playerId != playerId)
         {
             Debug.LogError("ServerDispatch->SwitchCards(): It's not player " + playerId + "'s turn!");
-            return;
+            ActionRejected(playerId); return;
         }
         
         if (gameStateServer.GetCurrentPlayerActionsTaken() == 2)
         {
             Debug.LogError("ServerDispatch->SwitchCards(): Player " + playerId + " has already taken 2 actions this turn!");
-            return;
+            ActionRejected(playerId); return;
         }
         Debug.Log("ServerDispatch->SwitchCards(): Player " + playerId + " switching cards " + cardId1 + " and " + cardId2);
 
@@ -444,7 +449,7 @@ public class ServerDispatch
         /*if (!gameStateServer.GetAvailableActionsForPlayer(gameStateServer.GetPlayerByID(playerId)).HasFlag(TurnAction.Switch))
         {
             Debug.LogError("ServerDispatch->SwitchCards(): Player " + playerId + " cannot switch cards now!");
-            return;
+            ActionRejected(playerId); return;
         }*/
 
         PlayerXServer player = gameStateServer.GetPlayerByID(playerId);
@@ -454,15 +459,15 @@ public class ServerDispatch
         if (player == null || cardPOD1 == null || cardPOD2 == null)
         {
             Debug.LogError("ServerDispatch->SwitchCards(): invalid player or card(s)!");
-            return;
+            ActionRejected(playerId); return;
         }
 
         int owningPlayerId = cardPOD1.ownerPlayerID;
         if (cardPOD1.ownerPlayerID != cardPOD2.ownerPlayerID)
         {
-            Debug.LogError("ServerDispatch->SwitchCards(): card'1s owner player id (" + owningPlayerId + 
+            Debug.LogWarning("ServerDispatch->SwitchCards(): card'1s owner player id (" + owningPlayerId + 
                 ") != card2 owner player id (" + cardPOD2.ownerPlayerID + ")!");
-            return;
+            ActionRejected(playerId); return;
         }
 
         
@@ -544,13 +549,13 @@ public class ServerDispatch
         if (gameStateServer.GetActivePlayer().playerId != playerId)
         {
             Debug.LogError("ServerDispatch->SwapCards1(): It's not player " + playerId + "'s turn!");
-            return;
+            ActionRejected(playerId); return;
         }
         
         if (gameStateServer.GetCurrentPlayerActionsTaken() == 2)
         {
             Debug.LogError("ServerDispatch->SwapCards1(): Player " + playerId + " has already taken 2 actions this turn!");
-            return;
+            ActionRejected(playerId); return;
         }
         Debug.Log("ServerDispatch->SwapCards1(): Player " + playerId + " swapping cards " + cardId1 + " and " + cardSwapWith1);
 
@@ -558,7 +563,7 @@ public class ServerDispatch
         /*if (!gameStateServer.GetAvailableActionsForPlayer(gameStateServer.GetPlayerByID(playerId)).HasFlag(TurnAction.Swap1))
         {
             Debug.LogError("ServerDispatch->SwapCards1(): Player " + playerId + " cannot swap cards now!");
-            return;
+            ActionRejected(playerId); return;
         }*/
 
         PlayerXServer playerSwapping = gameStateServer.GetPlayerByCardId(cardId1);
@@ -567,17 +572,17 @@ public class ServerDispatch
         if (playerSwapping == null || playerSwapWith == null)
         {
             Debug.LogError("ServerDispatch->SwapCards1(): invalid player(s)!");
-            return;
+            ActionRejected(playerId); return;
         }        
         if (playerSwapping.playerId != playerId && playerSwapWith.playerId != playerId)
         {
             Debug.LogWarning("ServerDispatch->SwapCards1(): Player " + playerId + " does not own either card " + cardId1 + " or card " + cardSwapWith1 + "!");
-            return;
+            ActionRejected(playerId); return;
         }
         if (playerSwapping == playerSwapWith)
         {
             Debug.LogWarning("ServerDispatch->SwapCards1(): both cards belong to same player (only Switch can be used for that)!");
-            return;
+            ActionRejected(playerId); return;
         }
         // Establish playerSwapping as owner of cardId1, playerSwapWith as owner of cardSwapWith1
         if (playerSwapping.playerId != playerId)
@@ -668,13 +673,13 @@ public class ServerDispatch
         if (gameStateServer.GetActivePlayer().playerId != playerId)
         {
             Debug.LogError("ServerDispatch->SwapCards2(): It's not player " + playerId + "'s turn!");
-            return;
+            ActionRejected(playerId); return;
         }
         
         if (gameStateServer.GetCurrentPlayerActionsTaken() == 2)
         {
             Debug.LogError("ServerDispatch->SwapCards2(): Player " + playerId + " has already taken 2 actions this turn!");
-            return;
+            ActionRejected(playerId); return;
         }
         Debug.Log("ServerDispatch->SwapCards2(): Player " + playerId + " swapping cards " + cardId1 + " & " + cardId2 + " with " + cardSwapWith1 + " & " + cardSwapWith2);
 
@@ -682,7 +687,7 @@ public class ServerDispatch
         /*if (!gameStateServer.GetAvailableActionsForPlayer(gameStateServer.GetPlayerByID(playerId)).HasFlag(TurnAction.Swap2))
         {
             Debug.LogError("ServerDispatch->SwapCards2(): Player " + playerId + " cannot swap cards now!");
-            return;
+            ActionRejected(playerId); return;
         }*/
 
         PlayerXServer playerSwapping = gameStateServer.GetPlayerByCardId(cardId1);
@@ -691,7 +696,7 @@ public class ServerDispatch
         if (playerSwapping == null || playerSwapWith == null)
         {
             Debug.LogError("ServerDispatch->SwapCards2(): invalid player(s)!");
-            return;
+            ActionRejected(playerId); return;
         }
         // if cardId1 and cardSwapWith1 belong to same player, rearrange players/ids
         if (playerSwapping == playerSwapWith)
@@ -701,16 +706,16 @@ public class ServerDispatch
             // not found OR same player again
             if (playerSwapWith == null || playerSwapWith == playerSwapping)
             {
-                Debug.LogError("ServerDispatch->SwapCards2(): invalid player(s)!");
-                return;
+                Debug.LogWarning("ServerDispatch->SwapCards2(): invalid player(s)!");
+                ActionRejected(playerId); return;
             }
             // known: cardId1 and cardSwapWith1 belong to playerSwapping, cardSwapWith2 belongs to playerSwapWith
             // not known but need to verify:
             //     cardId2  *should* belong to playerSwapWith
             if (playerSwapWith.GetIndexOfCardByID(cardId2) == -1)
             {
-                Debug.LogError("ServerDispatch->SwapCards2(): cards do not belong to expected players!");
-                return;
+                Debug.LogWarning("ServerDispatch->SwapCards2(): cards do not belong to expected players!");
+                ActionRejected(playerId); return;
             }
             // lets rearrange ids for clarity's sake
             int tempId = cardSwapWith1;
@@ -730,14 +735,14 @@ public class ServerDispatch
                 index = playerSwapWith.GetIndexOfCardByID(cardId2);
                 if (index == -1)
                 {
-                    Debug.LogError("ServerDispatch->SwapCards2(): cards do not belong to expected players!");
-                    return;
+                    Debug.LogWarning("ServerDispatch->SwapCards2(): cards do not belong to expected players!");
+                    ActionRejected(playerId); return;
                 }
                 // verify cardSwapWith2 belongs to playerSwapping
                 if (playerSwapping.GetIndexOfCardByID(cardSwapWith2) == -1)
                 {
-                    Debug.LogError("ServerDispatch->SwapCards2(): cards do not belong to expected players!");
-                    return;
+                    Debug.LogWarning("ServerDispatch->SwapCards2(): cards do not belong to expected players!");
+                    ActionRejected(playerId); return;
                 }
 
                 // swap card ids for clarity's sake
@@ -753,8 +758,8 @@ public class ServerDispatch
                 // verify playerSwapWith owns cardSwapWith2
                 if (playerSwapWith.GetIndexOfCardByID(cardSwapWith2) == -1)
                 {
-                    Debug.LogError("ServerDispatch->SwapCards2(): cards do not belong to expected players!");
-                    return;
+                    Debug.LogWarning("ServerDispatch->SwapCards2(): cards do not belong to expected players!");
+                    ActionRejected(playerId); return;
                 }
                 // Now:
                 // playerSwapWith now corresponds to cardSwapWith1 and cardSwapWith2
@@ -767,8 +772,8 @@ public class ServerDispatch
         // Unknown is which is playerId
         if (playerSwapping.playerId != playerId && playerSwapWith.playerId != playerId)
         {
-            Debug.LogError("ServerDispatch->SwapCards2(): Player " + playerId + " does not own either card " + cardId1 + " or card " + cardSwapWith1 + "!");
-            return;
+            Debug.LogWarning("ServerDispatch->SwapCards2(): Player " + playerId + " does not own either card " + cardId1 + " or card " + cardSwapWith1 + "!");
+            ActionRejected(playerId); return;
         }
 
         // Establish playerSwapping as owner of cardId1 & cardId2, playerSwapWith as owner of cardSwapWith1 & cardSwapWith2
@@ -799,15 +804,15 @@ public class ServerDispatch
         if (cardPOD1.GetFacingColor() != cardPOD2.GetFacingColor() ||
             cardSwapWithPOD1.GetOppositeColor() != cardSwapWithPOD2.GetOppositeColor())
         {
-            Debug.LogError("ServerDispatch->SwapCards2(): card pairs to be swapped are not adjacent matching colors!");
-            return;
+            Debug.LogWarning("ServerDispatch->SwapCards2(): card pairs to be swapped are not adjacent matching colors!");
+            ActionRejected(playerId); return;
         }
         // Verify cards are adjacent in hands
         if (Math.Abs(playerSwapping.GetIndexOfCardByID(cardId1) - playerSwapping.GetIndexOfCardByID(cardId2)) != 1 ||
             Math.Abs(playerSwapWith.GetIndexOfCardByID(cardSwapWith1) - playerSwapWith.GetIndexOfCardByID(cardSwapWith2)) != 1)
         {
-            Debug.LogError("ServerDispatch->SwapCards2(): card pairs to be swapped are not adjacent in hands!");
-            return;
+            Debug.LogWarning("ServerDispatch->SwapCards2(): card pairs to be swapped are not adjacent in hands!");
+            ActionRejected(playerId); return;
         }
 
         // Create Swap2 action
@@ -907,21 +912,21 @@ public class ServerDispatch
         if (player == null)
         {
             Debug.LogError("ServerDispatch->ScoreCards(): invalid player!");
-            return;
+            ActionRejected(playerId); return;
         }
 
         if (player.GetIndexOfCardByID(cardId) == -1)    //! Difference between this and swipe (swipe must be another player)
         {
-            Debug.LogError("ServerDispatch->ScoreCards(): player " + playerId + " does not own card " + cardId + "!");
-            return;
+            Debug.LogWarning("ServerDispatch->ScoreCards(): player " + playerId + " does not own card " + cardId + "!");
+            ActionRejected(playerId); return;
         }
     
         //! This action needs to change for swipe (looking at opposite side colors)
         int[] adjacentCardIndices = FlipOutGame.GetAdjacentColorsIndicesBasedOnCardId(cardId);
         if (adjacentCardIndices.Length < 4)
         {
-            Debug.Log("ServerDispatch->ScoreCards(): need at least 4 adjacent same-color cards to score!");
-            return;
+            Debug.LogWarning("ServerDispatch->ScoreCards(): need at least 4 adjacent same-color cards to score!");
+            ActionRejected(playerId); return;
         }
  
         CardActionInfo[] cardInfos = new CardActionInfo[adjacentCardIndices.Length];;
@@ -981,13 +986,13 @@ public class ServerDispatch
         if (player == null || targetPlayer == null)
         {
             Debug.LogError("ServerDispatch->SwipeCards(): one or more invalid players!");
-            return;
+            ActionRejected(playerId); return;
         }
 
         if (player.GetIndexOfCardByID(cardId) != -1)    // Player must not own card (swipe must be another player)
         {
-            Debug.LogError("ServerDispatch->SwipeCards(): player " + playerId + " owns card " + cardId + "!");
-            return;
+            Debug.LogWarning("ServerDispatch->SwipeCards(): player " + playerId + " owns card " + cardId + "!");
+            ActionRejected(playerId); return;
         }
     
         //! This action ??needs to change?? in swipe (looking at opposite side colors)
@@ -996,8 +1001,8 @@ public class ServerDispatch
         int[] adjacentCardIndices = FlipOutGame.GetAdjacentColorsIndicesBasedOnCardId(cardId);
         if (adjacentCardIndices.Length < 4)
         {
-            Debug.Log("ServerDispatch->SwipeCards(): need at least 4 adjacent same-color cards to score!");
-            return;
+            Debug.LogWarning("ServerDispatch->SwipeCards(): need at least 4 adjacent same-color cards to score!");
+            ActionRejected(playerId); return;
         }
  
         CardActionInfo[] cardInfos = new CardActionInfo[adjacentCardIndices.Length];;
