@@ -15,6 +15,7 @@ public enum FlipOutGameEvents
     UpdatingScores,
     StartingTurn,
     EndingTurn,
+    Paused,
     EndingGame
 }
 
@@ -40,6 +41,21 @@ public class FlipOutGame : MonoBehaviour
                 onFlipOutEvent?.Invoke(value);
             }
         }
+    }
+    private FlipOutGameEvents previousGameEvent = FlipOutGameEvents.Idle;
+
+    public void GameEventSaveStateForTransition()
+    {
+        previousGameEvent = currentGameEvent;
+    }
+    public void GameEventSaveStateAndTransition(FlipOutGameEvents newEvent)
+    {
+        previousGameEvent = currentGameEvent;
+        currentGameEvent = newEvent;
+    }
+    public void GameEventRestoreState()
+    {
+        currentGameEvent = previousGameEvent;
     }
 
     //! TODO: Move this UI manipulation to UIManager
@@ -1186,6 +1202,7 @@ public class FlipOutGame : MonoBehaviour
             //GameManager.Instance.uiManager.UpdateScoresDisplay();
         }
 
+        //!TODO: Move this to ServerDispatch -> after adding action, check # actions, add EndTurn action at 2
         GameStateClient.CurrentGameStateClient.ClearActionsSinceLastTurn();
         if (GameStateClient.CurrentGameStateClient.GetCurrentPlayerActionsTaken() >= 2)
         {

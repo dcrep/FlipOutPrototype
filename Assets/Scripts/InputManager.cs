@@ -12,24 +12,13 @@ public class InputManager : MonoBehaviour
 
     private InputAction numKeyAction;
 
-    //public PlayerX activePlayer = null;
+    private InputAction pauseAction;
 
-    // UI Manager (?)
-    GameObject pauseMenuPrefab = null;
-    GameObject pauseMenuInstance = null;
-    bool pauseMenuOpen = false;
+    //public PlayerX activePlayer = null;
 
     void Awake()
     {
         playerControls = new InputSystem_Actions();
-
-        // UI Manager:
-        /*pauseMenuPrefab = Resources.Load<GameObject>("Prefabs/" + "PauseModalDialog");
-        if (pauseMenuPrefab == null)
-        {
-            Debug.Log("Pause menu prefab not found!");
-            return;
-        }*/
     }
     void OnEnable()
     {
@@ -49,11 +38,18 @@ public class InputManager : MonoBehaviour
         numKeyAction.Enable();
         numKeyAction.performed += NumKeyPressed;
 
+        pauseAction = playerControls.Player.Pause;
+        pauseAction.Enable();
+        pauseAction.performed += PausePressed;
+
         CardObject.onCardClicked += onCardClicked;
     }
     void OnDisable()
     {
         CardObject.onCardClicked -= onCardClicked;
+
+        pauseAction.performed -= PausePressed;
+        pauseAction.Disable();
 
         numKeyAction.performed -= NumKeyPressed;
         numKeyAction.Disable();        
@@ -71,13 +67,7 @@ public class InputManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (playerControls.Player.Pause.triggered)
-        {
-            Debug.Log("Esc/Pause triggered!");
-            //PauseMenuOpen();
-            //UIManager.Instance.PauseMenu();
-        }
-        else if (playerControls.Player.Mute.triggered)
+        if (playerControls.Player.Mute.triggered)
         {
             //GameManager.Instance.MuteGame();
             AudioManager.PauseToggle();
@@ -92,53 +82,21 @@ public class InputManager : MonoBehaviour
             //UIManager.StartUITestTwoPlayer();
         }
     }
-    /*public bool PauseMenuClose()
-    {
-        if (pauseMenuOpen)
-        {
-            pauseMenuInstance.SetActive(false);
-            Destroy(pauseMenuInstance);
-            pauseMenuInstance = null;
-            Debug.Log("Pause menu closed!");
-            // Unfreeze game
-            //Time.timeScale = 1;           
-            GameManager.Instance.ResumeGame();
-            pauseMenuOpen = false;
-        }
-        return true;
-    }
-    private bool PauseMenuOpen()
-    {
-        if (pauseMenuOpen)
-        {
-            return PauseMenuClose();                
-        }
-        else if (GameManager.GameStatus == GameManager.GameStatus.Playing)
-        {
-            Debug.Log("Pause triggered!");
-            if (pauseMenuPrefab != null)
-            {
-                pauseMenuInstance = Instantiate(pauseMenuPrefab, Vector3.zero, Quaternion.identity);
-                if (pauseMenuInstance == null)
-                {
-                    Debug.LogError("Pause menu prefab not found!");
-                    return false;
-                }
-                var canvas = GameObject.Find("Canvas");
-                if (canvas == null)
-                {
-                    Debug.LogError("Canvas not found for Pause Menu!");
-                    return false;
-                }
-                pauseMenuInstance.transform.SetParent(GameObject.Find("Canvas").transform, false);
-                pauseMenuInstance.SetActive(true);
 
-                GameManager.Instance.PauseGame();
-                pauseMenuOpen = true;
-            }
+    private void PausePressed(InputAction.CallbackContext context)
+    {
+        Debug.Log("Esc/{p}ause triggered!");
+        if (GameManager.Instance.currentGameState == GameStatus.Playing)
+        {
+            //PauseMenuClose();
+            GameManager.Instance.PauseGame();
         }
-        return pauseMenuOpen;
-    }*/
+        else if (GameManager.Instance.currentGameState == GameStatus.Paused)
+        {
+            //PauseMenuOpen();
+            GameManager.Instance.ResumeGame();
+        }
+    }
 
     void MouseRightButtonPressed(InputAction.CallbackContext context)
     {

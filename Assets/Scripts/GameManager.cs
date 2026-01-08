@@ -119,6 +119,12 @@ public class GameManager : MonoBehaviour
     public void LoadScene(Scenes scene)
     {
         Debug.Log("GameManager->LoadScene(): " + scene.ToString());
+        if (currentGameState == GameStatus.Paused)
+        {
+            Debug.LogWarning("GameManager->LoadScene(): Game is paused, closing pause menu.");
+            uiManager.PauseMenuClose();
+            flipOutGame.EndGameCleanup();
+        }
         if (currentGameState == GameStatus.Playing)
         {
             flipOutGame.EndGameCleanup();
@@ -247,20 +253,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    void OnMultiplayerConnect()
-    {
-        Debug.Log("GameManager->OnServerConnected()");
-        currentMultiplayerMode = MultiplayerMode.Online;
-    
-    }
-
-    void OnMultiplayerDisconnect()
-    {
-        Debug.Log("GameManager->OnServerDisconnected()");
-        currentMultiplayerMode = MultiplayerMode.Disconnected;
-    }
-
-    // Scene -> Scene script (in each level) calls the following Awake/Start/Destroyed functions
+   // Scene -> Scene script (in each level) calls the following Awake/Start/Destroyed functions
 
     public void SceneAwake()
     {
@@ -388,11 +381,53 @@ public class GameManager : MonoBehaviour
         }*/
     }
 
+    public void PauseGame()
+    {
+        if (currentGameState != GameStatus.Playing)
+        {
+            Debug.LogWarning("GameManager->PauseGame(): Cannot pause, game is not in Playing state.");
+            return;
+        }
+        //flipOutGame.GameEventSaveStateAndTransition(FlipOutGameEvents.Paused);
+        // Show pause menu UI
+        uiManager.PauseMenuOpen();
+        currentGameState = GameStatus.Paused;
+        // Freeze game time
+        //Time.timeScale = 0f;
+    }
+
+    public void ResumeGame()
+    {
+        if (currentGameState != GameStatus.Paused)
+        {
+            Debug.LogWarning("GameManager->ResumeGame(): Cannot resume, game is not in Paused state.");
+            return;
+        }
+        //flipOutGame.GameEventRestoreState();
+        // Hide pause menu UI
+        uiManager.PauseMenuClose();
+        currentGameState = GameStatus.Playing;
+        // Resume game time
+        //Time.timeScale = 1f;
+    }
+
     public void SetLocalPlayerName(string name)
     {
         GameStateClient.localPlayerName = name;
     }
 
+    void OnMultiplayerConnect()
+    {
+        Debug.Log("GameManager->OnServerConnected()");
+        currentMultiplayerMode = MultiplayerMode.Online;
+    
+    }
+
+    void OnMultiplayerDisconnect()
+    {
+        Debug.Log("GameManager->OnServerDisconnected()");
+        currentMultiplayerMode = MultiplayerMode.Disconnected;
+    }
 
 
    // !TODO Called by NetworkManager when online game is ready to start (?)

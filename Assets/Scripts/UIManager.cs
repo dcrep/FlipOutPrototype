@@ -7,6 +7,10 @@ using TMPro;
 
 public class UIManager : MonoBehaviour
 {
+    GameObject pauseMenuPrefab = null;
+    GameObject pauseMenuInstance = null;
+    bool pauseMenuOpen = false;
+
     public int animationsInProgress = 0;
     //public static UIManager Instance;
 
@@ -107,6 +111,12 @@ public class UIManager : MonoBehaviour
                 animationManager = gameObject.AddComponent<AnimationManager>();
             }
         }
+        pauseMenuPrefab = Resources.Load<GameObject>("Prefabs/" + "PauseModalDialog");
+        if (pauseMenuPrefab == null)
+        {
+            Debug.Log("Pause menu prefab not found!");
+            return;
+        }
     }
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
@@ -147,6 +157,57 @@ public class UIManager : MonoBehaviour
             }
         }
     }
+
+    public bool PauseMenuClose()
+    {
+        if (pauseMenuOpen)
+        {
+            pauseMenuInstance.SetActive(false);
+            Destroy(pauseMenuInstance);
+            pauseMenuInstance = null;
+            Debug.Log("Pause menu closed!");
+            // Unfreeze game
+            //Time.timeScale = 1;
+            // This is what calls this function:    
+            //GameManager.Instance.ResumeGame();
+            pauseMenuOpen = false;
+        }
+        return true;
+    }
+    public bool PauseMenuOpen()
+    {
+        if (pauseMenuOpen)
+        {
+            return PauseMenuClose();                
+        }
+        else if (GameManager.Instance.currentGameState == GameStatus.Playing)
+        {
+            Debug.Log("Pause triggered!");
+            if (pauseMenuPrefab != null)
+            {
+                pauseMenuInstance = Instantiate(pauseMenuPrefab, Vector3.zero, Quaternion.identity);
+                if (pauseMenuInstance == null)
+                {
+                    Debug.LogError("Pause menu prefab not found!");
+                    return false;
+                }
+                var canvas = UICanvas;  //GameObject.Find("Canvas");
+                if (canvas == null)
+                {
+                    Debug.LogError("Canvas not found for Pause Menu!");
+                    return false;
+                }
+                pauseMenuInstance.transform.SetParent(canvas.transform, false);
+                pauseMenuInstance.SetActive(true);
+
+                // This is what calls this function
+                //GameManager.Instance.PauseGame();
+                pauseMenuOpen = true;
+            }
+        }
+        return pauseMenuOpen;
+    }
+    
 
     public void SetupPlayerUI(int numPlayers, string[] playerNames)
     {
@@ -191,11 +252,13 @@ public class UIManager : MonoBehaviour
 
     void OnCardClicked(CardObject card)
     {
-        if (card.cardPOD.state != CardState.playerHolder)
+        if (GameManager.Instance.currentGameState != GameStatus.Playing)
             return;
-
         if (GameManager.Instance.flipOutGame.currentGameEvent != FlipOutGameEvents.Idle &&
             GameManager.Instance.flipOutGame.currentGameEvent != FlipOutGameEvents.SelectingCards)
+            return;
+
+        if (card.cardPOD.state != CardState.playerHolder)
             return;
 
         //Debug.Log("UI->OnCardClicked() - Card " + card.cardPOD.cardID + " clicked.");

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-//!TODO: Debug.LogErrors -> warnings? logic elsewhere? or return failures?
+//!TODO: Submit/Receive FlipOutActions, Server-side: Accept->individual & broadcast->all or reject->individual
 
 public class ServerDispatch
 {
