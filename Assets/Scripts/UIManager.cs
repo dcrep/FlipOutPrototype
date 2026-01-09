@@ -581,6 +581,11 @@ public class UIManager : MonoBehaviour
 
     private void CreateOutline(CardObject card)
     {
+        if (GameManager.Instance.currentGameState != GameStatus.Playing)
+            return;
+        if (GameManager.Instance.flipOutGame.currentGameEvent != FlipOutGameEvents.Idle &&
+            GameManager.Instance.flipOutGame.currentGameEvent != FlipOutGameEvents.SelectingCards)
+            return;
         if (card == null) return;
         if (selectedCard != null) return;
         if (card.cardPOD.state != CardState.playerHolder) return;

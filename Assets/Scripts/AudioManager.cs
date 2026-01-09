@@ -38,6 +38,17 @@ public class AudioManager : MonoBehaviour
         audioMuted = false;
         audioSource.mute = false;
     }
+    public static void  MuteToggle()
+    {
+        if (audioMuted)
+        {
+            UnMute();
+        }
+        else
+        {
+            Mute();
+        }
+    }
 
     public static void SetMainVolumeAL(float volume)
     {

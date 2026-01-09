@@ -299,14 +299,14 @@ public class ServerDispatch
     }
 
     // call directly or roundabout through network message:
-    public void EndTurn()
+    public void EndTurn(bool delayActionImplementation = false)
     {
         if (!isServer)
         {
             Debug.LogError("EndTurnServer: not server!");
             return;
         }
-        Debug.Log("GameState: Ending turn for player " + gameStateServer.GetActivePlayerNumber() + " (" + gameStateServer.GetActivePlayer().playerName + ")");
+        Debug.Log("SD->Ending turn for player " + gameStateServer.GetActivePlayerNumber() + " (" + gameStateServer.GetActivePlayer().playerName + ")");
 
         FlipOutActions endTurnAction = FlipOutActions.CreateTurnEndAction(
             gameStateServer.GetActivePlayer().playerId
@@ -316,12 +316,14 @@ public class ServerDispatch
         //if (isHotseatGame) // no Hotseat check required here, if 1 client, 1 action tracked
         GameStateClient.AddUncountedActionTakenForAll(endTurnAction);
 
-        if (isHotseatGame)
+        if (!delayActionImplementation && isHotseatGame)
         {
             flipOutGame.ActOnFlipOutActionsForCurrentPlayer();
             //GameManager.Instance.EndTurnClient();
         }
-        //! online - any messages to clients?      
+        //! online - any messages to clients?   
+
+        //AdvanceToNextPlayer();  // currently in GameManager...   
     }
 
     public void AdvanceToNextPlayer()
@@ -337,6 +339,15 @@ public class ServerDispatch
     private void ActionRejected(int playerId)
     {
         GameManager.Instance.flipOutGame.PlayerActionRejected(playerId);
+    }
+
+    private void CheckForAndIssueEndTurnAction()
+    {
+        if (gameStateServer.GetCurrentPlayerActionsTaken() >= 2)
+        {
+            Debug.Log("ServerDispatch->CheckForAndIssueEndTurnAction(): Player " + gameStateServer.GetActivePlayer().playerId + " has taken 2 actions, ending turn...");
+            EndTurn(true);  // and AdvanceToNextPlayer()
+        }
     }
 
     // call directly or roundabout through network message:
@@ -410,6 +421,14 @@ public class ServerDispatch
         if (isHotseatGame)
         {
             GameStateClient.AddPlayerActionTakenForAll(flipAction);
+        }
+        else
+        {
+            
+        }
+        CheckForAndIssueEndTurnAction();
+        if (isHotseatGame)
+        {
             
             //GameStateClient.AddPlayerActionTakenForOpponentViews(playerId, flipActionForOpponents, false);
 
@@ -523,7 +542,14 @@ public class ServerDispatch
                 playerId,
                 switchActionForOpponents, false
             );
-
+        }
+        else
+        {
+            
+        }
+        CheckForAndIssueEndTurnAction();
+        if (isHotseatGame)
+        {
             //GameManager.Instance.SwitchCardsClient(cardId1, cardId2);
             //flipOutGame.ActOnFlipOutActionForCurrentPlayer(switchAction);
             //GameStateClient.CurrentGameStateClient.ClearActionsSinceLastTurn();
@@ -645,7 +671,15 @@ public class ServerDispatch
         if (isHotseatGame)
         {
             GameStateClient.AddPlayerActionTakenForAll(swap1Action);
+        }
+        else
+        {
             
+        }
+        CheckForAndIssueEndTurnAction();
+
+        if (isHotseatGame)
+        {            
             //GameStateClient.AddPlayerActionTakenForOpponentViews(playerId, swap1ActionForOpponents, false);
 
             //GameManager.Instance.SwitchCardsClient(cardId1, cardId2);
@@ -883,7 +917,14 @@ public class ServerDispatch
         if (isHotseatGame)
         {
             GameStateClient.AddPlayerActionTakenForAll(swap2Action);
+        }
+        else
+        {
             
+        }
+        CheckForAndIssueEndTurnAction();
+        if (isHotseatGame)
+        {
             //GameStateClient.AddPlayerActionTakenForOpponentViews(playerId, swap2ActionForOpponents, false);
 
             //GameManager.Instance.SwitchCardsClient(cardId1, cardId2);
@@ -962,9 +1003,15 @@ public class ServerDispatch
         {
             Debug.LogWarning("ServerDispatch->ScoreCards(): end game reached");
             EndGame();
-            //return;
+            if (isHotseatGame)
+            {
+                flipOutGame.ActOnFlipOutActionsForCurrentPlayer();
+            }
+            return;
         }
+        // else
 
+        CheckForAndIssueEndTurnAction();
         if (isHotseatGame)
         {
             flipOutGame.ActOnFlipOutActionsForCurrentPlayer();
@@ -1039,8 +1086,13 @@ public class ServerDispatch
         {
             Debug.LogWarning("ServerDispatch->SwipeCards(): end game reached");
             EndGame();
-            //return;
+            if (isHotseatGame)
+            {
+                flipOutGame.ActOnFlipOutActionsForCurrentPlayer();
+            }
+            return;
         }
+        CheckForAndIssueEndTurnAction();
 
         if (isHotseatGame)
         {

@@ -70,7 +70,7 @@ public class InputManager : MonoBehaviour
         if (playerControls.Player.Mute.triggered)
         {
             //GameManager.Instance.MuteGame();
-            AudioManager.PauseToggle();
+            AudioManager.MuteToggle();
         }
         else if (playerControls.Player.Quit.triggered)
         {

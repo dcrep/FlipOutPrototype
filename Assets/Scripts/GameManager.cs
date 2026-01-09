@@ -51,8 +51,8 @@ public class GameManager : MonoBehaviour
     [SerializeField] public PlayerSessionManager sessionManager = new PlayerSessionManager();
     [SerializeField] public GameStateServer gameStateServer = new GameStateServer();
 
-    // Only for Editor inspection:
-    //[SerializeField] public GameStateClient gameStateClient;
+    // (currently) Only for Editor inspection:
+    [SerializeField] public GameStateClient gameStateClient;
     //public GameStateClient gameStateClient2;
 
     public ServerDispatch serverDispatch = new ServerDispatch();
@@ -355,17 +355,7 @@ public class GameManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        // Quick test: press L to load the configured scene
-        if (Input.GetKeyDown(KeyCode.Slash))
-        {
-            //LoadScene("xDCExperiments");
-            LoadScene(Scenes.DCExperiments);
-        }
-        else if (Input.GetKeyDown(KeyCode.Z))
-        {
-            EndGameClient(0);
-        }
-        // workaround for Start() timing issue (avoiding Script Execution Order change)
+        // Previous workaround for Start() timing issue (avoiding Script Execution Order change)
         //!! Check logic
         /*if (currentScene == Scenes.Game && gameStateServer.serverDrawPile != null && !cardsShowing)
         {
@@ -503,6 +493,8 @@ public class GameManager : MonoBehaviour
         currentGameState = GameStatus.Playing;
 
         flipOutGame.StartHotseatGame();
+
+        gameStateClient = GameStateClient.CurrentGameStateClient;
 
 /*
         // if (IsHost)

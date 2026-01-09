@@ -1071,6 +1071,7 @@ public class FlipOutGame : MonoBehaviour
 
 #region Playback
 
+    //!TODO: Change action list to queue to make sense for playback? (no longer keeping full action history)
     //!TODO: Refactor some of this as it was pulled from FlipOutActions
 
     private void ActOnFlipOutActionForCurrentPlayer(FlipOutActions action)
@@ -1202,8 +1203,10 @@ public class FlipOutGame : MonoBehaviour
             //GameManager.Instance.uiManager.UpdateScoresDisplay();
         }
 
-        //!TODO: Move this to ServerDispatch -> after adding action, check # actions, add EndTurn action at 2
         GameStateClient.CurrentGameStateClient.ClearActionsSinceLastTurn();
+
+        //!TODO: Move this to ServerDispatch -> after adding action, check # actions, add EndTurn action at 2
+        /*
         if (GameStateClient.CurrentGameStateClient.GetCurrentPlayerActionsTaken() >= 2)
         {
             Debug.Log("ActOnFlipOutActionsForCurrentPlayerCoroutine: Current player has taken 2 actions, ending turn.");
@@ -1212,6 +1215,8 @@ public class FlipOutGame : MonoBehaviour
         }
         else
             currentGameEvent = FlipOutGameEvents.Idle;
+        */
+        currentGameEvent = FlipOutGameEvents.Idle;
     }
 
 #endregion
