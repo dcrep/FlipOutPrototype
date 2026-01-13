@@ -23,4 +23,6 @@ public class ScenesSO : ScriptableObject
 
     public string UITestScene;
     public Scenes UITestSceneEnum = Scenes.Game;    //UITest;
+    public string UILayoutScene;
+    public Scenes UILayoutSceneEnum = Scenes.Game;  //UILayout;
 }

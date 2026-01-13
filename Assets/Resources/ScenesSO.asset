@@ -26,3 +26,5 @@ MonoBehaviour:
   DCExperimentsSceneEnum: 4
   UITestScene: UITest
   UITestSceneEnum: 4
+  UILayoutScene: FlipoutUILayout
+  UILayoutSceneEnum: 8

@@ -17,7 +17,8 @@ public enum Scenes
     Game,
     GameOver,
     DCExperiments,
-    UITest
+    UITest,
+    UILayout
 }
 
 // AppState ? (avoids collision with GameState script)
@@ -174,6 +175,12 @@ public class GameManager : MonoBehaviour
                 currentScene = scenesSO.UITestSceneEnum;
                 currentGameState = GameStatus.Playing;
                 break;
+            case Scenes.UILayout:
+                SceneManager.LoadScene(scenesSO.UILayoutScene);
+                //currentScene = Scenes.UILayout;
+                currentScene = scenesSO.UILayoutSceneEnum;
+                currentGameState = GameStatus.UI;
+                break;
             default:
                 Debug.LogError("Unknown scene: " + scene);
                 break;
@@ -245,6 +252,15 @@ public class GameManager : MonoBehaviour
                 Debug.Log("currentScene mismatch; currentScene set to " + currentScene.ToString() + "; updating to " + Scenes.UITest.ToString());
                 currentScene = Scenes.Game; // !!
                 currentGameState = GameStatus.Playing;
+            }
+        }
+        else if (activeSceneName == scenesSO.UILayoutScene)
+        {
+            if (currentScene != Scenes.UILayout)
+            {
+                Debug.Log("currentScene mismatch; currentScene set to " + currentScene.ToString() + "; updating to " + Scenes.UILayout.ToString());
+                currentScene = Scenes.UILayout;
+                currentGameState = GameStatus.UI;
             }
         }
         else
