@@ -278,6 +278,20 @@ public class InputManager : MonoBehaviour
                 GameManager.Instance.serverDispatch.EndTurn();
             }
         }
+        else if (GameManager.Instance.currentScene == Scenes.UILayout)
+        {
+            if (keyValue < 2 || keyValue > 5)
+            {
+                Debug.LogWarning("Invalid number of players for UILayout scene: " + keyValue + ". Must be 2 to 5.");
+                return;
+            }
+            FlipOutUILayout layout = FindFirstObjectByType<FlipOutUILayout>();
+            if (layout != null)
+            {
+                layout.numberOfPlayers = keyValue;
+                layout.UpdateLayout();
+            }
+        }
     }
 
     private void onCardClicked(CardObject card)

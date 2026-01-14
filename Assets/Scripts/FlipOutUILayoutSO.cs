@@ -1,22 +1,24 @@
 using UnityEngine;
 
+/*
+// FlipOutUILayout.cs:
 [System.Serializable]
-public class UITransform
+public struct FlipoutUIPlayerLayout
 {
     public Vector3 position;
-    public Quaternion rotation;
-    public Vector3 scale;
-
+    public float rotationZ;
+    public float scale;
     public float objectOffsetX;
+    public float scorePileOffsetX;
 }
-
+*/
 [CreateAssetMenu(fileName = "FlipOutUILayoutSO", menuName = "Scriptable Objects/FlipOutUILayoutSO")]
 public class FlipOutUILayoutSO : ScriptableObject
 {
-    public UITransform[] two2Players = new UITransform[2];
-    public UITransform[] three3Players = new UITransform[3];
-    public UITransform[] four4Players = new UITransform[4];
-    public UITransform[] five5Players = new UITransform[5];
+    public FlipoutUIPlayerLayout[] two2Players = new FlipoutUIPlayerLayout[2];
+    public FlipoutUIPlayerLayout[] three3Players = new FlipoutUIPlayerLayout[3];
+    public FlipoutUIPlayerLayout[] four4Players = new FlipoutUIPlayerLayout[4];
+    public FlipoutUIPlayerLayout[] five5Players = new FlipoutUIPlayerLayout[5];
 
     void OValidate()
     {
