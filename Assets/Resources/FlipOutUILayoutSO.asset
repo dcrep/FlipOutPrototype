@@ -13,62 +13,62 @@ MonoBehaviour:
   m_Name: FlipOutUILayoutSO
   m_EditorClassIdentifier: 
   two2Players:
-  - position: {x: 0, y: 0, z: 0}
+  - position: {x: -6, y: -3, z: 0}
     rotation: {x: 0, y: 0, z: 0, w: 0}
-    scale: {x: 0, y: 0, z: 0}
-    objectOffsetX: 0
-  - position: {x: 0, y: 0, z: 0}
+    scale: {x: 1, y: 1, z: 1}
+    objectOffsetX: 2.5
+  - position: {x: -6, y: 3, z: 0}
     rotation: {x: 0, y: 0, z: 0, w: 0}
-    scale: {x: 0, y: 0, z: 0}
-    objectOffsetX: 0
+    scale: {x: 1, y: 1, z: 1}
+    objectOffsetX: 2.5
   three3Players:
-  - position: {x: 0, y: 0, z: 0}
+  - position: {x: -6, y: -3, z: 0}
     rotation: {x: 0, y: 0, z: 0, w: 0}
-    scale: {x: 0, y: 0, z: 0}
-    objectOffsetX: 0
-  - position: {x: 0, y: 0, z: 0}
+    scale: {x: 1, y: 1, z: 1}
+    objectOffsetX: 2.5
+  - position: {x: -6, y: 0, z: 0}
     rotation: {x: 0, y: 0, z: 0, w: 0}
-    scale: {x: 0, y: 0, z: 0}
-    objectOffsetX: 0
-  - position: {x: 0, y: 0, z: 0}
+    scale: {x: 1, y: 1, z: 1}
+    objectOffsetX: 2.5
+  - position: {x: -6, y: -3, z: 0}
     rotation: {x: 0, y: 0, z: 0, w: 0}
-    scale: {x: 0, y: 0, z: 0}
-    objectOffsetX: 0
+    scale: {x: 1, y: 1, z: 1}
+    objectOffsetX: 2.5
   four4Players:
-  - position: {x: 0, y: 0, z: 0}
+  - position: {x: -6, y: 0, z: 0}
     rotation: {x: 0, y: 0, z: 0, w: 0}
-    scale: {x: 0, y: 0, z: 0}
-    objectOffsetX: 0
-  - position: {x: 0, y: 0, z: 0}
+    scale: {x: 1, y: 1, z: 1}
+    objectOffsetX: 2.5
+  - position: {x: -6, y: 0, z: 0}
     rotation: {x: 0, y: 0, z: 0, w: 0}
-    scale: {x: 0, y: 0, z: 0}
-    objectOffsetX: 0
-  - position: {x: 0, y: 0, z: 0}
+    scale: {x: 1, y: 1, z: 1}
+    objectOffsetX: 2.5
+  - position: {x: -6, y: 0, z: 0}
     rotation: {x: 0, y: 0, z: 0, w: 0}
-    scale: {x: 0, y: 0, z: 0}
-    objectOffsetX: 0
-  - position: {x: 0, y: 0, z: 0}
+    scale: {x: 1, y: 1, z: 1}
+    objectOffsetX: 2.5
+  - position: {x: -6, y: 0, z: 0}
     rotation: {x: 0, y: 0, z: 0, w: 0}
-    scale: {x: 0, y: 0, z: 0}
-    objectOffsetX: 0
+    scale: {x: 1, y: 1, z: 1}
+    objectOffsetX: 2.5
   five5Players:
-  - position: {x: 0, y: 0, z: 0}
+  - position: {x: -6, y: 0, z: 0}
     rotation: {x: 0, y: 0, z: 0, w: 0}
-    scale: {x: 0, y: 0, z: 0}
-    objectOffsetX: 0
-  - position: {x: 0, y: 0, z: 0}
+    scale: {x: 1, y: 1, z: 1}
+    objectOffsetX: 2.5
+  - position: {x: -6, y: 0, z: 0}
     rotation: {x: 0, y: 0, z: 0, w: 0}
-    scale: {x: 0, y: 0, z: 0}
-    objectOffsetX: 0
-  - position: {x: 0, y: 0, z: 0}
+    scale: {x: 1, y: 1, z: 1}
+    objectOffsetX: 2.5
+  - position: {x: -6, y: 0, z: 0}
     rotation: {x: 0, y: 0, z: 0, w: 0}
-    scale: {x: 0, y: 0, z: 0}
-    objectOffsetX: 0
-  - position: {x: 0, y: 0, z: 0}
+    scale: {x: 1, y: 1, z: 1}
+    objectOffsetX: 2.5
+  - position: {x: -6, y: 0, z: 0}
     rotation: {x: 0, y: 0, z: 0, w: 0}
-    scale: {x: 0, y: 0, z: 0}
-    objectOffsetX: 0
-  - position: {x: 0, y: 0, z: 0}
+    scale: {x: 1, y: 1, z: 1}
+    objectOffsetX: 2.5
+  - position: {x: -6, y: 0, z: 0}
     rotation: {x: 0, y: 0, z: 0, w: 0}
-    scale: {x: 0, y: 0, z: 0}
-    objectOffsetX: 0
+    scale: {x: 1, y: 1, z: 1}
+    objectOffsetX: 2.5
