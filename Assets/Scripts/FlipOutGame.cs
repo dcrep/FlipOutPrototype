@@ -19,6 +19,14 @@ public enum FlipOutGameEvents
     EndingGame
 }
 
+//!TODO: Establish Order of players independent of player IDs
+// (as opposed to Dictionary lookup by id or array-search)
+struct PlayerOrderInfo
+{
+    public int playerId;
+    public int playerStateIndex;
+}
+
 //!TODO: UI stuff should be moved to UIManager
 //!TODO: Make multi-file partial class to reduce code-per-file
 public class FlipOutGame : MonoBehaviour

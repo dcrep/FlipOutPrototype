@@ -19,6 +19,9 @@ public class FlipOutUILayout : MonoBehaviour
 
     [SerializeField] FlipOutUILayoutSO layoutSO;
 
+    Vector3 deckPosition= new Vector3(6f, 0f, 0f);
+    float deckRotationZ = 0f;
+    float deckScale = 1f;
     FlipoutUIPlayerLayout[] playerLayoutFor2 = new FlipoutUIPlayerLayout[2]
     {
         new() { position = new Vector3(-5.8f, -3, 0), rotationZ = 0f,
@@ -38,26 +41,26 @@ public class FlipOutUILayout : MonoBehaviour
     FlipoutUIPlayerLayout[] playerLayoutFor4 = new FlipoutUIPlayerLayout[4]
     {
         new() { position = new Vector3(-4.25f, -3.75f, 0), rotationZ = 0f,
-                scale = 0.7f, objectOffsetX = 1.8f, scorePileOffsetX = -2.0f },
+                scale = 0.7f, objectOffsetX = 1.8f, scorePileOffsetX = -1.75f },
         new() { position = new Vector3(-4.25f, -1.25f, 0), rotationZ = 0f,
-                scale = 0.7f, objectOffsetX = 1.8f, scorePileOffsetX = -2.0f },
+                scale = 0.7f, objectOffsetX = 1.8f, scorePileOffsetX = -1.75f },
         new() { position = new Vector3(-4.25f, 1.25f, 0), rotationZ = 0f,
-                scale = 0.7f, objectOffsetX = 1.8f, scorePileOffsetX = -2.0f },
+                scale = 0.7f, objectOffsetX = 1.8f, scorePileOffsetX = -1.75f },
         new() { position = new Vector3(-4.25f, 3.75f, 0), rotationZ = 0f,
-                scale = 0.7f, objectOffsetX = 1.8f, scorePileOffsetX = -2.0f }
+                scale = 0.7f, objectOffsetX = 1.8f, scorePileOffsetX = -1.75f }
     };
     FlipoutUIPlayerLayout[] playerLayoutFor5 = new FlipoutUIPlayerLayout[5]
     {
         new() { position = new Vector3(-3.25f, -4f, 0), rotationZ = 0f,
-                scale = 0.55f, objectOffsetX = 1.4f, scorePileOffsetX = -2.0f },
+                scale = 0.55f, objectOffsetX = 1.4f, scorePileOffsetX = -1.5f },
         new() { position = new Vector3(-3.25f, -2f, 0), rotationZ = 0f,
-                scale = 0.55f, objectOffsetX = 1.4f, scorePileOffsetX = -2.0f },
+                scale = 0.55f, objectOffsetX = 1.4f, scorePileOffsetX = -1.5f },
         new() { position = new Vector3(-3.25f, 0f, 0), rotationZ = 0f,
-                scale = 0.55f, objectOffsetX = 1.4f, scorePileOffsetX = -2.0f },
+                scale = 0.55f, objectOffsetX = 1.4f, scorePileOffsetX = -1.5f },
         new() { position = new Vector3(-3.25f, 2f, 0), rotationZ = 0f,
-                scale = 0.55f, objectOffsetX = 1.4f, scorePileOffsetX = -2.0f },
+                scale = 0.55f, objectOffsetX = 1.4f, scorePileOffsetX = -1.5f },
         new() { position = new Vector3(-3.25f, 4f, 0), rotationZ = 0f,
-                scale = 0.55f, objectOffsetX = 1.4f, scorePileOffsetX = -2.0f }
+                scale = 0.55f, objectOffsetX = 1.4f, scorePileOffsetX = -1.5f }
     };
 
     [SerializeField] private Canvas canvas = null;
@@ -179,7 +182,7 @@ public class FlipOutUILayout : MonoBehaviour
             canvasTextParentGO.transform.SetParent(canvas.transform, false);
         }
 
-        FlipoutUIPlayerLayout[] playerLayouts = null;
+        FlipoutUIPlayerLayout[] playerLayouts;
 
         FlipoutUIPlayerLayout[] uiTransforms = null;
         switch (numberOfPlayers)
@@ -205,9 +208,9 @@ public class FlipOutUILayout : MonoBehaviour
                 return;
         }
 
-        for (int playerNum = 0; playerNum < playerLayouts.Length; playerNum++)
+        for (int playerTableNum = 0; playerTableNum < playerLayouts.Length; playerTableNum++)
         {
-            FlipoutUIPlayerLayout uIPlayerLayout = playerLayouts[playerNum];
+            FlipoutUIPlayerLayout uIPlayerLayout = playerLayouts[playerTableNum];
             Vector3 pos = uIPlayerLayout.position;
             float rotZ = uIPlayerLayout.rotationZ;
             float scale = uIPlayerLayout.scale;
@@ -228,31 +231,148 @@ public class FlipOutUILayout : MonoBehaviour
                 InstantiateCardObject(color, pos, rotZ, scale);
                 pos.x += uIPlayerLayout.objectOffsetX;
             }
-            // reset pos
-            pos = uIPlayerLayout.position;
-            // move to score pile position
-            pos.x += uIPlayerLayout.scorePileOffsetX;
-            InstantiateCardObject(color, pos, rotZ, scale * 0.66f);
 
-            AddPlayerText(pos, playerNum);
+            // TEST: Randomly deal one card to each player
+            DealCard(playerTableNum, 4, CardColor.red);
+
+
+            DrawScorePile(playerTableNum);
+            // reset pos
+            //pos = uIPlayerLayout.position;
+            // move to score pile position
+            //pos.x += uIPlayerLayout.scorePileOffsetX;
+            //InstantiateCardObject(color, pos, rotZ, scale * 0.66f);
+
+            AddPlayerText(playerTableNum);
         }
+
+        UpdateScoresDisplay();
+
+        CalculateDeckPosition();
+
+        InstantiateCardObject(CardColor.invalid, deckPosition, deckRotationZ, deckScale);
 
         // 'Highlight' current player
         playerText[0].color = Color.cyan;
         playerText[0].fontStyle = FontStyles.Bold;
     }
 
-    private void AddPlayerText(Vector3 position, int playerNum)
+    private FlipoutUIPlayerLayout[] GetUIPlayerLayouts()
     {
+        FlipoutUIPlayerLayout[] playerLayouts;
+        switch (numberOfPlayers)
+        {
+            case 2:
+                playerLayouts = playerLayoutFor2;
+                break;
+            case 3:
+                playerLayouts = playerLayoutFor3;
+                break;
+            case 4:
+                playerLayouts = playerLayoutFor4;
+                break;
+            case 5:
+                playerLayouts = playerLayoutFor5;
+                break;
+            default:
+                Debug.LogWarning("Invalid number of players: " + numberOfPlayers);
+                return playerLayoutFor2;
+        }
+        return playerLayouts;
+    }
+
+    private FlipoutUIPlayerLayout GetUIPlayerLayout(int playerTableNum)
+    {
+        return GetUIPlayerLayouts()[playerTableNum];
+    }
+
+    private FlipoutUIPlayerLayout GetUIPlayerLayoutAtCardIdx(int playerTableNum, int cardIndex)
+    {
+        FlipoutUIPlayerLayout uIPlayerLayout = GetUIPlayerLayout(playerTableNum);
+        Vector3 pos = uIPlayerLayout.position;
+        pos.x += uIPlayerLayout.objectOffsetX * cardIndex;
+        uIPlayerLayout.position = pos;
+        return uIPlayerLayout;
+    }
+
+    private void DealCard(int playerTableNum, int cardIndex, CardColor color)
+    {
+        // Logic to deal a card to the specified player
+        Debug.Log($"Dealing card {cardIndex} to player {playerTableNum}");
+
+        FlipoutUIPlayerLayout uIPlayerLayout = GetUIPlayerLayoutAtCardIdx(playerTableNum, cardIndex);
+
+        CardObject card = InstantiateCardObject(color, uIPlayerLayout.position, uIPlayerLayout.rotationZ, uIPlayerLayout.scale);
+        card.SetSortingOrder(20);
+    }
+
+    private void DrawScorePile(int playerTableNum)
+    {
+        // Logic to draw score pile for the specified player
+        Debug.Log($"Drawing score pile for player {playerTableNum}");
+
+        FlipoutUIPlayerLayout uIPlayerLayout = GetUIPlayerLayout(playerTableNum);
+        Vector3 pos = uIPlayerLayout.position;
+        pos.x += uIPlayerLayout.scorePileOffsetX;
+
+        CardObject card = InstantiateCardObject(CardColor.invalid, pos, uIPlayerLayout.rotationZ, uIPlayerLayout.scale * 0.66f);
+        card.SetSortingOrder(10);
+    }
+
+    private void UpdateScoresDisplay()
+    {
+        for (int i = 0; i < numberOfPlayers; i++)
+        {
+            scoreText[i].text = $"Score: {Random.Range(0, 50)}";
+        }
+    }
+
+    private void CalculateDeckPosition()
+    {
+        FlipoutUIPlayerLayout[] playerLayouts = GetUIPlayerLayouts();
+        deckRotationZ = 0f;
+        deckScale = 1f;
+        // Deck X position for most cases; adjusting Y as needed
+        //float deckPosXOffset = 0f;
+        if (playerLayouts.Length < 3)   // 2 players
+        {
+            // Adjust deck position for 2 players
+            deckPosition = new Vector3(0f, 0f, 0f);
+            deckRotationZ = 90f;
+            deckScale = 0.85f;
+        }
+        else    // 3 - 5 players
+        {
+            // placing deck to right, either in middle or between 2 & 3 players (index 1 & 2)
+
+            int playerAtMidIndex = playerLayouts.Length / 2;
+            deckPosition = playerLayouts[playerAtMidIndex].position;
+            deckPosition.x += playerLayouts[playerAtMidIndex].objectOffsetX * 6 + playerLayouts[playerAtMidIndex].objectOffsetX * 0.15f;
+            deckScale = playerLayouts[playerAtMidIndex].scale * 1.25f;
+            if (playerLayouts.Length == 4)  // adjust Y between players 2 & 3
+            {
+                // average Y of two middle players
+                Vector3 pos1 = playerLayouts[playerAtMidIndex - 1].position;
+                Vector3 pos2 = playerLayouts[playerAtMidIndex].position;
+                deckPosition.y = (pos1.y + pos2.y) / 2f;
+            }
+        }
+    }
+
+    private void AddPlayerText(int playerTableNum)
+    {
+        FlipoutUIPlayerLayout uIPlayerLayout = GetUIPlayerLayout(playerTableNum);
+        Vector3 position = uIPlayerLayout.position;
         Vector3 pos = position;
-        playerTextGO[playerNum] = new GameObject($"Player{playerNum}_Name", typeof(RectTransform));   //, typeof(RectTransform));
-        scoreKeeperGO[playerNum] = new GameObject($"Player{playerNum}_Score", typeof(RectTransform));   //, typeof(RectTransform));
+        pos.x += uIPlayerLayout.scorePileOffsetX;
+        playerTextGO[playerTableNum] = new GameObject($"Player{playerTableNum}_Name", typeof(RectTransform));   //, typeof(RectTransform));
+        scoreKeeperGO[playerTableNum] = new GameObject($"Player{playerTableNum}_Score", typeof(RectTransform));   //, typeof(RectTransform));
         // IMPORTANT: false keeps local UI coordinates correct
-        //scoreKeeperGO[playerNum].transform.SetParent(canvas.transform, false); //, false);
-        playerTextGO[playerNum].transform.SetParent(canvasTextParentGO.transform, false); //, false);
-        scoreKeeperGO[playerNum].transform.SetParent(canvasTextParentGO.transform, false); //, false);
-        RectTransform rtPlayer = playerTextGO[playerNum].GetComponent<RectTransform>();
-        RectTransform rt = scoreKeeperGO[playerNum].GetComponent<RectTransform>();
+        //scoreKeeperGO[playerTableNum].transform.SetParent(canvas.transform, false); //, false);
+        playerTextGO[playerTableNum].transform.SetParent(canvasTextParentGO.transform, false); //, false);
+        scoreKeeperGO[playerTableNum].transform.SetParent(canvasTextParentGO.transform, false); //, false);
+        RectTransform rtPlayer = playerTextGO[playerTableNum].GetComponent<RectTransform>();
+        RectTransform rt = scoreKeeperGO[playerTableNum].GetComponent<RectTransform>();
         // Use anchoredPosition for UI placement
         //rt.anchoredPosition = playerScorePilePositions[i];\
 
@@ -261,35 +381,35 @@ public class FlipOutUILayout : MonoBehaviour
 
         pos *= 100; //ppi
         pos.x -= 50;
-        rt.anchoredPosition = pos;    // playerScoreTextPositions[playerNum];
+        rt.anchoredPosition = pos;    // playerScoreTextPositions[playerTableNum];
 
         pos.y += 60;
-        Debug.Log("Player Score Text Position: " + pos);    // playerScoreTextPositions[playerNum]);
-        rtPlayer.anchoredPosition = pos;    // playerScoreTextPositions[playerNum];
+        Debug.Log("Player Score Text Position: " + pos);    // playerScoreTextPositions[playerTableNum]);
+        rtPlayer.anchoredPosition = pos;    // playerScoreTextPositions[playerTableNum];
 
         //rt.localScale = Vector3.one;
         //Vector3 pos = playerScorePilePositions[i];
-        //Vector3 pos = playerScoreTextPositions[playerNum];
+        //Vector3 pos = playerScoreTextPositions[playerTableNum];
         //pos.z = -0.5f;
         //scoreKeeperGO[i].transform.localPosition = pos;
         //scoreKeeperGO[i].transform.localScale = Vector3.one;
-        playerTextGO[playerNum].layer = LayerMask.NameToLayer("UI");
-        scoreKeeperGO[playerNum].layer = LayerMask.NameToLayer("UI");
+        playerTextGO[playerTableNum].layer = LayerMask.NameToLayer("UI");
+        scoreKeeperGO[playerTableNum].layer = LayerMask.NameToLayer("UI");
         
-        playerText[playerNum] = playerTextGO[playerNum].AddComponent<TextMeshProUGUI>();
-        scoreText[playerNum] = scoreKeeperGO[playerNum].AddComponent<TextMeshProUGUI>();
+        playerText[playerTableNum] = playerTextGO[playerTableNum].AddComponent<TextMeshProUGUI>();
+        scoreText[playerTableNum] = scoreKeeperGO[playerTableNum].AddComponent<TextMeshProUGUI>();
         //scoreText[i].GetComponent<Renderer>().sortingLayerName = "UI";
         //scoreText[i].GetComponent<Renderer>().sortingOrder = 150; // Optional: set render order
 
-        playerText[playerNum].text = "Player Name";
-        playerText[playerNum].fontSize = 32;
-        playerText[playerNum].alignment = TextAlignmentOptions.Left;
-        playerText[playerNum].color = Color.darkBlue;
+        playerText[playerTableNum].text = "Player Name";
+        playerText[playerTableNum].fontSize = 32;
+        playerText[playerTableNum].alignment = TextAlignmentOptions.Left;
+        playerText[playerTableNum].color = Color.darkBlue;
 
-        scoreText[playerNum].text = "Score: 00";
-        scoreText[playerNum].fontSize = 32;
-        scoreText[playerNum].alignment = TextAlignmentOptions.Center;
-        scoreText[playerNum].color = Color.black;
+        scoreText[playerTableNum].text = "Score: 00";
+        scoreText[playerTableNum].fontSize = 32;
+        scoreText[playerTableNum].alignment = TextAlignmentOptions.Center;
+        scoreText[playerTableNum].color = Color.black;
     }
 }
 
