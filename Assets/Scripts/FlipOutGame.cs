@@ -121,6 +121,12 @@ public class FlipOutGame : MonoBehaviour
     int nextSortOrder = 1;
 
 
+    FlipOutUI flipOutUI;
+
+    void Awake()
+    {
+        flipOutUI = new FlipOutUI();
+    }
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -304,28 +310,35 @@ public class FlipOutGame : MonoBehaviour
             }
             cardsInPlay.Clear();
         }
-        Destroy(cardsParentGO);
-        cardsParentGO = null;
-        drawPileTop = null;
-    }
-
-    public void EndGameCleanup()
-    {
-        Debug.Log("->EndGameCleanup()");
-        playersParentGO = null;
-        //cardsShowing = false;
-        drawPileTop = null;
-    
-        if (cardsInPlay != null)
-        {
-            cardsInPlay.Clear();
-            cardsInPlay = null;
-        }
         if (cardsHighlighted != null)
         {
             cardsHighlighted.Clear();
             cardsHighlighted = null;
         }
+        if (cardsParentGO != null)
+        {
+            Destroy(cardsParentGO);
+            cardsParentGO = null;
+        }
+        if (playersParentGO != null)
+        {
+            Destroy(playersParentGO);
+            playersParentGO = null;
+        }        
+        if (drawPileTop != null)
+        {
+            Destroy(drawPileTop.gameObject);
+            drawPileTop = null;
+        }
+        flipOutUI.Cleanup();
+    }
+
+    public void EndGameCleanup()
+    {
+        Debug.Log("->EndGameCleanup()");
+    
+        ClearObjectsInPlay();
+        flipOutUI.Cleanup();
         GameManager.Instance.StateCleanup();
         //gameStateServer.Cleanup();
         //GameStateClient.CleanupClients();

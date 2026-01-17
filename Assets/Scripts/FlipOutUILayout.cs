@@ -379,7 +379,7 @@ public class FlipOutUILayout : MonoBehaviour
         rtPlayer.sizeDelta = new Vector2(250, 50);
         rt.sizeDelta = new Vector2(200, 50);
 
-        pos *= 100; //ppi
+        pos *= 100; //ppu
         pos.x -= 50;
         rt.anchoredPosition = pos;    // playerScoreTextPositions[playerTableNum];
 
