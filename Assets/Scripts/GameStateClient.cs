@@ -267,12 +267,12 @@ public class GameStateClient
         return totalPlayers;
     }
 
-   public PlayerXClient GetActivePlayer()
+    public PlayerXClient GetActivePlayer()
     {
         return playersClient[currentPlayerIndex];
     }
 
-   public int GetPlayerNumberByID(int playerID)
+    public int GetPlayerNumberByID(int playerID)
     {
         for (int playerNum = 0; playerNum < totalPlayers; playerNum++)
         {
@@ -281,6 +281,12 @@ public class GameStateClient
         }
         Debug.LogError("GameStateC->GetPlayerNumberByID(): could not find playerID " + playerID);
         return -1;
+    }
+
+    //!TODO: Get player table number based on position
+    public int GetPlayerTableNumberByID(int playerID)
+    {
+        return GetPlayerNumberByID(playerID);
     }
 
     public PlayerXClient GetPlayerByNumber(int playerNum)

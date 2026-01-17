@@ -481,7 +481,7 @@ public class FlipOutGame : MonoBehaviour
     {
         for (int playerNum = 0; playerNum < GameStateClient.GetTotalPlayers(); playerNum++)
         {
-            DealFullHandClientFromState(playerNum);
+            DealFullHandClientFromState(GameStateClient.CurrentGameStateClient.GetPlayerIDByNumber(playerNum));
         }
         //SetDrawPileTopCard(GameStateClient.GetDeckTopCardColor());
     }
@@ -550,7 +550,7 @@ public class FlipOutGame : MonoBehaviour
             );
         }
         // Run and reset sorting order afterwards (to keep dealing cards on top during animation)
-        //uiManager.animationManager.Run(ResetCardSortingOrdersAfterDeal);
+        uiManager.animationManager.Run(ResetCardSortingOrdersAfterDeal);
 
         // Called in FlipOutActions (should I do it here instead?):
         //GameStateClient.CurrentGameStateClient.AssignCardsToPlayerHand(targetPlayerId, dealtCards, positions);
@@ -558,7 +558,7 @@ public class FlipOutGame : MonoBehaviour
         SetDrawPileTopCard(deckTopColor);
     }
 
-/*
+//
     // Was to be a callback on animation end, but the playback and callback system changed:
     private void ResetCardSortingOrdersAfterDeal()
     {
@@ -576,7 +576,7 @@ public class FlipOutGame : MonoBehaviour
             }
         }
     }
-*/
+//
 
     public void DealNewCardsToClient(int targetPlayerId, List<CardPODClient> dealtCards, int[] dealtCardIndices)
     {
@@ -1169,6 +1169,7 @@ public class FlipOutGame : MonoBehaviour
                     {
                         Debug.Log("ActOnFlipOutActionsForCurrentPlayer: Ending current player's turn as per action.");
                         GameStateClient.CurrentGameStateClient.ClearCurrentPlayerActionsTaken();
+                        //!TODO: Animation shouldn't be running, add wait for FlipoutGame.EndTurn?
                         GameManager.Instance.uiManager.animationManager.SetActionCompleteCallback(() => GameManager.Instance.EndTurnClient(), true);
                     }
                     break;
