@@ -17,11 +17,11 @@ public class FlipOutUI
 
     //[SerializeField] FlipOutUILayoutSO layoutSO;
 
-    Vector3 deckPosition= new Vector3(6f, 0f, 0f);
-    float deckRotationZ = 0f;
-    float deckScale = 1f;
+    public Vector3 deckPosition= new Vector3(6f, 0f, 0f);
+    public float deckRotationZ = 0f;
+    public float deckScale = 1f;
 
-    float scorePileScaleMultiplier = 0.66f;
+    public float scorePileScaleMultiplier = 0.66f;
     FlipoutUIPlayerLayout[] playerLayoutFor2 = new FlipoutUIPlayerLayout[2]
     {
         new() { position = new Vector3(-5.8f, -3, 0), rotationZ = 0f,
@@ -383,7 +383,7 @@ public class FlipOutUI
         return playerLayouts;
     }
 
-    private FlipoutUIPlayerLayout GetUIPlayerLayout(int numPlayers, int playerTableNum)
+    public FlipoutUIPlayerLayout GetUIPlayerLayout(int numPlayers, int playerTableNum)
     {
         return GetUIPlayerLayouts(numPlayers)[playerTableNum];
     }
@@ -497,7 +497,7 @@ public class FlipOutUI
         scoreText[playerTableNum].color = Color.black;
     }
 
-    public void AddPlayersText(int numPlayers)
+    public void AddPlayersText(int numPlayers, int playerTableNum)
     {
         if (canvasTextParentGO == null)
         {
@@ -547,7 +547,7 @@ public class FlipOutUI
             //scoreText[i].GetComponent<Renderer>().sortingLayerName = "UI";
             //scoreText[i].GetComponent<Renderer>().sortingOrder = 150; // Optional: set render order
 
-            playerText[playerNum].text = "Player Name";
+            playerText[playerNum].text = GameStateClient.CurrentGameStateClient.GetPlayerByNumber(playerNum).playerName;
             playerText[playerNum].fontSize = 32;
             playerText[playerNum].alignment = TextAlignmentOptions.Left;
             playerText[playerNum].color = Color.darkBlue;
@@ -557,6 +557,9 @@ public class FlipOutUI
             scoreText[playerNum].alignment = TextAlignmentOptions.Center;
             scoreText[playerNum].color = Color.black;
         }
+        // 'Highlight' current player
+        playerText[playerTableNum].color = Color.cyan;
+        playerText[playerTableNum].fontStyle = FontStyles.Bold;
     }
 #endregion UI-Layout
 

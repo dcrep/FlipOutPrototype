@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using TMPro;
 using System.Collections;
+//using System.Numerics;
 
 public enum FlipOutGameEvents
 {
@@ -81,7 +82,7 @@ public class FlipOutGame : MonoBehaviour
     GameStateClient gameStateClient2 = null;
 
 //! More UI stuff
-    Vector3 drawPileDefaultPosition = new Vector3(0, 0, 0);   //(-6, -3, 0);
+    //Vector3 drawPileDefaultPosition = new Vector3(0, 0, 0);   //(-6, -3, 0);
     private Vector3 deckOffscreenPosition = new Vector3(-1000, -1000, 0);
 
     [SerializeField] private Vector3[] playerPositions = new Vector3[5]
@@ -93,6 +94,7 @@ public class FlipOutGame : MonoBehaviour
         new(0, 0, 0)      // Player 5 - Center (?!!)
     };
     [SerializeField] private Vector3 cardHolderOffset = new Vector3(2.5f, 0, 0);
+    /*
     [SerializeField] private Vector3[] playerScorePilePositions = new Vector3[5]
     {
         new(-8, -3, 0),    // Player 1 - Bottom left
@@ -100,7 +102,7 @@ public class FlipOutGame : MonoBehaviour
         new(-9, 0, 0),    // Player 3 - Left center back        
         new(9, 0, 0),     // Player 4 - Right center back
         new(0, 4, 0)      // Player 5 - Center top (?!!)
-    };
+    };*/
 
     CardObject drawPileTop = null;
 
@@ -170,7 +172,7 @@ public class FlipOutGame : MonoBehaviour
 
         //FlipOutActions.flipOutGame = this;
 
-        uiManager.SetupPlayerUI(numPlayers, playerNames);
+        //uiManager.SetupPlayerUI(numPlayers, playerNames);
 
         // if (IsHost)
         //gameStateServer.InitGameStateServer(playerIds,playerNames);
@@ -208,7 +210,7 @@ public class FlipOutGame : MonoBehaviour
         // This will call GameStateClient.InitGameStateClient() which will result in a log-error.
         // Not sure how I should do the order of calls as I need gameStateClient setup
         serverDispatch.StartHotseatGame(playerIds, playerNames);
-        SetDrawPileTopCard(GameStateClient.GetDeckTopCardColor());
+        flipOutUI.SetDrawPileTopCard(GameStateClient.GetDeckTopCardColor());
         //TurnStart();
     }
 
@@ -262,10 +264,11 @@ public class FlipOutGame : MonoBehaviour
         Debug.Log("FlipOut->StartPlayerTurnClient(): Player " + playerId + "'s turn started.");
 
         PlayerXClient player = GameStateClient.CurrentGameStateClient.GetPlayerByNumber(playerId);
-        UpdatePlayerInfoText("Player " + playerId + "'s " + (playerNum == 1 ? "^" : "v") + " (" + player.playerName + ") Turn");
+        //UpdatePlayerInfoText("Player " + playerId + "'s " + (playerNum == 1 ? "^" : "v") + " (" + player.playerName + ") Turn");
+        flipOutUI.AddPlayersText(GameStateClient.GetTotalPlayers(), playerNum);
 
         currentGameEvent = FlipOutGameEvents.UpdatingScores;
-        uiManager.UpdateScoresDisplay();
+        flipOutUI.UpdateScoresDisplay();
         currentGameEvent = FlipOutGameEvents.StartingTurn;
 
         // This should be done at TurnEnd:
@@ -275,8 +278,8 @@ public class FlipOutGame : MonoBehaviour
         {
             if (GameStateClient.CurrentGameStateClient.handsDealt)
             {
-                DealAllHandsClientFromState();
-                BuildScorePile();
+                flipOutUI.DealAllHandsClientFromState();
+                flipOutUI.BuildScorePile();
                 ActOnFlipOutActionsForCurrentPlayer();
                 //Debug.Log("StartPlayerTurn-> Current game event: " + currentGameEvent);
             }
@@ -285,7 +288,7 @@ public class FlipOutGame : MonoBehaviour
                 ActOnFlipOutActionsForCurrentPlayer();
                 // Dealing is done through calls to DealFullHandClientFromState in FlipOutActions
                 //DealAllHandsClientFromState();
-                BuildScorePile();
+                flipOutUI.BuildScorePile();
                 GameStateClient.CurrentGameStateClient.handsDealt = true;
                 //Debug.Log("StartPlayerTurn(else)-> Current game event: " + currentGameEvent);
             }
@@ -422,7 +425,7 @@ public class FlipOutGame : MonoBehaviour
 #endregion
 
 #region Draw and Score Piles
-
+/*
     void BuildScorePile()
     {
         for (int playerNum = 0; playerNum < GameStateClient.GetTotalPlayers(); playerNum++)
@@ -480,10 +483,11 @@ public class FlipOutGame : MonoBehaviour
         }
         return;
     }
+*/
 #endregion
 
 #region Deal-or-Show Hands
-
+/*
     public void ShowOpponentFullHandClient(int playerNum, CardPODClient[] hand)
     {
         // Show opponent's full hand to local player
@@ -663,7 +667,7 @@ public class FlipOutGame : MonoBehaviour
         //GameStateClient.CurrentGameStateClient.SetCardsForPlayer(playerNum, hand);
     }
 
-
+*/
  #endregion
 
 #region FllpOut Actions
@@ -918,7 +922,10 @@ public class FlipOutGame : MonoBehaviour
         }
 
         int playerNum = player.playerNumber;
-        Vector3 scorePilePosition = playerScorePilePositions[playerNum];
+        FlipOutUI.FlipoutUIPlayerLayout playerLayout = flipOutUI.GetUIPlayerLayout(GameStateClient.GetTotalPlayers(), playerNum);
+        //Vector3 scorePilePosition = playerScorePilePositions[playerNum];
+        Vector3 scorePilePosition = playerLayout.position;
+        scorePilePosition.x += playerLayout.scorePileOffsetX;
 
         List<AnimationTask> animationTasks = new List<AnimationTask>();
         for (int i = 0; i < handIndices.Length; i++)
@@ -948,12 +955,13 @@ public class FlipOutGame : MonoBehaviour
 
                 // Move card to score pile position
                 Vector3 targetPosition = scorePilePosition;
+                Vector3 scale = Vector3.one * playerLayout.scale * flipOutUI.scorePileScaleMultiplier;
                 
                 //cardObject.SetLocalPosition(targetPosition);
                 //cardObject.SetLocalScale(Vector3.one * 0.5f); // Slightly smaller
                 cardObject.SetSortingOrder((player.scorePile.Count + 1) * 2); // On top of score pile
                 //StartCoroutine(uiManager.AnimateCardMovementAndScale(cardObject, targetPosition, Vector3.one * 0.5f));
-                animationTasks.Add( new AnimationTask { Routine = uiManager.AnimateCardMovementAndScale(cardObject, targetPosition, Vector3.one * 0.5f), DelayAfter = 1f } );
+                animationTasks.Add( new AnimationTask { Routine = uiManager.AnimateCardMovementAndScale(cardObject, targetPosition, scale), DelayAfter = 1f } );
                 //uiManager.animationManager.AddSequential( 
                 //    new AnimationTask { Routine = uiManager.AnimateCardMovementAndScale(cardObject, targetPosition, Vector3.one * 0.5f), DelayAfter = 0f } 
                 //    );                
@@ -967,7 +975,8 @@ public class FlipOutGame : MonoBehaviour
         var prevEvent = currentGameEvent;;
         currentGameEvent = FlipOutGameEvents.UpdatingScores;
         //uiManager.animationManager.Run();
-        uiManager.UpdateScoresDisplay();
+        flipOutUI.UpdateScoresDisplay();
+        //uiManager.UpdateScoresDisplay();
         currentGameEvent = prevEvent;
         //this is called along with Score/Swipe to create/queue deal action:
         // GameManager.Instance.serverDispatch.DealCardsToPlayerHandIndices(playerId, handIndices);
@@ -991,8 +1000,19 @@ public class FlipOutGame : MonoBehaviour
 
         int playerNum = player.playerNumber;
         int playerTargetNum = targetPlayer.playerNumber;
-        Vector3 scorePilePosition = playerScorePilePositions[playerNum];
-        Vector3 targetScorePilePosition = playerScorePilePositions[playerTargetNum];
+
+        FlipOutUI.FlipoutUIPlayerLayout playerLayout = flipOutUI.GetUIPlayerLayout(GameStateClient.GetTotalPlayers(), playerNum);
+        //Vector3 scorePilePosition = playerScorePilePositions[playerNum];
+        Vector3 scorePilePosition = playerLayout.position;
+        scorePilePosition.x += playerLayout.scorePileOffsetX;
+
+        FlipOutUI.FlipoutUIPlayerLayout targetPlayerLayout = flipOutUI.GetUIPlayerLayout(GameStateClient.GetTotalPlayers(), playerTargetNum);
+
+        //Vector3 scorePilePosition = playerScorePilePositions[playerNum];
+        //Vector3 targetScorePilePosition = playerScorePilePositions[playerTargetNum];
+        Vector3 targetScorePilePosition = targetPlayerLayout.position;
+        targetScorePilePosition.x += targetPlayerLayout.scorePileOffsetX;
+
         List<AnimationTask> animationTasks = new List<AnimationTask>();
 
         // Final card goes to target player's score pile
@@ -1024,11 +1044,12 @@ public class FlipOutGame : MonoBehaviour
 
                 // Move card to score pile position
                 Vector3 targetPosition = scorePilePosition;
+                Vector3 scale = Vector3.one * playerLayout.scale * flipOutUI.scorePileScaleMultiplier;
 
                 //cardObject.SetLocalPosition(targetPosition);
                 //cardObject.SetLocalScale(Vector3.one * 0.5f); // Slightly smaller
                 cardObject.SetSortingOrder((player.scorePile.Count + 1) * 2); // On top of score pile
-                animationTasks.Add( new AnimationTask { Routine = uiManager.AnimateCardMovementAndScale(cardObject, targetPosition, Vector3.one * 0.5f), DelayAfter = 0.10f } );
+                animationTasks.Add( new AnimationTask { Routine = uiManager.AnimateCardMovementAndScale(cardObject, targetPosition, scale), DelayAfter = 0.10f } );
                 //StartCoroutine(uiManager.AnimateCardMovementAndScale(cardObject, targetPosition, Vector3.one * 0.5f));
             }
             else
@@ -1063,14 +1084,14 @@ public class FlipOutGame : MonoBehaviour
 
             // Move card to score pile position
             Vector3 targetPosition = targetScorePilePosition;
-            
+            Vector3 scale = Vector3.one * targetPlayerLayout.scale * flipOutUI.scorePileScaleMultiplier;
             //finalCardObject.SetLocalPosition(targetPosition);
             //finalCardObject.SetLocalScale(Vector3.one * 0.5f); // Slightly smaller
             finalCardObject.SetSortingOrder((targetPlayer.scorePile.Count + 1) * 2); // On top of score pile
             //uiManager.animationManager.AddSequential( 
             //    new AnimationTask { Routine = uiManager.AnimateCardMovementAndScale(finalCardObject, targetPosition, Vector3.one * 0.5f), DelayAfter = 1f } 
             //    );
-            animationTasks.Add( new AnimationTask { Routine = uiManager.AnimateCardMovementAndScale(finalCardObject, targetPosition, Vector3.one * 0.5f), DelayAfter = 0.10f } );
+            animationTasks.Add( new AnimationTask { Routine = uiManager.AnimateCardMovementAndScale(finalCardObject, targetPosition, scale), DelayAfter = 0.10f } );
             //animationTasks.Add( new AnimationTask { Routine = uiManager.AnimateCardMovementAndScale(finalCardObject, targetPosition, Vector3.one * 0.5f), DelayAfter = 1f } );
             //StartCoroutine(uiManager.AnimateCardMovementAndScale(finalCardObject, targetPosition, Vector3.one * 0.5f));
             uiManager.animationManager.AddParallel(animationTasks);
@@ -1082,7 +1103,8 @@ public class FlipOutGame : MonoBehaviour
         var prevEvent = currentGameEvent;;
         currentGameEvent = FlipOutGameEvents.UpdatingScores;
         //uiManager.animationManager.Run();
-        uiManager.UpdateScoresDisplay();
+        flipOutUI.UpdateScoresDisplay();
+        //uiManager.UpdateScoresDisplay();
         currentGameEvent = prevEvent;
         //this is called along with Score/Swipe to create/queue deal action:
         // GameManager.Instance.serverDispatch.DealCardsToPlayerHandIndices(playerId, handIndices);
@@ -1174,7 +1196,7 @@ public class FlipOutGame : MonoBehaviour
                         action.positions);
                     
                     //GameManager.Instance.DealFullHandClientFromState(action.playerTargetId);
-                    DealNewCardsToClient(action.playerTargetId, dealtCards, action.positions, action.cardDestInfos[0].cardColor);
+                    flipOutUI.DealNewCardsToClient(action.playerTargetId, dealtCards, action.positions, action.cardDestInfos[0].cardColor);
                     break;
                 case FlipOutAction.TurnEnd:
                     // act on if current player
@@ -1183,7 +1205,7 @@ public class FlipOutGame : MonoBehaviour
                         Debug.Log("ActOnFlipOutActionsForCurrentPlayer: Ending current player's turn as per action.");
                         GameStateClient.CurrentGameStateClient.ClearCurrentPlayerActionsTaken();
                         //!TODO: Animation shouldn't be running, add wait for FlipoutGame.EndTurn?
-                        GameManager.Instance.uiManager.animationManager.SetActionCompleteCallback(() => GameManager.Instance.EndTurnClient(), true);
+                        uiManager.animationManager.SetActionCompleteCallback(() => GameManager.Instance.EndTurnClient(), true);
                     }
                     break;
                 case FlipOutAction.EndGame:
