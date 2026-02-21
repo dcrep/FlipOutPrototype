@@ -4,4 +4,10 @@
 
 FlipOut digital card game in Unity 2d
 
-Unity web build coming (?). Need to test the netcode portion..
+Web build at https://github.com/dcrep/flipout-build
+
+Info + Rules:
+
+https://boardgamegeek.com/boardgame/41585/flipout
+
+https://www.ultraboardgames.com/flipout/game-rules.php
